@@ -131,11 +131,21 @@ echo $info['pe_ratio'];
 #### Get Historical Data
 
 ```php
+// Basic usage (default: 1day interval, 78 data points)
+$timeline = $client->stocks()->timeline('AAPL');
+
+// With options
 $timeline = $client->stocks()->timeline('AAPL', [
-    'interval' => '1m',      // 1d, 1m, 3m, 6m, 12m
-    'orderBy' => 'DESC',     // ASC or DESC
-    'size' => 50             // Number of data points (1-78)
+    'interval' => '1min',    // Options: '1min' or '1day'
+    'orderBy' => 'DESC',     // Sort order: 'ASC' or 'DESC' (default: ASC)
+    'size' => 480,           // Number of data points: 1-5000 (default: 78)
+    'timestamp' => 1704067200 // Optional: Unix timestamp start date
 ]);
+
+// Examples:
+// Last 8 hours (minute data): size=480, interval=1min
+// Last 3 months (daily data): size=90, interval=1day
+// Last 1 year (daily data): size=365, interval=1day
 ```
 
 #### Get Financials
