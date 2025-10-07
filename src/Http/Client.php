@@ -107,6 +107,7 @@ class Client
                 'method' => $method,
                 'path' => $path,
                 'error_type' => 'connection_error',
+                'category' => $this->extractCategory($path),
             ];
 
             // Add request data if configured
@@ -131,6 +132,7 @@ class Client
                 'path' => $path,
                 'error_type' => 'network_error',
                 'status_code' => $response !== null ? $response->getStatusCode() : null,
+                'category' => $this->extractCategory($path),
             ];
 
             // Add request/response data if configured
@@ -257,6 +259,7 @@ class Client
             'error_category' => $this->categorizeError($statusCode),
             'method' => $method,
             'path' => $path,
+            'category' => $this->extractCategory($path),
         ], $additionalContext);
 
         // Add request data if configured
@@ -312,6 +315,21 @@ class Client
         }
 
         return $requestData;
+    }
+
+    /**
+     * Extract category from API path
+     * Examples: /v2/stocks/get -> stocks, /v2/currency/convert -> currency
+     */
+    private function extractCategory(string $path): string
+    {
+        // Extract category from path pattern: /v2/{category}/...
+        if (preg_match('#^/v2/([^/]+)/#', $path, $matches)) {
+            return $matches[1]; // stocks, currency, news, crypto, account
+        }
+
+        // Default to 'unknown' if pattern doesn't match
+        return 'unknown';
     }
 
     /**
