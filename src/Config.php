@@ -18,9 +18,12 @@ class Config
     private bool $errorReporting;
     private string $errorReportingEndpoint;
     private bool $includeStackTrace;
+    private string $errorReportingLevel;
+    private bool $includeRequestData;
+    private bool $includeResponseData;
 
     /**
-     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array, error_reporting?: bool, error_reporting_endpoint?: string, include_stack_trace?: bool} $options
+     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array, error_reporting?: bool, error_reporting_endpoint?: string, include_stack_trace?: bool, error_reporting_level?: string, include_request_data?: bool, include_response_data?: bool} $options
      */
     public function __construct(array $options = [])
     {
@@ -52,6 +55,11 @@ class Config
             ?? 'https://api.wioex.com/v2/sdk/error-report';
         $this->includeStackTrace = $options['include_stack_trace'] ?? false;
 
+        // Error reporting levels: 'minimal', 'standard', 'detailed'
+        $this->errorReportingLevel = $options['error_reporting_level'] ?? 'standard';
+        $this->includeRequestData = $options['include_request_data'] ?? false;
+        $this->includeResponseData = $options['include_response_data'] ?? false;
+
         $this->validate();
     }
 
@@ -67,6 +75,13 @@ class Config
 
         if (filter_var($this->baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('Invalid base URL');
+        }
+
+        $validLevels = ['minimal', 'standard', 'detailed'];
+        if (!in_array($this->errorReportingLevel, $validLevels, true)) {
+            throw new InvalidArgumentException(
+                'Invalid error reporting level. Must be one of: ' . implode(', ', $validLevels)
+            );
         }
     }
 
@@ -118,6 +133,31 @@ class Config
         return $this->includeStackTrace;
     }
 
+    public function getErrorReportingLevel(): string
+    {
+        return $this->errorReportingLevel;
+    }
+
+    public function shouldIncludeRequestData(): bool
+    {
+        return $this->includeRequestData;
+    }
+
+    public function shouldIncludeResponseData(): bool
+    {
+        return $this->includeResponseData;
+    }
+
+    /**
+     * Get API key identification for error reporting
+     * Returns hashed version for privacy while allowing customer identification
+     */
+    public function getApiKeyIdentification(): string
+    {
+        // Use first 8 chars of SHA256 hash for identification
+        return substr(hash('sha256', $this->apiKey), 0, 16);
+    }
+
     public function toArray(): array
     {
         return [
@@ -130,6 +170,9 @@ class Config
             'error_reporting' => $this->errorReporting,
             'error_reporting_endpoint' => $this->errorReportingEndpoint,
             'include_stack_trace' => $this->includeStackTrace,
+            'error_reporting_level' => $this->errorReportingLevel,
+            'include_request_data' => $this->includeRequestData,
+            'include_response_data' => $this->includeResponseData,
         ];
     }
 }

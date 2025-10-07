@@ -96,42 +96,68 @@ class Client
             $response = $this->client->request($method, $path, $options);
 
             // Handle HTTP errors
-            $this->handleResponseErrors($response);
+            $this->handleResponseErrors($response, $method, $path, $options);
 
             return new Response($response);
         } catch (ConnectException $e) {
             $exception = RequestException::connectionFailed($e->getMessage());
 
             // Report error to WioEX if enabled
-            $this->errorReporter->report($exception, [
+            $context = [
                 'method' => $method,
                 'path' => $path,
                 'error_type' => 'connection_error',
-            ]);
+            ];
+
+            // Add request data if configured
+            if ($this->config->shouldIncludeRequestData()) {
+                $context['request_data'] = $this->extractRequestData($method, $path, $options);
+            }
+
+            $this->errorReporter->report($exception, $context);
 
             throw $exception;
         } catch (GuzzleRequestException $e) {
             $response = $e->getResponse();
             if ($response !== null) {
-                $this->handleResponseErrors($response);
+                $this->handleResponseErrors($response, $method, $path, $options);
             }
 
             $exception = RequestException::networkError($e->getMessage());
 
             // Report error to WioEX if enabled
-            $this->errorReporter->report($exception, [
+            $context = [
                 'method' => $method,
                 'path' => $path,
                 'error_type' => 'network_error',
                 'status_code' => $response !== null ? $response->getStatusCode() : null,
-            ]);
+            ];
+
+            // Add request/response data if configured
+            if ($this->config->shouldIncludeRequestData()) {
+                $context['request_data'] = $this->extractRequestData($method, $path, $options);
+            }
+
+            if ($response !== null && $this->config->shouldIncludeResponseData()) {
+                $context['response_data'] = [
+                    'status' => $response->getStatusCode(),
+                    'body' => (string) $response->getBody(),
+                    'headers' => $response->getHeaders(),
+                ];
+            }
+
+            $this->errorReporter->report($exception, $context);
 
             throw $exception;
         }
     }
 
-    private function handleResponseErrors(\Psr\Http\Message\ResponseInterface $response): void
-    {
+    private function handleResponseErrors(
+        \Psr\Http\Message\ResponseInterface $response,
+        string $method = '',
+        string $path = '',
+        array $options = []
+    ): void {
         $statusCode = $response->getStatusCode();
         $body = (string) $response->getBody();
         /** @var mixed $data */
@@ -155,28 +181,28 @@ class Client
         // 401 Unauthorized
         if ($statusCode === 401) {
             $exception = AuthenticationException::unauthorized($errorMessage);
-            $this->reportError($exception, $statusCode);
+            $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
         }
 
         // 403 Forbidden
         if ($statusCode === 403) {
             $exception = AuthenticationException::unauthorized($errorMessage);
-            $this->reportError($exception, $statusCode);
+            $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
         }
 
         // 400 Bad Request
         if ($statusCode === 400) {
             $exception = ValidationException::fromResponse($errorMessage);
-            $this->reportError($exception, $statusCode);
+            $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
         }
 
         // 422 Unprocessable Entity
         if ($statusCode === 422) {
             $exception = ValidationException::fromResponse($errorMessage);
-            $this->reportError($exception, $statusCode);
+            $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
         }
 
@@ -187,21 +213,21 @@ class Client
                 : null;
 
             $exception = RateLimitException::exceeded($retryAfter);
-            $this->reportError($exception, $statusCode, ['retry_after' => $retryAfter]);
+            $this->reportError($exception, $response, $method, $path, $options, ['retry_after' => $retryAfter]);
             throw $exception;
         }
 
         // 500+ Server Errors
         if ($statusCode >= 500) {
             $exception = ServerException::internalError($errorMessage);
-            $this->reportError($exception, $statusCode);
+            $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
         }
 
         // Other client errors (404, etc.)
         if ($statusCode >= 400) {
             $exception = ValidationException::fromResponse($errorMessage);
-            $this->reportError($exception, $statusCode);
+            $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
         }
     }
@@ -210,20 +236,82 @@ class Client
      * Report error to WioEX if error reporting is enabled
      *
      * @param \Throwable $exception
-     * @param int $statusCode
+     * @param \Psr\Http\Message\ResponseInterface $response
+     * @param string $method
+     * @param string $path
+     * @param array<string, mixed> $options
      * @param array<string, mixed> $additionalContext
      */
     private function reportError(
         \Throwable $exception,
-        int $statusCode,
+        \Psr\Http\Message\ResponseInterface $response,
+        string $method,
+        string $path,
+        array $options,
         array $additionalContext = []
     ): void {
+        $statusCode = $response->getStatusCode();
+
         $context = array_merge([
             'http_status_code' => $statusCode,
             'error_category' => $this->categorizeError($statusCode),
+            'method' => $method,
+            'path' => $path,
         ], $additionalContext);
 
+        // Add request data if configured
+        if ($this->config->shouldIncludeRequestData()) {
+            $context['request_data'] = $this->extractRequestData($method, $path, $options);
+        }
+
+        // Add response data if configured
+        if ($this->config->shouldIncludeResponseData()) {
+            $context['response_data'] = [
+                'status' => $statusCode,
+                'body' => (string) $response->getBody(),
+                'headers' => $response->getHeaders(),
+            ];
+        }
+
         $this->errorReporter->report($exception, $context);
+    }
+
+    /**
+     * Extract request data for error reporting
+     *
+     * @param string $method
+     * @param string $path
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function extractRequestData(string $method, string $path, array $options): array
+    {
+        $requestData = [
+            'method' => $method,
+            'path' => $path,
+        ];
+
+        // Add query parameters (API key will be sanitized by ErrorReporter)
+        if (isset($options['query'])) {
+            $requestData['query'] = $options['query'];
+        }
+
+        // Add JSON body
+        if (isset($options['json'])) {
+            $requestData['body'] = $options['json'];
+        }
+
+        // Add form data
+        if (isset($options['form_params'])) {
+            $requestData['form_params'] = $options['form_params'];
+        }
+
+        // Add headers (sensitive ones will be sanitized)
+        if (isset($options['headers'])) {
+            $requestData['headers'] = $options['headers'];
+        }
+
+        return $requestData;
     }
 
     /**
