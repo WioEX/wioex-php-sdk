@@ -16,6 +16,9 @@ class RetryHandler
     private int $multiplier;
     private int $maxDelay;
 
+    /**
+     * @param array{times?: int, delay?: int, multiplier?: int, max_delay?: int} $config
+     */
     public function __construct(array $config)
     {
         $this->maxRetries = $config['times'] ?? 3;
@@ -24,6 +27,9 @@ class RetryHandler
         $this->maxDelay = $config['max_delay'] ?? 5000;
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedParam
+     */
     public function __invoke(
         int $retryCount,
         RequestInterface $request,
@@ -42,17 +48,17 @@ class RetryHandler
         }
 
         // Retry on 5xx server errors
-        if ($response && $response->getStatusCode() >= 500) {
+        if ($response !== null && $response->getStatusCode() >= 500) {
             $this->sleep($retryCount);
             return true;
         }
 
         // Retry on 429 rate limit (but not too aggressively)
-        if ($response && $response->getStatusCode() === 429) {
+        if ($response !== null && $response->getStatusCode() === 429) {
             // Check for Retry-After header
             if ($response->hasHeader('Retry-After')) {
                 $retryAfter = (int) $response->getHeaderLine('Retry-After');
-                usleep($retryAfter * 1000000); // Convert to microseconds
+                usleep(max(0, $retryAfter * 1000000)); // Convert to microseconds
             } else {
                 $this->sleep($retryCount);
             }
@@ -69,7 +75,7 @@ class RetryHandler
             $this->maxDelay
         );
 
-        usleep($delay * 1000); // Convert milliseconds to microseconds
+        usleep(max(0, (int) ($delay * 1000))); // Convert milliseconds to microseconds
     }
 
     public function getMaxRetries(): int

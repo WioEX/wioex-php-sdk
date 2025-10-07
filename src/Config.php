@@ -12,12 +12,16 @@ class Config
     private string $baseUrl;
     private int $timeout;
     private int $connectTimeout;
+    /** @var array{times: int, delay: int, multiplier: int, max_delay: int} */
     private array $retryConfig;
     private array $headers;
 
+    /**
+     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array} $options
+     */
     public function __construct(array $options = [])
     {
-        if (empty($options['api_key'])) {
+        if (!isset($options['api_key']) || $options['api_key'] === '') {
             throw new InvalidArgumentException('API key is required');
         }
 
@@ -26,11 +30,12 @@ class Config
         $this->timeout = $options['timeout'] ?? 30;
         $this->connectTimeout = $options['connect_timeout'] ?? 10;
 
-        $this->retryConfig = $options['retry'] ?? [
-            'times' => 3,
-            'delay' => 100, // milliseconds
-            'multiplier' => 2,
-            'max_delay' => 5000 // max 5 seconds
+        $retry = $options['retry'] ?? [];
+        $this->retryConfig = [
+            'times' => $retry['times'] ?? 3,
+            'delay' => $retry['delay'] ?? 100, // milliseconds
+            'multiplier' => $retry['multiplier'] ?? 2,
+            'max_delay' => $retry['max_delay'] ?? 5000 // max 5 seconds
         ];
 
         $this->headers = array_merge([
@@ -51,7 +56,7 @@ class Config
             throw new InvalidArgumentException('Connect timeout must be at least 1 second');
         }
 
-        if (!filter_var($this->baseUrl, FILTER_VALIDATE_URL)) {
+        if (filter_var($this->baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('Invalid base URL');
         }
     }
@@ -76,6 +81,9 @@ class Config
         return $this->connectTimeout;
     }
 
+    /**
+     * @return array{times: int, delay: int, multiplier: int, max_delay: int}
+     */
     public function getRetryConfig(): array
     {
         return $this->retryConfig;

@@ -7,6 +7,9 @@ namespace Wioex\SDK\Http;
 use ArrayAccess;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * @implements ArrayAccess<string, mixed>
+ */
 class Response implements ArrayAccess
 {
     private ResponseInterface $response;
@@ -21,7 +24,9 @@ class Response implements ArrayAccess
     {
         if ($this->decodedData === null) {
             $body = (string) $this->response->getBody();
-            $this->decodedData = json_decode($body, true) ?? [];
+            /** @var mixed $decoded */
+            $decoded = json_decode($body, true);
+            $this->decodedData = is_array($decoded) ? $decoded : [];
         }
 
         return $this->decodedData;

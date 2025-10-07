@@ -25,7 +25,7 @@ class WioexClient
     /**
      * Create a new WioEX API client instance
      *
-     * @param array $options Configuration options:
+     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array} $options Configuration options:
      *   - api_key: string (required) Your WioEX API key
      *   - base_url: string (optional) API base URL, defaults to https://api.wioex.com
      *   - timeout: int (optional) Request timeout in seconds, defaults to 30
@@ -62,7 +62,7 @@ class WioexClient
      * @example
      * ```php
      * $client->stocks()->search('AAPL');
-     * $client->stocks()->get('AAPL');
+     * $client->stocks()->quote('AAPL');
      * $client->stocks()->info('AAPL');
      * ```
      */

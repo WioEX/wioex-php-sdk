@@ -13,16 +13,16 @@ class Stocks extends Resource
      */
     public function search(string $query): Response
     {
-        return $this->get('/v2/stocks/search', ['q' => $query]);
+        return parent::get('/v2/stocks/search', ['q' => $query]);
     }
 
     /**
      * Get real-time stock data for one or multiple tickers
      * @param string $ticker Single ticker or comma-separated list (e.g., "AAPL" or "AAPL,GOOGL,MSFT")
      */
-    public function get(string $ticker): Response
+    public function quote(string $ticker): Response
     {
-        return $this->get('/v2/stocks/get', ['ticker' => $ticker]);
+        return parent::get('/v2/stocks/get', ['ticker' => $ticker]);
     }
 
     /**
@@ -30,7 +30,7 @@ class Stocks extends Resource
      */
     public function info(string $ticker): Response
     {
-        return $this->get('/v2/stocks/info', ['ticker' => $ticker]);
+        return parent::get('/v2/stocks/info', ['ticker' => $ticker]);
     }
 
     /**
@@ -40,7 +40,7 @@ class Stocks extends Resource
      */
     public function timeline(string $ticker, array $options = []): Response
     {
-        return $this->get('/v2/stocks/chart/timeline', array_merge(
+        return parent::get('/v2/stocks/chart/timeline', array_merge(
             ['ticker' => $ticker],
             $options
         ));
@@ -51,7 +51,7 @@ class Stocks extends Resource
      */
     public function list(array $options = []): Response
     {
-        return $this->get('/v2/stocks/get_list', $options);
+        return parent::get('/v2/stocks/get_list', $options);
     }
 
     /**
@@ -61,11 +61,11 @@ class Stocks extends Resource
     {
         $params = ['ticker' => $ticker];
 
-        if ($currency) {
+        if ($currency !== null) {
             $params['currency'] = $currency;
         }
 
-        return $this->get('/v2/stocks/financials', $params);
+        return parent::get('/v2/stocks/financials', $params);
     }
 
     /**
@@ -74,7 +74,7 @@ class Stocks extends Resource
      */
     public function heatmap(string $market): Response
     {
-        return $this->get('/v2/stocks/heatmap', ['market' => $market]);
+        return parent::get('/v2/stocks/heatmap', ['market' => $market]);
     }
 
     /**
@@ -82,6 +82,6 @@ class Stocks extends Resource
      */
     public function minimalChart(string $ticker): Response
     {
-        return $this->get('/v2/stocks/chart/minimal', ['ticker' => $ticker]);
+        return parent::get('/v2/stocks/chart/minimal', ['ticker' => $ticker]);
     }
 }

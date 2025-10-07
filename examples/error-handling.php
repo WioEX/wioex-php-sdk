@@ -24,7 +24,7 @@ try {
     $client = new WioexClient([
         'api_key' => 'invalid-key-12345'
     ]);
-    $result = $client->stocks()->get('AAPL');
+    $result = $client->stocks()->quote('AAPL');
 } catch (AuthenticationException $e) {
     echo "✓ Authentication error caught: " . $e->getMessage() . "\n";
 } catch (WioexException $e) {
@@ -40,7 +40,7 @@ try {
     ]);
 
     // Invalid ticker symbol
-    $result = $client->stocks()->get('');
+    $result = $client->stocks()->quote('');
 } catch (ValidationException $e) {
     echo "✓ Validation error caught: " . $e->getMessage() . "\n";
 }
@@ -55,7 +55,7 @@ try {
 
     // Simulate many rapid requests
     for ($i = 0; $i < 100; $i++) {
-        $result = $client->stocks()->get('AAPL');
+        $result = $client->stocks()->quote('AAPL');
     }
 } catch (RateLimitException $e) {
     echo "✓ Rate limit error caught: " . $e->getMessage() . "\n";
@@ -68,7 +68,7 @@ try {
 
         // Retry the request
         try {
-            $result = $client->stocks()->get('AAPL');
+            $result = $client->stocks()->quote('AAPL');
             echo "  ✓ Request succeeded after waiting!\n";
         } catch (WioexException $e) {
             echo "  Request still failed: " . $e->getMessage() . "\n";
@@ -87,7 +87,7 @@ try {
         'timeout' => 5
     ]);
 
-    $result = $client->stocks()->get('AAPL');
+    $result = $client->stocks()->quote('AAPL');
 } catch (RequestException $e) {
     echo "✓ Request error caught: " . $e->getMessage() . "\n";
 }
@@ -112,44 +112,37 @@ function safeApiCall(callable $callback): void
         } else {
             echo "✗ Request failed with status: " . $result->status() . "\n";
         }
-
     } catch (AuthenticationException $e) {
         echo "✗ Authentication failed: " . $e->getMessage() . "\n";
         echo "  Action: Check your API key\n";
-
     } catch (ValidationException $e) {
         echo "✗ Validation error: " . $e->getMessage() . "\n";
         echo "  Action: Check your request parameters\n";
-
     } catch (RateLimitException $e) {
         echo "✗ Rate limit exceeded: " . $e->getMessage() . "\n";
         if ($retryAfter = $e->getRetryAfter()) {
             echo "  Action: Wait {$retryAfter} seconds before retrying\n";
         }
-
     } catch (ServerException $e) {
         echo "✗ Server error: " . $e->getMessage() . "\n";
         echo "  Action: The API is experiencing issues. Try again later.\n";
-
     } catch (RequestException $e) {
         echo "✗ Request failed: " . $e->getMessage() . "\n";
         echo "  Action: Check your internet connection\n";
-
     } catch (WioexException $e) {
         echo "✗ Unexpected error: " . $e->getMessage() . "\n";
         echo "  Context: " . json_encode($e->getContext()) . "\n";
-
     } catch (\Exception $e) {
         echo "✗ System error: " . $e->getMessage() . "\n";
     }
 }
 
 // Test successful request
-safeApiCall(fn() => $client->stocks()->get('AAPL'));
+safeApiCall(fn() => $client->stocks()->quote('AAPL'));
 echo "\n";
 
 // Test failing request
-safeApiCall(fn() => $client->stocks()->get('INVALID_TICKER_XYZ'));
+safeApiCall(fn() => $client->stocks()->quote('INVALID_TICKER_XYZ'));
 echo "\n";
 
 // Example 6: Retry logic example
@@ -163,13 +156,12 @@ function fetchWithRetry(WioexClient $client, string $ticker, int $maxAttempts = 
         try {
             echo "  Attempt {$attempt}/{$maxAttempts}...\n";
 
-            $result = $client->stocks()->get($ticker);
+            $result = $client->stocks()->quote($ticker);
 
             if ($result->successful()) {
                 echo "  ✓ Success!\n";
                 return $result->data();
             }
-
         } catch (RateLimitException $e) {
             if ($attempt >= $maxAttempts) {
                 echo "  ✗ Max attempts reached\n";
@@ -179,7 +171,6 @@ function fetchWithRetry(WioexClient $client, string $ticker, int $maxAttempts = 
             $waitTime = $e->getRetryAfter() ?? ($attempt * 2);
             echo "  Rate limited. Waiting {$waitTime}s...\n";
             sleep($waitTime);
-
         } catch (ServerException $e) {
             if ($attempt >= $maxAttempts) {
                 echo "  ✗ Max attempts reached\n";
@@ -188,7 +179,6 @@ function fetchWithRetry(WioexClient $client, string $ticker, int $maxAttempts = 
 
             echo "  Server error. Retrying...\n";
             sleep($attempt); // Simple exponential backoff
-
         } catch (WioexException $e) {
             echo "  ✗ Unrecoverable error: " . $e->getMessage() . "\n";
             throw $e;
