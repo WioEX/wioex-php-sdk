@@ -68,17 +68,21 @@ class ErrorReporter
      */
     private function buildErrorData(Throwable $exception, array $context): array
     {
+        $level = $this->config->getErrorReportingLevel();
+
         $data = [
             'sdk_version' => '1.0.0',
             'php_version' => PHP_VERSION,
+            'api_key_id' => $this->config->getApiKeyIdentification(), // Hashed API key for customer identification
+            'reporting_level' => $level,
             'error' => [
                 'type' => get_class($exception),
                 'message' => $exception->getMessage(),
                 'code' => $exception->getCode(),
-                'file' => $this->sanitizeFilePath($exception->getFile()),
+                'file' => $this->getRelativeFilePath($exception->getFile()),
                 'line' => $exception->getLine(),
             ],
-            'context' => $this->sanitizeContext($context),
+            'context' => $this->sanitizeContext($context, $level),
             'timestamp' => date('c'),
             'environment' => [
                 'os' => PHP_OS,
@@ -86,51 +90,75 @@ class ErrorReporter
             ],
         ];
 
-        // Add stack trace if enabled
-        if ($this->config->shouldIncludeStackTrace()) {
+        // Add stack trace based on level
+        if ($level === 'standard' || $level === 'detailed' || $this->config->shouldIncludeStackTrace()) {
             $data['error']['stack_trace'] = $this->sanitizeStackTrace($exception->getTrace());
         }
 
         // Add exception context if available
         if ($exception instanceof WioexException) {
-            $data['exception_context'] = $this->sanitizeContext($exception->getContext());
+            $data['exception_context'] = $this->sanitizeContext($exception->getContext(), $level);
+        }
+
+        // Add request data if enabled (detailed level or explicit opt-in)
+        if ($this->config->shouldIncludeRequestData() || $level === 'detailed') {
+            if (isset($context['request_data'])) {
+                $data['request'] = $this->sanitizePayload($context['request_data'], $level);
+            }
+        }
+
+        // Add response data if enabled (detailed level or explicit opt-in)
+        if ($this->config->shouldIncludeResponseData() || $level === 'detailed') {
+            if (isset($context['response_data'])) {
+                $data['response'] = $this->sanitizePayload($context['response_data'], $level);
+            }
         }
 
         return $data;
     }
 
     /**
-     * Sanitize file path to remove sensitive information
+     * Get relative file path for debugging
+     * Keeps meaningful path information while removing sensitive parts
      */
-    private function sanitizeFilePath(string $path): string
+    private function getRelativeFilePath(string $path): string
     {
-        // Remove absolute path, keep only relative path from project root
-        $vendorPos = strpos($path, '/vendor/');
-        if ($vendorPos !== false) {
-            return 'vendor/' . substr($path, $vendorPos + 8);
+        // Try to find common project markers
+        $markers = [
+            '/vendor/wioex/' => 'vendor/wioex/',
+            '/vendor/' => 'vendor/',
+            '/src/' => 'src/',
+            '/app/' => 'app/',
+            '/public/' => 'public/',
+        ];
+
+        foreach ($markers as $marker => $replacement) {
+            $pos = strpos($path, $marker);
+            if ($pos !== false) {
+                return $replacement . substr($path, $pos + strlen($marker));
+            }
         }
 
-        $srcPos = strpos($path, '/src/');
-        if ($srcPos !== false) {
-            return 'src/' . substr($path, $srcPos + 5);
-        }
-
-        return basename($path);
+        // If no marker found, return last 3 segments of path
+        $segments = explode('/', $path);
+        $relevant = array_slice($segments, -3);
+        return implode('/', $relevant);
     }
 
     /**
-     * Sanitize context to remove sensitive data
+     * Sanitize context to remove sensitive data based on reporting level
      *
      * @param array<string, mixed> $context
+     * @param string $level
      * @return array<string, mixed>
      */
-    private function sanitizeContext(array $context): array
+    private function sanitizeContext(array $context, string $level = 'standard'): array
     {
         $sanitized = [];
-        $sensitiveKeys = ['api_key', 'password', 'token', 'secret', 'authorization'];
+        $sensitiveKeys = ['api_key', 'password', 'token', 'secret', 'authorization', 'bearer'];
 
         foreach ($context as $key => $value) {
-            // Remove sensitive keys
+            // Remove sensitive keys in all levels
             $lowerKey = strtolower($key);
             $isSensitive = false;
 
@@ -142,9 +170,14 @@ class ErrorReporter
             }
 
             if ($isSensitive) {
-                $sanitized[$key] = '[REDACTED]';
+                // In detailed mode, show partial data
+                if ($level === 'detailed' && is_string($value) && strlen($value) > 4) {
+                    $sanitized[$key] = substr($value, 0, 4) . '...' . substr($value, -4);
+                } else {
+                    $sanitized[$key] = '[REDACTED]';
+                }
             } elseif (is_array($value)) {
-                $sanitized[$key] = $this->sanitizeContext($value);
+                $sanitized[$key] = $this->sanitizeContext($value, $level);
             } elseif (is_scalar($value) || $value === null) {
                 $sanitized[$key] = $value;
             } else {
@@ -153,6 +186,44 @@ class ErrorReporter
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Sanitize request/response payload data
+     *
+     * @param mixed $payload
+     * @param string $level
+     * @return mixed
+     */
+    private function sanitizePayload($payload, string $level = 'standard')
+    {
+        if (is_array($payload)) {
+            return $this->sanitizeContext($payload, $level);
+        }
+
+        if (is_string($payload)) {
+            // Try to parse JSON
+            $decoded = json_decode($payload, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $this->sanitizeContext($decoded, $level);
+            }
+
+            // For non-JSON strings in minimal/standard, truncate
+            if ($level === 'minimal') {
+                return '[' . strlen($payload) . ' bytes]';
+            } elseif ($level === 'standard') {
+                return strlen($payload) > 200 ? substr($payload, 0, 200) . '... [truncated]' : $payload;
+            }
+
+            // Detailed mode: include full payload
+            return $payload;
+        }
+
+        if (is_scalar($payload) || $payload === null) {
+            return $payload;
+        }
+
+        return '[' . gettype($payload) . ']';
     }
 
     /**
@@ -170,7 +241,7 @@ class ErrorReporter
             $sanitizedFrame = [];
 
             if (isset($frame['file']) && is_string($frame['file'])) {
-                $sanitizedFrame['file'] = $this->sanitizeFilePath($frame['file']);
+                $sanitizedFrame['file'] = $this->getRelativeFilePath($frame['file']);
             }
 
             if (isset($frame['line']) && is_int($frame['line'])) {
