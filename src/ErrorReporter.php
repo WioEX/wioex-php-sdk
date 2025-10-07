@@ -72,22 +72,31 @@ class ErrorReporter
 
         $data = [
             'sdk_version' => '1.0.0',
-            'php_version' => PHP_VERSION,
+            'sdk_type' => 'php',
+            'runtime' => 'PHP/' . PHP_VERSION,
             'api_key_id' => $this->config->getApiKeyIdentification(), // Hashed API key for customer identification
             'reporting_level' => $level,
             'error' => [
                 'type' => get_class($exception),
                 'message' => $exception->getMessage(),
-                'code' => $exception->getCode(),
+                'code' => (string)$exception->getCode(),
                 'file' => $this->getRelativeFilePath($exception->getFile()),
                 'line' => $exception->getLine(),
             ],
             'context' => $this->sanitizeContext($context, $level),
-            'timestamp' => date('c'),
-            'environment' => [
-                'os' => PHP_OS,
-                'sapi' => PHP_SAPI,
-            ],
+            'timestamp' => time() * 1000, // Unix timestamp in milliseconds
+        ];
+
+        // Add category if provided in context (stocks, currency, news, crypto, account)
+        if (isset($context['category'])) {
+            $data['category'] = $context['category'];
+        }
+
+        // Legacy environment fields (kept for backward compatibility)
+        $data['php_version'] = PHP_VERSION;
+        $data['environment'] = [
+            'os' => PHP_OS,
+            'sapi' => PHP_SAPI,
         ];
 
         // Add stack trace based on level
