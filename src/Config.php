@@ -15,9 +15,12 @@ class Config
     /** @var array{times: int, delay: int, multiplier: int, max_delay: int} */
     private array $retryConfig;
     private array $headers;
+    private bool $errorReporting;
+    private string $errorReportingEndpoint;
+    private bool $includeStackTrace;
 
     /**
-     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array} $options
+     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array, error_reporting?: bool, error_reporting_endpoint?: string, include_stack_trace?: bool} $options
      */
     public function __construct(array $options = [])
     {
@@ -42,6 +45,12 @@ class Config
             'Accept' => 'application/json',
             'User-Agent' => 'WioEX-PHP-SDK/1.0',
         ], $options['headers'] ?? []);
+
+        // Error reporting configuration
+        $this->errorReporting = $options['error_reporting'] ?? false;
+        $this->errorReportingEndpoint = $options['error_reporting_endpoint']
+            ?? 'https://api.wioex.com/v2/sdk/error-report';
+        $this->includeStackTrace = $options['include_stack_trace'] ?? false;
 
         $this->validate();
     }
@@ -94,6 +103,21 @@ class Config
         return $this->headers;
     }
 
+    public function isErrorReportingEnabled(): bool
+    {
+        return $this->errorReporting;
+    }
+
+    public function getErrorReportingEndpoint(): string
+    {
+        return $this->errorReportingEndpoint;
+    }
+
+    public function shouldIncludeStackTrace(): bool
+    {
+        return $this->includeStackTrace;
+    }
+
     public function toArray(): array
     {
         return [
@@ -103,6 +127,9 @@ class Config
             'connect_timeout' => $this->connectTimeout,
             'retry' => $this->retryConfig,
             'headers' => $this->headers,
+            'error_reporting' => $this->errorReporting,
+            'error_reporting_endpoint' => $this->errorReportingEndpoint,
+            'include_stack_trace' => $this->includeStackTrace,
         ];
     }
 }
