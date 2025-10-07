@@ -56,7 +56,8 @@ class Config
         $this->includeStackTrace = $options['include_stack_trace'] ?? false;
 
         // Error reporting levels: 'minimal', 'standard', 'detailed'
-        $this->errorReportingLevel = $options['error_reporting_level'] ?? 'standard';
+        // Default is 'detailed' for better debugging and customer support
+        $this->errorReportingLevel = $options['error_reporting_level'] ?? 'detailed';
         $this->includeRequestData = $options['include_request_data'] ?? false;
         $this->includeResponseData = $options['include_response_data'] ?? false;
 
