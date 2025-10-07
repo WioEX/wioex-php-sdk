@@ -11,7 +11,7 @@ class RateLimitException extends WioexException
     public static function exceeded(?int $retryAfter = null): self
     {
         $message = 'Rate limit exceeded.';
-        if ($retryAfter) {
+        if ($retryAfter !== null) {
             $message .= " Retry after {$retryAfter} seconds.";
         }
 

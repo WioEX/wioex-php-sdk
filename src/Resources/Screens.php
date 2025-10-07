@@ -14,7 +14,7 @@ class Screens extends Resource
     public function active(?int $limit = null): Response
     {
         $params = [];
-        if ($limit) {
+        if ($limit !== null) {
             $params['limit'] = $limit;
         }
 

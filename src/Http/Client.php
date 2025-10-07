@@ -9,6 +9,8 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException as GuzzleRequestException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Wioex\SDK\Config;
 use Wioex\SDK\Exceptions\AuthenticationException;
 use Wioex\SDK\Exceptions\RateLimitException;
@@ -33,8 +35,14 @@ class Client
 
         // Add retry middleware
         $retryHandler = new RetryHandler($this->config->getRetryConfig());
+        /** @psalm-suppress MixedArgumentTypeCoercion */
         $stack->push(Middleware::retry(
-            function ($retries, $request, $response, $exception) use ($retryHandler) {
+            function (
+                int $retries,
+                RequestInterface $request,
+                ?ResponseInterface $response,
+                ?\Exception $exception
+            ) use ($retryHandler) {
                 return $retryHandler($retries, $request, $response, $exception);
             }
         ));
@@ -91,8 +99,9 @@ class Client
         } catch (ConnectException $e) {
             throw RequestException::connectionFailed($e->getMessage());
         } catch (GuzzleRequestException $e) {
-            if ($e->hasResponse()) {
-                $this->handleResponseErrors($e->getResponse());
+            $response = $e->getResponse();
+            if ($response !== null) {
+                $this->handleResponseErrors($response);
             }
             throw RequestException::networkError($e->getMessage());
         }
@@ -102,8 +111,18 @@ class Client
     {
         $statusCode = $response->getStatusCode();
         $body = (string) $response->getBody();
-        $data = json_decode($body, true) ?? [];
-        $errorMessage = $data['error'] ?? $data['message'] ?? 'Unknown error occurred';
+        /** @var mixed $data */
+        $data = json_decode($body, true);
+
+        // Extract error message with type safety
+        $errorMessage = 'Unknown error occurred';
+        if (is_array($data)) {
+            if (isset($data['error']) && is_string($data['error'])) {
+                $errorMessage = $data['error'];
+            } elseif (isset($data['message']) && is_string($data['message'])) {
+                $errorMessage = $data['message'];
+            }
+        }
 
         // Success - no error
         if ($statusCode >= 200 && $statusCode < 300) {
@@ -145,7 +164,7 @@ class Client
         }
 
         // Other client errors (404, etc.)
-        if ($statusCode >= 400 && $statusCode < 500) {
+        if ($statusCode >= 400) {
             throw ValidationException::fromResponse($errorMessage);
         }
     }

@@ -23,7 +23,7 @@ class Account extends Resource
     public function usage(?int $days = null): Response
     {
         $params = [];
-        if ($days) {
+        if ($days !== null) {
             $params['days'] = $days;
         }
 

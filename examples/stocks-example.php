@@ -31,10 +31,11 @@ echo "\n";
 echo "2. GET MULTIPLE STOCKS\n";
 echo str_repeat('-', 50) . "\n";
 
-$stocks = $client->stocks()->get('AAPL,GOOGL,MSFT,TSLA');
+$stocks = $client->stocks()->quote('AAPL,GOOGL,MSFT,TSLA');
 echo "Current prices:\n";
 foreach ($stocks['data'] as $stock) {
-    echo sprintf("  %-6s $%-8s %+.2f%%\n",
+    echo sprintf(
+        "  %-6s $%-8s %+.2f%%\n",
         $stock['symbol'],
         number_format($stock['price'], 2),
         $stock['change_percent']
@@ -68,7 +69,8 @@ $timeline = $client->stocks()->timeline('AAPL', [
 
 echo "AAPL - Last 10 trading days:\n";
 foreach ($timeline['data'] as $point) {
-    echo sprintf("  %s: $%-8s (Vol: %s)\n",
+    echo sprintf(
+        "  %s: $%-8s (Vol: %s)\n",
         $point['date'],
         number_format($point['close'], 2),
         number_format($point['volume'])

@@ -19,7 +19,7 @@ echo "=== WioEX PHP SDK - Basic Usage Example ===\n\n";
 
 // 1. Get stock data
 echo "1. Getting stock data for AAPL...\n";
-$stock = $client->stocks()->get('AAPL');
+$stock = $client->stocks()->quote('AAPL');
 
 if ($stock->successful()) {
     echo "Symbol: {$stock['symbol']}\n";
