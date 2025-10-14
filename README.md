@@ -1,6 +1,6 @@
 # WioEX PHP SDK
 
-Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client library for accessing stocks, news, currency, and financial market data.
+Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client library for accessing stocks, trading signals, news, currency, and financial market data.
 
 [![PHP Version](https://img.shields.io/packagist/php-v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Latest Version](https://img.shields.io/packagist/v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
@@ -46,9 +46,17 @@ $client = new WioexClient([
     'api_key' => 'your-api-key-here'
 ]);
 
-// Get stock data
-$stock = $client->stocks()->get('AAPL');
-echo "Price: $" . $stock['price'] . "\n";
+// Get stock data (signals auto-included)
+$stock = $client->stocks()->quote('AAPL');
+if (isset($stock['tickers'][0])) {
+    $ticker = $stock['tickers'][0];
+    echo "Price: $" . $ticker['market']['price'] . "\n";
+
+    // Check if signal is available
+    if (isset($ticker['signal'])) {
+        echo "Signal: {$ticker['signal']['signal_type']} @ \${$ticker['signal']['entry_price']}\n";
+    }
+}
 
 // Search for stocks
 $results = $client->stocks()->search('Apple');
@@ -113,11 +121,13 @@ $results = $client->stocks()->search('AAPL');
 
 ```php
 // Single stock
-$stock = $client->stocks()->get('AAPL');
+$stock = $client->stocks()->quote('AAPL');
 
 // Multiple stocks (comma-separated)
-$stocks = $client->stocks()->get('AAPL,GOOGL,MSFT');
+$stocks = $client->stocks()->quote('AAPL,GOOGL,MSFT');
 ```
+
+**💡 Auto-included Signals:** If an active trading signal exists for the requested stock, it will be automatically included in the response under the `signal` key. No additional API call needed!
 
 #### Get Stock Info
 
@@ -126,7 +136,15 @@ $info = $client->stocks()->info('AAPL');
 echo $info['company_name'];
 echo $info['market_cap'];
 echo $info['pe_ratio'];
+
+// Check for auto-included signal
+if (isset($info['signal'])) {
+    echo "Signal: {$info['signal']['signal_type']} @ \${$info['signal']['entry_price']}\n";
+    echo "Confidence: {$info['signal']['confidence']}%\n";
+}
 ```
+
+**💡 Auto-included Signals:** Stock info responses automatically include active signals when available.
 
 #### Get Historical Data
 
@@ -230,6 +248,71 @@ $analysis = $client->news()->companyAnalysis('AAPL');
 echo $analysis['summary'];
 echo $analysis['sentiment'];
 ```
+
+### Trading Signals ⭐ NEW
+
+#### Get Active Signals
+
+```php
+// Get all active signals
+$signals = $client->signals()->active();
+
+// Get signals for a specific symbol
+$signals = $client->signals()->active(['symbol' => 'AAPL']);
+
+// Get BUY signals with high confidence
+$signals = $client->signals()->active([
+    'signal_type' => 'BUY',
+    'min_confidence' => 80
+]);
+
+// Get signals for specific timeframe
+$signals = $client->signals()->active([
+    'timeframe' => '1d',
+    'limit' => 100
+]);
+
+foreach ($signals['signals'] as $signal) {
+    echo "{$signal['symbol']}: {$signal['signal_type']}\n";
+    echo "  Entry: \${$signal['entry_price']}\n";
+    echo "  Target: \${$signal['target_price']}\n";
+    echo "  Stop Loss: \${$signal['stop_loss']}\n";
+    echo "  Confidence: {$signal['confidence']}%\n";
+    echo "  Reason: {$signal['reason']}\n\n";
+}
+```
+
+**Parameters:**
+- `symbol` (string): Filter by stock symbol (e.g., "AAPL")
+- `signal_type` (string): Filter by type - BUY, SELL, HOLD, STRONG_BUY, STRONG_SELL
+- `min_confidence` (int): Minimum confidence level (0-100), default 70
+- `timeframe` (string): Filter by timeframe - 5m, 15m, 1h, 4h, 1d, 1w, 1M
+- `limit` (int): Maximum results, default 50, max 200
+
+#### Get Signal History
+
+```php
+// Get signal history for last 7 days
+$history = $client->signals()->history(['days' => 7]);
+
+// Get triggered signals for TSLA
+$history = $client->signals()->history([
+    'symbol' => 'TSLA',
+    'trigger_type' => 'target'  // entry, target, stop_loss, expired
+]);
+
+foreach ($history['signals'] as $signal) {
+    echo "{$signal['symbol']}: {$signal['signal_type']}\n";
+    echo "  Triggered: {$signal['trigger_type']} at \${$signal['triggered_price']}\n";
+    echo "  Triggered At: {$signal['triggered_at']}\n\n";
+}
+```
+
+**Parameters:**
+- `symbol` (string): Filter by stock symbol
+- `days` (int): Number of days to look back, default 30, max 365
+- `trigger_type` (string): Filter by trigger - entry, target, stop_loss, expired
+- `limit` (int): Maximum results, default 50, max 200
 
 ### Currency
 
