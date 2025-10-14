@@ -9,6 +9,7 @@ use Wioex\SDK\Resources\Account;
 use Wioex\SDK\Resources\Currency;
 use Wioex\SDK\Resources\News;
 use Wioex\SDK\Resources\Screens;
+use Wioex\SDK\Resources\Signals;
 use Wioex\SDK\Resources\Stocks;
 
 class WioexClient
@@ -18,6 +19,7 @@ class WioexClient
 
     private ?Stocks $stocks = null;
     private ?Screens $screens = null;
+    private ?Signals $signals = null;
     private ?News $news = null;
     private ?Currency $currency = null;
     private ?Account $account = null;
@@ -94,6 +96,26 @@ class WioexClient
         }
 
         return $this->screens;
+    }
+
+    /**
+     * Access trading signals endpoints
+     *
+     * @return Signals
+     *
+     * @example
+     * ```php
+     * $client->signals()->active(['symbol' => 'AAPL']);
+     * $client->signals()->history(['days' => 7]);
+     * ```
+     */
+    public function signals(): Signals
+    {
+        if ($this->signals === null) {
+            $this->signals = new Signals($this->httpClient);
+        }
+
+        return $this->signals;
     }
 
     /**
@@ -175,6 +197,6 @@ class WioexClient
      */
     public static function getVersion(): string
     {
-        return '1.0.0';
+        return '1.1.0';
     }
 }

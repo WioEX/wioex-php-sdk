@@ -1,11 +1,12 @@
 {
     "name": "wioex/php-sdk",
-    "description": "Official PHP SDK for WioEX Financial Data API - Enterprise-grade client library for stocks, news, currency, and financial market data",
+    "description": "Official PHP SDK for WioEX Financial Data API - Enterprise-grade client library for stocks, trading signals, news, currency, and financial market data",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "wioex",
         "stocks",
+        "trading-signals",
         "financial",
         "api",
         "sdk",
