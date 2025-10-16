@@ -16,6 +16,9 @@ class WioexException extends Exception
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getContext(): array
     {
         return $this->context;

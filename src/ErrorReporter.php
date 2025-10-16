@@ -202,7 +202,7 @@ class ErrorReporter
      *
      * @param mixed $payload
      * @param string $level
-     * @return mixed
+     * @return array<string, mixed>|string|int|float|bool|null
      */
     private function sanitizePayload($payload, string $level = 'standard')
     {

@@ -17,4 +17,7 @@ parameters:
     reportStaticMethodSignatures: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
     checkUninitializedProperties: true
-    checkMissingIterableValueType: false
+    
+    ignoreErrors:
+        -
+            identifier: missingType.iterableValue

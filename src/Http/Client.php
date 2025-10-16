@@ -338,7 +338,7 @@ class Client
     private function extractCategory(string $path): string
     {
         // Extract category from path pattern: /v2/{category}/...
-        if (preg_match('#^/v2/([^/]+)/#', $path, $matches)) {
+        if (preg_match('#^/v2/([^/]+)/#', $path, $matches) === 1) {
             return $matches[1]; // stocks, currency, news, crypto, account
         }
 
