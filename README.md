@@ -2,9 +2,31 @@
 
 Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client library for accessing stocks, trading signals, news, currency, and financial market data.
 
+**Current Version: 1.2.0** | **Released: October 16, 2025** | **PHP 8.1+**
+
 [![PHP Version](https://img.shields.io/packagist/php-v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Latest Version](https://img.shields.io/packagist/v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![License](https://img.shields.io/packagist/l/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation) 
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Usage](#usage)
+  - [Stocks](#stocks) - Quote, Info, Timeline, Price Changes, Financials, Heatmap
+  - [Stock Screens](#stock-screens) - Gainers, Losers, Active, IPOs
+  - [Trading Signals](#trading-signals-new) - Active signals, History
+  - [Market Status](#market-status-new) - Real-time market hours (public access)
+  - [News](#news) - Latest news, Company analysis
+  - [Currency](#currency) - Exchange rates, Conversion, Historical data
+  - [Account](#account) - Balance, Usage, Analytics
+- [Response Handling](#response-handling)
+- [Error Handling](#error-handling)
+- [Testing](#testing)
+- [Examples](#examples)
+- [Support](#support)
 
 ## Features
 
@@ -18,6 +40,10 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - ✅ **Type Safe** - Full IDE autocomplete support
 - ✅ **Zero Config** - Works out of the box with sensible defaults
 - ✅ **Public Endpoints** - Some endpoints work without API key for frontend usage
+- ⭐ **Session Filtering** - Filter intraday data by trading sessions (v1.2.0)
+- ⭐ **Advanced Timeline** - Date-based filtering and convenience methods (v1.2.0)
+- ⭐ **Trading Signals** - Auto-included signals and comprehensive signal data (v1.1.0)
+- ⭐ **Market Status** - Real-time market hours with public access option (v1.1.0)
 
 ## Requirements
 
@@ -194,7 +220,55 @@ $afterHours = $client->stocks()->timelineBySession('TSLA', 'after_hours', ['size
 - `after_hours`: 4:00 PM - 8:00 PM EST (Extended trading)
 - `extended`: 4:00 AM - 8:00 PM EST (All extended hours combined)
 - `all`: Full 24-hour data (default)
+
+#### Get Price Changes ⭐ NEW
+
+Get organized price change data across multiple timeframes from 15 minutes to all-time:
+
+```php
+// Get comprehensive price changes for a stock
+$changes = $client->stocks()->priceChanges('TSLA');
+
+// Access different timeframe categories
+$shortTerm = $changes['price_changes']['short_term'];
+$mediumTerm = $changes['price_changes']['medium_term'];
+$longTerm = $changes['price_changes']['long_term'];
+
+// Short-term changes (minutes to month)
+echo "1 Day: " . $shortTerm['1_day']['percentage'] . "% (" . $shortTerm['1_day']['label'] . ")\n";
+echo "1 Week: " . $shortTerm['1_week']['percentage'] . "%\n";
+echo "1 Month: " . $shortTerm['1_month']['percentage'] . "%\n";
+
+// Medium-term changes (months to YTD)
+echo "3 Months: " . $mediumTerm['3_months']['percentage'] . "%\n";
+echo "6 Months: " . $mediumTerm['6_months']['percentage'] . "%\n";
+echo "Year to Date: " . $mediumTerm['year_to_date']['percentage'] . "%\n";
+
+// Long-term changes (years to all-time)
+echo "1 Year: " . $longTerm['1_year']['percentage'] . "%\n";
+echo "3 Years: " . $longTerm['3_years']['percentage'] . "%\n";
+echo "All Time: " . $longTerm['all_time']['percentage'] . "%\n";
+
+// Check data availability
+if ($shortTerm['1_day']['available']) {
+    echo "1-day data is available\n";
+}
+
+// Last updated timestamp
+echo "Last updated: " . $changes['updated_at'] . "\n";
 ```
+
+**Available Timeframes:**
+- **Intraday**: 15 minutes, 30 minutes, 1 hour
+- **Short-term**: 1 day, 1 week, 1 month  
+- **Medium-term**: 3 months, 6 months, year-to-date
+- **Long-term**: 1 year, 3 years, 5 years, all-time
+
+**Response includes:**
+- `percentage`: Price change percentage (can be null if unavailable)
+- `label`: Human-readable timeframe description
+- `available`: Boolean indicating if data exists for this timeframe
+- `updated_at`: Timestamp of last data update
 
 #### Get Financials
 
@@ -673,13 +747,16 @@ composer cs:fix
 
 See the `/examples` directory for more usage examples:
 
-- `basic-usage.php` - Basic usage patterns
+- `basic-usage.php` - Basic usage patterns and getting started
 - `stocks-example.php` - Comprehensive stock operations
-- `error-handling.php` - Error handling patterns
-- `test_signals.php` - Trading signals examples
+- `timeline-advanced-example.php` - ⭐ **NEW** Session filtering and date-based timeline data
+- `test_price_changes.php` - ⭐ **NEW** Price changes across multiple timeframes  
+- `error-handling.php` - Error handling patterns and exception management
+- `test_signals.php` - Trading signals examples and filtering
 - `test_stock_with_signal.php` - Stock data with auto-included signals
 - `test_market_status.php` - Market status (authenticated & public access)
-- `test_all_features.php` - Comprehensive test suite
+- `test_all_features.php` - Comprehensive test suite for all endpoints
+- `error-reporting-example.php` - Error reporting and telemetry examples
 
 ## Support
 
