@@ -35,11 +35,11 @@ class Stocks extends Resource
 
     /**
      * Get historical price data for charting
-     * 
+     *
      * @param string $ticker Stock ticker symbol
      * @param array $options Available options:
      *   - interval: '1min' or '1day' (default: '1day')
-     *   - orderBy: 'ASC' or 'DESC' (default: 'ASC')  
+     *   - orderBy: 'ASC' or 'DESC' (default: 'ASC')
      *   - size: Number of data points 1-5000 (default: 78)
      *   - session: 'all', 'regular', 'pre_market', 'after_hours', 'extended' (default: 'all', only applies to 1min interval)
      *   - started_date: Date string (e.g., '2024-10-16') or timestamp (filters data from this date onward)
@@ -55,7 +55,7 @@ class Stocks extends Resource
 
     /**
      * Get 1-minute timeline data filtered by trading session
-     * 
+     *
      * @param string $ticker Stock ticker symbol
      * @param string $session Trading session: 'regular', 'pre_market', 'after_hours', 'extended'
      * @param array $options Additional options (size, orderBy, started_date)
@@ -70,7 +70,7 @@ class Stocks extends Resource
 
     /**
      * Get timeline data starting from a specific date
-     * 
+     *
      * @param string $ticker Stock ticker symbol
      * @param string $startDate Date in format 'YYYY-MM-DD' (e.g., '2024-10-16')
      * @param array $options Additional options (interval, size, orderBy, session)
@@ -84,7 +84,7 @@ class Stocks extends Resource
 
     /**
      * Get intraday (1-minute) timeline data for regular trading hours only
-     * 
+     *
      * @param string $ticker Stock ticker symbol
      * @param array $options Additional options (size, orderBy, started_date)
      */
@@ -95,7 +95,7 @@ class Stocks extends Resource
 
     /**
      * Get extended hours timeline data (pre-market + regular + after-hours)
-     * 
+     *
      * @param string $ticker Stock ticker symbol
      * @param array $options Additional options (size, orderBy, started_date)
      */
@@ -146,7 +146,7 @@ class Stocks extends Resource
     /**
      * Get price changes for different time periods
      * Returns organized price change data across multiple timeframes from 15 minutes to all-time
-     * 
+     *
      * @param string $symbol Stock ticker symbol (e.g., "TSLA", "AAPL")
      * @return Response Returns structured price change data with organized timeframes
      */
