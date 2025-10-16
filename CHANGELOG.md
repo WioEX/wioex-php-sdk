@@ -5,6 +5,41 @@ All notable changes to the WioEX PHP SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-10-16
+
+### Added
+- **Advanced Timeline Features** - Enhanced historical data capabilities
+  - **Session Filtering** - Filter 1-minute data by trading sessions:
+    - `regular`: Standard market hours (9:30 AM - 4:00 PM EST)
+    - `pre_market`: Pre-market trading (4:00 AM - 9:30 AM EST)
+    - `after_hours`: After-hours trading (4:00 PM - 8:00 PM EST)
+    - `extended`: All extended hours combined (4:00 AM - 8:00 PM EST)
+  - **Date Filtering** - Start timeline data from specific date
+    - `started_date`: Date string format (e.g., '2024-10-16')
+    - `timestamp`: Unix timestamp alternative
+  - **Convenience Methods** for common use cases:
+    - `intradayTimeline()`: Regular trading hours only
+    - `extendedHoursTimeline()`: All extended hours data
+    - `timelineFromDate()`: Data from specific date onwards
+    - `timelineBySession()`: Session-specific data
+
+- **Improved Data Source** - Primary integration with Investing.com API
+  - More reliable data availability for major stocks
+  - Finbold API maintained as fallback
+  - Response includes `data_source` metadata
+
+- **New Example File** - `timeline-advanced-example.php` demonstrating all new features
+
+### Enhanced
+- **Timeline Documentation** - Comprehensive parameter documentation in `timeline()` method
+- **README.md** - Updated with session filtering examples and trading hours reference
+- **Type Safety** - All new methods include full PHPDoc annotations
+
+### Technical
+- **Backend API Integration** - Session filtering implemented server-side
+- **Manual Date Filtering** - Client-side filtering for precise date ranges
+- **Backward Compatibility** - All existing timeline usage remains unchanged
+
 ## [1.1.0] - 2025-10-14
 
 ### Added

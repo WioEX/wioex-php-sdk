@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 class Config
 {
-    private string $apiKey;
+    private ?string $apiKey;
     private string $baseUrl;
     private int $timeout;
     private int $connectTimeout;
@@ -27,11 +27,10 @@ class Config
      */
     public function __construct(array $options = [])
     {
-        if (!isset($options['api_key']) || $options['api_key'] === '') {
-            throw new InvalidArgumentException('API key is required');
-        }
-
-        $this->apiKey = $options['api_key'];
+        // API key is optional for public endpoints
+        $this->apiKey = isset($options['api_key']) && $options['api_key'] !== ''
+            ? $options['api_key']
+            : null;
         $this->baseUrl = $options['base_url'] ?? 'https://api.wioex.com';
         $this->timeout = $options['timeout'] ?? 30;
         $this->connectTimeout = $options['connect_timeout'] ?? 10;
@@ -86,9 +85,14 @@ class Config
         }
     }
 
-    public function getApiKey(): string
+    public function getApiKey(): ?string
     {
         return $this->apiKey;
+    }
+
+    public function hasApiKey(): bool
+    {
+        return $this->apiKey !== null;
     }
 
     public function getBaseUrl(): string
@@ -153,8 +157,11 @@ class Config
      * Get API key identification for error reporting
      * Returns hashed version for privacy while allowing customer identification
      */
-    public function getApiKeyIdentification(): string
+    public function getApiKeyIdentification(): ?string
     {
+        if ($this->apiKey === null) {
+            return null;
+        }
         // Use first 8 chars of SHA256 hash for identification
         return substr(hash('sha256', $this->apiKey), 0, 16);
     }
