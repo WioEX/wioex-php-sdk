@@ -7,6 +7,7 @@ namespace Wioex\SDK;
 use Wioex\SDK\Http\Client;
 use Wioex\SDK\Resources\Account;
 use Wioex\SDK\Resources\Currency;
+use Wioex\SDK\Resources\Markets;
 use Wioex\SDK\Resources\News;
 use Wioex\SDK\Resources\Screens;
 use Wioex\SDK\Resources\Signals;
@@ -20,6 +21,7 @@ class WioexClient
     private ?Stocks $stocks = null;
     private ?Screens $screens = null;
     private ?Signals $signals = null;
+    private ?Markets $markets = null;
     private ?News $news = null;
     private ?Currency $currency = null;
     private ?Account $account = null;
@@ -116,6 +118,26 @@ class WioexClient
         }
 
         return $this->signals;
+    }
+
+    /**
+     * Access market status and trading hours endpoints
+     *
+     * @return Markets
+     *
+     * @example
+     * ```php
+     * $status = $client->markets()->status();
+     * echo "NYSE is " . ($status['markets']['nyse']['is_open'] ? 'open' : 'closed');
+     * ```
+     */
+    public function markets(): Markets
+    {
+        if ($this->markets === null) {
+            $this->markets = new Markets($this->httpClient);
+        }
+
+        return $this->markets;
     }
 
     /**
