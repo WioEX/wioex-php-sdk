@@ -33,12 +33,12 @@ echo str_repeat('-', 50) . "\n";
 
 $stocks = $client->stocks()->quote('AAPL,GOOGL,MSFT,TSLA');
 echo "Current prices:\n";
-foreach ($stocks['data'] as $stock) {
+foreach ($stocks['tickers'] as $stock) {
     echo sprintf(
         "  %-6s $%-8s %+.2f%%\n",
-        $stock['symbol'],
-        number_format($stock['price'], 2),
-        $stock['change_percent']
+        $stock['ticker'],
+        number_format($stock['market']['price'], 2),
+        $stock['market']['change']['percent']
     );
 }
 echo "\n";
