@@ -6,7 +6,7 @@ use Wioex\SDK\WioexClient;
 
 // Test script for price changes endpoint
 $client = new WioexClient([
-    'api_key' => '65c8a165-f368-41d5-ab9b-b50cef65d5e1' // Demo API key
+    'api_key' => 'your-api-key-here' // Demo API key
 ]);
 
 echo "Testing Price Changes Endpoint\n";

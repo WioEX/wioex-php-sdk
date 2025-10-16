@@ -49,7 +49,7 @@ echo "\n";
 echo "🔐 Method 2: Authenticated Access (With API Key)\n";
 echo str_repeat('─', 54) . "\n";
 
-$client = new WioexClient(['api_key' => '65c8a165-f368-41d5-ab9b-b50cef65d5e1']);
+$client = new WioexClient(['api_key' => 'your-api-key-here']);
 $status = $client->markets()->status();
 
 if ($status->successful()) {
