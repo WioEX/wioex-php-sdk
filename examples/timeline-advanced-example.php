@@ -163,13 +163,13 @@ echo "\n=== Advanced Timeline Example completed ===\n";
 
 /*
  * TRADING SESSION REFERENCE:
- * 
+ *
  * - regular: 9:30 AM - 4:00 PM EST (Standard market hours)
  * - pre_market: 4:00 AM - 9:30 AM EST (Early trading)
  * - after_hours: 4:00 PM - 8:00 PM EST (Extended trading)
  * - extended: 4:00 AM - 8:00 PM EST (All extended hours combined)
  * - all: Full 24-hour data (default)
- * 
+ *
  * Note: Session filtering only applies to 1-minute interval data.
  * Daily data ignores the session parameter.
  */

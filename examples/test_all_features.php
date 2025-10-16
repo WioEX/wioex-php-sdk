@@ -22,34 +22,34 @@ echo "\n";
 
 $tests = [
     'Signals' => [
-        'Active Signals' => function() use ($client) {
+        'Active Signals' => function () use ($client) {
             $result = $client->signals()->active(['limit' => 5]);
             return $result->successful() && isset($result['success']);
         },
-        'Signal History' => function() use ($client) {
+        'Signal History' => function () use ($client) {
             $result = $client->signals()->history(['days' => 7]);
             return $result->successful() && isset($result['success']);
         },
-        'Symbol Filter' => function() use ($client) {
+        'Symbol Filter' => function () use ($client) {
             $result = $client->signals()->active(['symbol' => 'SOUN']);
             return $result->successful() && isset($result['count']);
         }
     ],
     'Stocks' => [
-        'Quote' => function() use ($client) {
+        'Quote' => function () use ($client) {
             $result = $client->stocks()->quote('AAPL');
             return $result->successful() && isset($result['tickers']);
         },
-        'Quote with Signal' => function() use ($client) {
+        'Quote with Signal' => function () use ($client) {
             $result = $client->stocks()->quote('SOUN');
             $data = $result->data();
             return $result->successful() && isset($data['tickers'][0]['signal']);
         },
-        'Info' => function() use ($client) {
+        'Info' => function () use ($client) {
             $result = $client->stocks()->info('AAPL');
             return $result->successful();
         },
-        'Info with Signal' => function() use ($client) {
+        'Info with Signal' => function () use ($client) {
             $result = $client->stocks()->info('SOUN');
             $data = $result->data();
             return $result->successful() && isset($data['signal']);

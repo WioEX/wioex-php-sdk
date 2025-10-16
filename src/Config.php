@@ -37,10 +37,10 @@ class Config
 
         $retry = $options['retry'] ?? [];
         $this->retryConfig = [
-            'times' => $retry['times'] ?? 3,
-            'delay' => $retry['delay'] ?? 100, // milliseconds
-            'multiplier' => $retry['multiplier'] ?? 2,
-            'max_delay' => $retry['max_delay'] ?? 5000 // max 5 seconds
+            'times' => (int)($retry['times'] ?? 3),
+            'delay' => (int)($retry['delay'] ?? 100), // milliseconds
+            'multiplier' => (int)($retry['multiplier'] ?? 2),
+            'max_delay' => (int)($retry['max_delay'] ?? 5000) // max 5 seconds
         ];
 
         $this->headers = array_merge([
