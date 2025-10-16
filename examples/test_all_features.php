@@ -11,7 +11,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Wioex\SDK\WioexClient;
 
 $client = new WioexClient([
-    'api_key' => '65c8a165-f368-41d5-ab9b-b50cef65d5e1'
+    'api_key' => 'your-api-key-here'
 ]);
 
 echo "\n";
