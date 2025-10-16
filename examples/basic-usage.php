@@ -22,9 +22,10 @@ echo "1. Getting stock data for AAPL...\n";
 $stock = $client->stocks()->quote('AAPL');
 
 if ($stock->successful()) {
-    echo "Symbol: {$stock['symbol']}\n";
-    echo "Price: $" . $stock['price'] . "\n";
-    echo "Change: " . $stock['change'] . "%\n";
+    $ticker = $stock['tickers'][0];
+    echo "Symbol: {$ticker['ticker']}\n";
+    echo "Price: $" . $ticker['market']['price'] . "\n";
+    echo "Change: " . $ticker['market']['change']['percent'] . "%\n";
 } else {
     echo "Failed to get stock data\n";
 }

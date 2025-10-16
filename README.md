@@ -631,26 +631,32 @@ foreach ($keys['api_keys'] as $key) {
 ### Accessing Response Data
 
 ```php
-$stock = $client->stocks()->get('AAPL');
-
-// Array access
-echo $stock['symbol'];
-echo $stock['price'];
-
-// Object access
-echo $stock->symbol;
-echo $stock->price;
-
-// Get all data as array
-$data = $stock->data();
-
-// Get as JSON string
-$json = $stock->json();
+$response = $client->stocks()->quote('AAPL');
 
 // Check response status
-if ($stock->successful()) {
-    echo "Success!";
+if ($response->successful()) {
+    // Get first ticker data
+    $ticker = $response['tickers'][0];
+    
+    // Array access to ticker data
+    echo "Symbol: " . $ticker['ticker'] . "\n";
+    echo "Price: $" . $ticker['market']['price'] . "\n";
+    echo "Change: " . $ticker['market']['change'] . "%\n";
+    echo "Exchange: " . $ticker['market']['name'] . "\n";
+    
+    // Object access (alternative)
+    echo "Price: $" . $response->tickers[0]->market->price . "\n";
 }
+
+// Get all data as array
+$data = $response->data();
+
+// Get as JSON string
+$json = $response->json();
+
+// Access response metadata
+echo "Service: " . $response['wioex']['service'] . "\n";
+echo "Last Cache: " . $response['wioex']['last_cache'] . "\n";
 ```
 
 ### Response Methods
