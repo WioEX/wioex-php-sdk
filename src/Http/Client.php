@@ -62,32 +62,46 @@ class Client
 
     public function get(string $path, array $query = []): Response
     {
-        return $this->request('GET', $path, [
-            'query' => array_merge($query, ['api_key' => $this->config->getApiKey()])
-        ]);
+        // Only add API key if it's set (for authenticated endpoints)
+        if ($this->config->hasApiKey()) {
+            $query['api_key'] = $this->config->getApiKey();
+        }
+
+        return $this->request('GET', $path, ['query' => $query]);
     }
 
     public function post(string $path, array $data = []): Response
     {
-        return $this->request('POST', $path, [
-            'json' => $data,
-            'query' => ['api_key' => $this->config->getApiKey()]
-        ]);
+        $options = ['json' => $data];
+
+        // Only add API key if it's set (for authenticated endpoints)
+        if ($this->config->hasApiKey()) {
+            $options['query'] = ['api_key' => $this->config->getApiKey()];
+        }
+
+        return $this->request('POST', $path, $options);
     }
 
     public function put(string $path, array $data = []): Response
     {
-        return $this->request('PUT', $path, [
-            'json' => $data,
-            'query' => ['api_key' => $this->config->getApiKey()]
-        ]);
+        $options = ['json' => $data];
+
+        // Only add API key if it's set (for authenticated endpoints)
+        if ($this->config->hasApiKey()) {
+            $options['query'] = ['api_key' => $this->config->getApiKey()];
+        }
+
+        return $this->request('PUT', $path, $options);
     }
 
     public function delete(string $path, array $query = []): Response
     {
-        return $this->request('DELETE', $path, [
-            'query' => array_merge($query, ['api_key' => $this->config->getApiKey()])
-        ]);
+        // Only add API key if it's set (for authenticated endpoints)
+        if ($this->config->hasApiKey()) {
+            $query['api_key'] = $this->config->getApiKey();
+        }
+
+        return $this->request('DELETE', $path, ['query' => $query]);
     }
 
     private function request(string $method, string $path, array $options = []): Response

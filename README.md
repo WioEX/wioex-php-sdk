@@ -17,6 +17,7 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - ✅ **Response Wrapper** - Easy data access with array syntax support
 - ✅ **Type Safe** - Full IDE autocomplete support
 - ✅ **Zero Config** - Works out of the box with sensible defaults
+- ✅ **Public Endpoints** - Some endpoints work without API key for frontend usage
 
 ## Requirements
 
@@ -69,6 +70,12 @@ $news = $client->news()->latest('TSLA');
 foreach ($news['articles'] as $article) {
     echo $article['title'] . "\n";
 }
+
+// Check market status (works with or without API key)
+$marketStatus = $client->markets()->status();
+$nyse = $marketStatus['markets']['nyse'];
+echo "NYSE is " . ($nyse['is_open'] ? 'open' : 'closed') . "\n";
+echo "Market time: " . $nyse['market_time'] . "\n";
 
 // Check account balance
 $balance = $client->account()->balance();
@@ -152,18 +159,41 @@ if (isset($info['signal'])) {
 // Basic usage (default: 1day interval, 78 data points)
 $timeline = $client->stocks()->timeline('AAPL');
 
-// With options
+// With all options
 $timeline = $client->stocks()->timeline('AAPL', [
-    'interval' => '1min',    // Options: '1min' or '1day'
-    'orderBy' => 'DESC',     // Sort order: 'ASC' or 'DESC' (default: ASC)
-    'size' => 480,           // Number of data points: 1-5000 (default: 78)
-    'timestamp' => 1704067200 // Optional: Unix timestamp start date
+    'interval' => '1min',        // Options: '1min' or '1day'
+    'orderBy' => 'DESC',         // Sort order: 'ASC' or 'DESC' (default: ASC)
+    'size' => 480,               // Number of data points: 1-5000 (default: 78)
+    'session' => 'regular',      // Trading session (1min only): 'all', 'regular', 'pre_market', 'after_hours', 'extended'
+    'started_date' => '2024-10-16', // Start date (YYYY-MM-DD format)
+    'timestamp' => 1704067200    // Alternative: Unix timestamp start date
 ]);
 
-// Examples:
-// Last 8 hours (minute data): size=480, interval=1min
-// Last 3 months (daily data): size=90, interval=1day
-// Last 1 year (daily data): size=365, interval=1day
+// Convenience methods for common use cases:
+
+// Get regular trading hours only (9:30 AM - 4:00 PM EST)
+$intraday = $client->stocks()->intradayTimeline('TSLA', ['size' => 100]);
+
+// Get extended hours data (pre-market + regular + after-hours)
+$extended = $client->stocks()->extendedHoursTimeline('TSLA', ['size' => 200]);
+
+// Get data from specific date onwards
+$fromDate = $client->stocks()->timelineFromDate('AAPL', '2024-10-16', [
+    'interval' => '1day',
+    'size' => 30
+]);
+
+// Session-specific data (1-minute intervals only)
+$preMarket = $client->stocks()->timelineBySession('TSLA', 'pre_market', ['size' => 50]);
+$afterHours = $client->stocks()->timelineBySession('TSLA', 'after_hours', ['size' => 50]);
+```
+
+**Trading Sessions** (applies to 1-minute intervals only):
+- `regular`: 9:30 AM - 4:00 PM EST (Standard market hours)
+- `pre_market`: 4:00 AM - 9:30 AM EST (Early trading)
+- `after_hours`: 4:00 PM - 8:00 PM EST (Extended trading)
+- `extended`: 4:00 AM - 8:00 PM EST (All extended hours combined)
+- `all`: Full 24-hour data (default)
 ```
 
 #### Get Financials
@@ -313,6 +343,150 @@ foreach ($history['signals'] as $signal) {
 - `days` (int): Number of days to look back, default 30, max 365
 - `trigger_type` (string): Filter by trigger - entry, target, stop_loss, expired
 - `limit` (int): Maximum results, default 50, max 200
+
+### Market Status ⭐ NEW
+
+Get real-time market status and trading hours for NYSE and NASDAQ exchanges.
+
+**✨ Unique Feature**: Works with or without API key!
+- **With API key**: Costs 1 credit, no rate limit, tracks usage
+- **Without API key**: FREE, rate limited to 100 req/min per IP
+
+#### Authenticated Usage (With API Key)
+
+```php
+$client = new WioexClient(['api_key' => 'your-api-key-here']);
+$status = $client->markets()->status();
+
+if ($status['success']) {
+    $nyse = $status['markets']['nyse'];
+    $nasdaq = $status['markets']['nasdaq'];
+
+    // Market status
+    echo "NYSE is " . ($nyse['is_open'] ? 'open' : 'closed') . "\n";
+    echo "Status: " . $nyse['status'] . "\n"; // "open" or "closed"
+    echo "Market Time: " . $nyse['market_time'] . "\n";
+    echo "Local Time: " . $nyse['local_time'] . "\n";
+    echo "Next Change: " . $nyse['next_change'] . "\n";
+
+    // Trading hours
+    echo "Regular Hours: " . $nyse['hours']['regular']['open'] . " - " . $nyse['hours']['regular']['close'] . "\n";
+    echo "Pre-Market: " . $nyse['hours']['pre_market']['open'] . " - " . $nyse['hours']['pre_market']['close'] . "\n";
+    echo "After-Hours: " . $nyse['hours']['after_hours']['open'] . " - " . $nyse['hours']['after_hours']['close'] . "\n";
+
+    // Holidays
+    foreach ($nyse['holidays'] as $holiday) {
+        echo $holiday['date'] . ": " . $holiday['name'];
+        if ($holiday['type'] === 'early-close') {
+            echo " (closes at " . $holiday['close_time'] . ")";
+        }
+        echo "\n";
+    }
+
+    // Trading days (1=Monday, 5=Friday)
+    echo "Trading Days: " . implode(', ', $nyse['trading_days']) . "\n";
+}
+```
+
+#### Public Usage (Without API Key)
+
+**Perfect for frontend applications** where you cannot safely store API keys:
+
+```php
+// Initialize without API key
+$client = new WioexClient(['api_key' => '']);
+$status = $client->markets()->status();
+
+if ($status['success']) {
+    $nyse = $status['markets']['nyse'];
+    echo "NYSE is " . ($nyse['is_open'] ? 'open' : 'closed') . "\n";
+    echo "Status: " . $nyse['status'] . "\n";
+}
+
+// Cost: FREE
+// Rate Limit: 100 requests per minute per IP
+// No usage tracking
+```
+
+#### Direct API Call (JavaScript/Frontend)
+
+Can be called directly from JavaScript without any authentication:
+
+```javascript
+fetch('https://api.wioex.com/v2/market/status')
+  .then(response => response.json())
+  .then(data => {
+    const nyse = data.markets.nyse;
+    console.log('NYSE is', nyse.is_open ? 'open' : 'closed');
+    console.log('Status:', nyse.status);
+    console.log('Market time:', nyse.market_time);
+
+    // Display trading hours
+    console.log('Regular hours:',
+      nyse.hours.regular.open + ' - ' + nyse.hours.regular.close + ' ET'
+    );
+  });
+```
+
+**Response Structure:**
+```json
+{
+  "success": true,
+  "timestamp": "2025-10-14 20:00:00 UTC",
+  "markets": {
+    "nyse": {
+      "id": "nyse",
+      "name": "New York Stock Exchange",
+      "short_name": "NYSE",
+      "timezone": "America/New_York",
+      "is_open": false,
+      "status": "closed",
+      "local_time": "8:00:00 PM",
+      "market_time": "4:00:00 PM",
+      "next_change": "2025-10-15T13:30:00.000Z",
+      "hours": {
+        "regular": {"open": "09:30", "close": "16:00"},
+        "pre_market": {"open": "04:00", "close": "09:30"},
+        "after_hours": {"open": "16:00", "close": "20:00"}
+      },
+      "trading_days": [1, 2, 3, 4, 5],
+      "next_open_time": "2025-10-15T13:30:00.000Z",
+      "holidays": [
+        {
+          "date": "2025-01-01",
+          "name": "New Year's Day",
+          "type": "full",
+          "close_time": null
+        },
+        {
+          "date": "2025-11-28",
+          "name": "Day after Thanksgiving",
+          "type": "early-close",
+          "close_time": "13:00"
+        }
+      ]
+    },
+    "nasdaq": { /* same structure */ }
+  }
+}
+```
+
+**Status Values:**
+- `open` - Market is currently open for trading
+- `closed` - Market is closed
+- `pre_market` - Pre-market trading hours
+- `after_hours` - After-hours trading
+
+**Holiday Types:**
+- `full` - Market closed all day
+- `early-close` - Market closes early (check `close_time`)
+
+**Use Cases:**
+- ✅ Display market hours on your website
+- ✅ Show "Market Open/Closed" indicators
+- ✅ Schedule trading operations
+- ✅ Frontend widgets without exposing API keys
+- ✅ Mobile apps with public data display
 
 ### Currency
 
@@ -502,6 +676,10 @@ See the `/examples` directory for more usage examples:
 - `basic-usage.php` - Basic usage patterns
 - `stocks-example.php` - Comprehensive stock operations
 - `error-handling.php` - Error handling patterns
+- `test_signals.php` - Trading signals examples
+- `test_stock_with_signal.php` - Stock data with auto-included signals
+- `test_market_status.php` - Market status (authenticated & public access)
+- `test_all_features.php` - Comprehensive test suite
 
 ## Support
 
