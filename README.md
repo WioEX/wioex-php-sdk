@@ -13,9 +13,10 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 
 ### New Features
 - **Automatic Error Reporting & Telemetry**: Privacy-first monitoring with configurable data collection
-- **Bulk Operations**: 95% performance improvement - process 500+ stocks in 30 seconds vs 8-10 minutes
+- **Bulk Quote Operations**: Up to 95% performance improvement for stock quotes (30 symbols per request)
+- **Bulk Timeline/Info/Financials**: Automated individual processing with error handling and progress tracking
 - **Privacy Controls**: 4 configurable privacy levels (minimal → debug) with data sanitization
-- **High Performance**: Server-side processing eliminates CORS issues, 98% fewer API calls
+- **High Performance**: Server-side processing eliminates CORS issues
 - **Usage Analytics**: Automatic performance tracking and usage patterns
 - **Advanced Security**: Rate limiting, batch reporting, and comprehensive error handling
 

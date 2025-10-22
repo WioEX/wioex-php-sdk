@@ -399,9 +399,9 @@ class Stocks extends Resource
         
         $requestOptions = array_merge($options, ['interval' => $intervalValue]);
         
-        // Use smaller chunk size for timeline requests (more data intensive)
+        // Timeline endpoint only supports 1 symbol per request (API limitation)
         if (!isset($requestOptions['chunk_size'])) {
-            $requestOptions['chunk_size'] = 25;
+            $requestOptions['chunk_size'] = 1; // Must be 1 for timeline endpoint
         }
         if (!isset($requestOptions['chunk_delay'])) {
             $requestOptions['chunk_delay'] = 0.2; // Slower for timeline data
@@ -516,12 +516,18 @@ class Stocks extends Resource
     {
         return [
             'max_symbols_per_request' => 1000,
-            'max_symbols_per_chunk' => 50,
+            'max_symbols_per_chunk' => 30, // Updated to match API quote limit
+            'api_endpoint_limits' => [
+                'quote' => 30,      // /v2/stocks/get max limit
+                'timeline' => 1,    // /v2/stocks/chart/timeline single symbol only
+                'info' => 1,        // /v2/stocks/info single symbol only
+                'financials' => 1   // /v2/stocks/financials single symbol only
+            ],
             'default_chunk_sizes' => [
-                'quote' => 50,
-                'timeline' => 25,
-                'info' => 50,
-                'financials' => 50
+                'quote' => 30,      // Updated to API limit
+                'timeline' => 1,    // Must be 1 for single symbol API
+                'info' => 1,        // Must be 1 for single symbol API
+                'financials' => 1   // Must be 1 for single symbol API
             ],
             'recommended_delays' => [
                 'quote' => 0.1,
@@ -529,12 +535,19 @@ class Stocks extends Resource
                 'info' => 0.15,
                 'financials' => 0.15
             ],
+            'credit_consumption' => [
+                'quote' => '1 credit per symbol',
+                'timeline' => '1 credit per symbol', 
+                'info' => '1 credit per symbol',
+                'financials' => '1 credit per symbol'
+            ],
             'features' => [
                 'automatic_chunking' => true,
                 'partial_failure_handling' => true,
                 'progress_tracking' => true,
                 'server_side_processing' => true, // No CORS issues
-                'response_merging' => true
+                'response_merging' => true,
+                'real_api_endpoints' => true // Uses actual API endpoints, not bulk endpoints
             ]
         ];
     }
