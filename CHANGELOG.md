@@ -5,6 +5,14 @@ All notable changes to the WioEX PHP SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-10-22
+
+### Fixed
+- **HTTP Method Correction** - Fixed streaming token endpoint to use correct HTTP method
+  - `streaming()->getToken()` now uses POST instead of GET for `/v1/stream/token`
+  - Resolves API compatibility issue where endpoint expects POST request
+  - Maintains backward compatibility in SDK usage
+
 ## [1.3.0] - 2025-10-22
 
 ### Added
