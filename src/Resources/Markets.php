@@ -35,9 +35,12 @@ class Markets extends Resource
      *     echo "Next Change: " . $nyse['next_change'] . "\n";
      *
      *     // Trading hours
-     *     echo "Regular Hours: " . $nyse['hours']['regular']['open'] . " - " . $nyse['hours']['regular']['close'] . "\n";
-     *     echo "Pre-Market: " . $nyse['hours']['pre_market']['open'] . " - " . $nyse['hours']['pre_market']['close'] . "\n";
-     *     echo "After-Hours: " . $nyse['hours']['after_hours']['open'] . " - " . $nyse['hours']['after_hours']['close'] . "\n";
+     *     echo "Regular Hours: " . $nyse['hours']['regular']['open'] .
+     *          " - " . $nyse['hours']['regular']['close'] . "\n";
+     *     echo "Pre-Market: " . $nyse['hours']['pre_market']['open'] .
+     *          " - " . $nyse['hours']['pre_market']['close'] . "\n";
+     *     echo "After-Hours: " . $nyse['hours']['after_hours']['open'] .
+     *          " - " . $nyse['hours']['after_hours']['close'] . "\n";
      *
      *     // Holidays
      *     foreach ($nyse['holidays'] as $holiday) {

@@ -41,7 +41,8 @@ class Stocks extends Resource
      *   - interval: '1min' or '1day' (default: '1day')
      *   - orderBy: 'ASC' or 'DESC' (default: 'ASC')
      *   - size: Number of data points 1-5000 (default: 78)
-     *   - session: 'all', 'regular', 'pre_market', 'after_hours', 'extended' (default: 'all', only applies to 1min interval)
+     *   - session: 'all', 'regular', 'pre_market', 'after_hours', 'extended'
+     *     (default: 'all', only applies to 1min interval)
      *   - started_date: Date string (e.g., '2024-10-16') or timestamp (filters data from this date onward)
      *   - timestamp: Unix timestamp (alternative to started_date)
      */
