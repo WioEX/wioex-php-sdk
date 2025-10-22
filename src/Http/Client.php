@@ -179,10 +179,19 @@ class Client
         /** @var mixed $data */
         $data = json_decode($body, true);
 
-        // Extract error message with type safety
+        // Extract error message with type safety (supports both old and new error formats)
         $errorMessage = 'Unknown error occurred';
         if (is_array($data)) {
-            if (isset($data['error']) && is_string($data['error'])) {
+            // New error format: { "error": { "message": "...", "code": "...", ... } }
+            if (isset($data['error']) && is_array($data['error'])) {
+                if (isset($data['error']['message']) && is_string($data['error']['message'])) {
+                    $errorMessage = $data['error']['message'];
+                } elseif (isset($data['error']['title']) && is_string($data['error']['title'])) {
+                    $errorMessage = $data['error']['title'];
+                }
+            }
+            // Legacy error format: { "error": "message" } or { "message": "message" }
+            elseif (isset($data['error']) && is_string($data['error'])) {
                 $errorMessage = $data['error'];
             } elseif (isset($data['message']) && is_string($data['message'])) {
                 $errorMessage = $data['message'];
