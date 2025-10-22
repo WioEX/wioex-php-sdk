@@ -5,7 +5,14 @@ All notable changes to the WioEX PHP SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1] - 2025-10-22
+## [1.3.0] - 2025-10-22
+
+### Added
+- **WebSocket Streaming Support** - New streaming resource for real-time market data
+  - `streaming()->getToken()` method for WebSocket authentication
+  - JWT-based token authentication for secure streaming connections
+  - Complete WebSocket integration examples and documentation
+  - Support for `/v1/stream/token` endpoint
 
 ### Fixed
 - **API Parameter Alignment** - Updated stocks endpoint to use correct parameter name
@@ -19,10 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Handles nested error responses: `{"error": {"message": "...", "code": "..."}}`
   - Maintains backward compatibility with legacy error format
   - Better error message extraction for user-friendly error reporting
+- **Code Quality** - PSR12 compliance improvements across all source files
+  - Fixed line length violations and improved type hints
+  - Enhanced documentation and code readability
 
 ### Technical
 - **Response Processing** - Enhanced error message parsing for both formats
 - **API Compatibility** - Ensures SDK works with latest API error responses
+- **Documentation** - Comprehensive streaming integration guide added
 
 ## [1.2.0] - 2025-10-16
 
