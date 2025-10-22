@@ -29,6 +29,6 @@ class Streaming extends Resource
      */
     public function getToken(): Response
     {
-        return parent::get('/v1/stream/token');
+        return parent::post('/v1/stream/token');
     }
 }
