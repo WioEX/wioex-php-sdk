@@ -7,7 +7,7 @@ use Wioex\SDK\Config;
 
 /**
  * WebSocket Integration Example
- * 
+ *
  * This example demonstrates how to use the enhanced WebSocket functionality
  * including token management, connection status monitoring, and real-time streaming.
  */
@@ -40,7 +40,7 @@ try {
     echo "2. Validating token...\n";
     $isValid = $client->streaming()->validateToken();
     echo $isValid ? "✓ Token is valid\n" : "✗ Token is invalid\n";
-    
+
     // Get token expiry information
     $expiry = $client->streaming()->getTokenExpiry();
     echo "✓ Token expires in: " . $expiry['expires_in'] . " seconds\n";
@@ -144,10 +144,9 @@ try {
     echo "        // Subscribe to real-time stock data\n";
     echo "    }\n";
     echo "}\n\n";
-
 } catch (Exception $e) {
     echo "❌ Error: " . $e->getMessage() . "\n";
-    
+
     if ($e instanceof \Wioex\SDK\Exceptions\AuthenticationException) {
         echo "💡 Check your API key configuration\n";
     } elseif ($e instanceof \Wioex\SDK\Exceptions\RateLimitException) {

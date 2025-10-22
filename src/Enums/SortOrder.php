@@ -64,7 +64,7 @@ enum SortOrder: string
     public static function fromString(string $value): self
     {
         $normalizedValue = strtoupper($value);
-        return self::tryFrom($normalizedValue) 
+        return self::tryFrom($normalizedValue)
             ?? throw new \InvalidArgumentException("Invalid sort order: {$value}. Must be 'ASC' or 'DESC'");
     }
 

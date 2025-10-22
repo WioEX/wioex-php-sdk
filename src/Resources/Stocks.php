@@ -53,7 +53,7 @@ class Stocks extends Resource
      *     • TradingSession::ALL, REGULAR, PRE_MARKET, AFTER_HOURS, EXTENDED
      *   - started_date: string - Date string (e.g., '2024-10-16') or timestamp
      *   - timestamp: int - Unix timestamp (alternative to started_date)
-     * 
+     *
      * @example Using ENUMs (recommended):
      * ```php
      * $timeline = $client->stocks()->timeline('AAPL', [
@@ -63,7 +63,7 @@ class Stocks extends Resource
      *     'size' => 100
      * ]);
      * ```
-     * 
+     *
      * @example Backward compatibility with strings:
      * ```php
      * $timeline = $client->stocks()->timeline('AAPL', [
@@ -77,7 +77,7 @@ class Stocks extends Resource
     {
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processTimelineOptions($options);
-        
+
         return parent::get('/v2/stocks/chart/timeline', array_merge(
             ['ticker' => $ticker],
             $processedOptions
@@ -90,7 +90,7 @@ class Stocks extends Resource
      * @param string $ticker Stock ticker symbol
      * @param TradingSession|string $session Trading session filter
      * @param array $options Additional options (size, orderBy, started_date)
-     * 
+     *
      * @example Using ENUM (recommended):
      * ```php
      * $data = $client->stocks()->timelineBySession('AAPL', TradingSession::REGULAR);
@@ -243,7 +243,7 @@ class Stocks extends Resource
     /**
      * Get market heatmap data for major indices
      * @param MarketIndex|string $market Market index
-     * 
+     *
      * @example Using ENUM (recommended):
      * ```php
      * $heatmap = $client->stocks()->heatmap(MarketIndex::NASDAQ_100);
@@ -277,29 +277,29 @@ class Stocks extends Resource
 
     /**
      * Process timeline options to convert ENUMs to strings
-     * 
+     *
      * @param array $options Raw options array
      * @return array Processed options with ENUM values converted to strings
      */
     private function processTimelineOptions(array $options): array
     {
         $processed = $options;
-        
+
         // Convert TimelineInterval ENUM to string
         if (isset($processed['interval']) && $processed['interval'] instanceof TimelineInterval) {
             $processed['interval'] = $processed['interval']->value;
         }
-        
+
         // Convert SortOrder ENUM to string
         if (isset($processed['orderBy']) && $processed['orderBy'] instanceof SortOrder) {
             $processed['orderBy'] = $processed['orderBy']->value;
         }
-        
+
         // Convert TradingSession ENUM to string
         if (isset($processed['session']) && $processed['session'] instanceof TradingSession) {
             $processed['session'] = $processed['session']->value;
         }
-        
+
         return $processed;
     }
 
@@ -366,9 +366,9 @@ class Stocks extends Resource
             if ($currency) {
                 $params['currency'] = $currency;
             }
-            
+
             $response = parent::get('/v2/stocks/get', $params);
-            
+
             // Add bulk metadata to response
             if ($response->successful()) {
                 $data = $response->data();
@@ -380,7 +380,7 @@ class Stocks extends Resource
                 ];
                 return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($data)));
             }
-            
+
             return $response;
         }
 
@@ -394,9 +394,9 @@ class Stocks extends Resource
             if ($currency) {
                 $params['currency'] = $currency;
             }
-            
+
             $response = parent::get('/v2/stocks/get', $params);
-            
+
             if ($response->successful()) {
                 $chunkData = $response->data();
                 if (isset($chunkData['tickers'])) {
@@ -447,7 +447,7 @@ class Stocks extends Resource
      *     TimelineInterval::FIVE_MINUTES,
      *     ['size' => 50]
      * );
-     * 
+     *
      * foreach ($timelines['symbols'] as $symbol => $timeline) {
      *     echo "Timeline for {$symbol}: " . count($timeline['data']) . " points\n";
      * }
@@ -525,7 +525,7 @@ class Stocks extends Resource
      *     'include_financials' => true,
      *     'currency' => 'USD'
      * ]);
-     * 
+     *
      * foreach ($info['companies'] as $symbol => $companyData) {
      *     echo "{$symbol}: {$companyData['company_name']}\n";
      *     echo "Market Cap: \${$companyData['market_cap']}\n";
@@ -608,7 +608,7 @@ class Stocks extends Resource
      *     'parallel' => true,
      *     'continue_on_error' => true
      * ]);
-     * 
+     *
      * // Access different result types
      * $quotes = $results['results']['quotes'];
      * $timelines = $results['results']['timelines'];
@@ -668,14 +668,14 @@ class Stocks extends Resource
             try {
                 $stats['total_operations']++;
                 $timelineResults = [];
-                
+
                 foreach ($operations['timelines'] as $symbol => $interval) {
                     $response = $this->timeline($symbol, ['interval' => $interval]);
                     if ($response->successful()) {
                         $timelineResults[$symbol] = $response->data();
                     }
                 }
-                
+
                 $results['timelines'] = $timelineResults;
                 $stats['successful_operations']++;
             } catch (\Exception $e) {
@@ -716,14 +716,14 @@ class Stocks extends Resource
             try {
                 $stats['total_operations']++;
                 $financialResults = [];
-                
+
                 foreach ($operations['financials'] as $symbol => $currency) {
                     $response = $this->financials($symbol, $currency);
                     if ($response->successful()) {
                         $financialResults[$symbol] = $response->data();
                     }
                 }
-                
+
                 $results['financials'] = $financialResults;
                 $stats['successful_operations']++;
             } catch (\Exception $e) {
@@ -799,7 +799,7 @@ class Stocks extends Resource
                 $searchData = $response->data();
                 if (isset($searchData['data'])) {
                     $limitedResults = array_slice($searchData['data'], 0, $limitPerQuery);
-                    
+
                     if ($mergeResults) {
                         $allSymbols = array_merge($allSymbols, $limitedResults);
                     } else {
@@ -813,7 +813,7 @@ class Stocks extends Resource
             if ($deduplicate) {
                 // Remove duplicates based on symbol
                 $seen = [];
-                $allSymbols = array_filter($allSymbols, function($item) use (&$seen) {
+                $allSymbols = array_filter($allSymbols, function ($item) use (&$seen) {
                     if (isset($item['symbol']) && in_array($item['symbol'], $seen)) {
                         return false;
                     }

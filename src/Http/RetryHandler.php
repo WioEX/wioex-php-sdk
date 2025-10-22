@@ -15,7 +15,7 @@ class RetryHandler
     private int $baseDelay;
     private int $multiplier;
     private int $maxDelay;
-    
+
     // Enhanced retry configuration
     private bool $enhancedMode;
     private string $backoffStrategy;
@@ -35,10 +35,10 @@ class RetryHandler
         $this->baseDelay = $config['delay'] ?? 100;
         $this->multiplier = $config['multiplier'] ?? 2;
         $this->maxDelay = $config['max_delay'] ?? 5000;
-        
+
         // Enhanced configuration
         $this->enhancedMode = $enhancedConfig !== null && ($enhancedConfig['enabled'] ?? false);
-        
+
         if ($this->enhancedMode) {
             $this->maxRetries = $enhancedConfig['attempts'] ?? 5;
             $this->baseDelay = $enhancedConfig['base_delay'] ?? 100;
@@ -51,7 +51,7 @@ class RetryHandler
             $this->jitter = false;
             $this->exponentialBase = 2.0;
         }
-        
+
         // Define retryable and non-retryable status codes
         $this->retryableStatusCodes = [429, 500, 502, 503, 504];
         $this->nonRetryableStatusCodes = [400, 401, 403, 404, 422]; // Client errors that shouldn't be retried
@@ -73,7 +73,7 @@ class RetryHandler
 
         // Determine if we should retry based on exception or response
         $shouldRetry = $this->shouldRetry($exception, $response);
-        
+
         if ($shouldRetry) {
             $this->sleepWithStrategy($retryCount, $response);
             return true;
@@ -81,7 +81,7 @@ class RetryHandler
 
         return false;
     }
-    
+
     /**
      * Determine if the request should be retried
      */
@@ -91,28 +91,28 @@ class RetryHandler
         if ($exception instanceof ConnectException || $exception instanceof RequestException) {
             return true;
         }
-        
+
         if ($response === null) {
             return false;
         }
-        
+
         $statusCode = $response->getStatusCode();
-        
+
         // Don't retry client errors that are definitely not retryable
         if (in_array($statusCode, $this->nonRetryableStatusCodes, true)) {
             return false;
         }
-        
+
         // Retry specific status codes
         if (in_array($statusCode, $this->retryableStatusCodes, true)) {
             return true;
         }
-        
+
         // In enhanced mode, be more liberal with retries for server errors
         if ($this->enhancedMode && $statusCode >= 500) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -125,30 +125,30 @@ class RetryHandler
         if ($response !== null && $response->getStatusCode() === 429 && $response->hasHeader('Retry-After')) {
             $retryAfter = (int) $response->getHeaderLine('Retry-After');
             $delay = $retryAfter * 1000; // Convert to milliseconds
-            
+
             // Apply jitter even to Retry-After delays if enabled
             if ($this->jitter) {
                 $delay = $this->applyJitter($delay);
             }
-            
+
             usleep(max(0, (int) ($delay * 1000))); // Convert to microseconds
             return;
         }
-        
+
         // Calculate delay based on strategy
         $delay = $this->calculateDelay($retryCount);
-        
+
         // Apply jitter if enabled
         if ($this->jitter) {
             $delay = $this->applyJitter($delay);
         }
-        
+
         // Ensure delay doesn't exceed maximum
         $delay = min($delay, $this->maxDelay);
-        
+
         usleep(max(0, (int) ($delay * 1000))); // Convert milliseconds to microseconds
     }
-    
+
     /**
      * Calculate delay based on backoff strategy
      */
@@ -161,7 +161,7 @@ class RetryHandler
             default => $this->calculateExponentialDelay($retryCount),
         };
     }
-    
+
     /**
      * Calculate exponential backoff delay
      */
@@ -170,11 +170,11 @@ class RetryHandler
         if ($this->enhancedMode) {
             return (int) ($this->baseDelay * ($this->exponentialBase ** $retryCount));
         }
-        
+
         // Legacy exponential backoff
         return $this->baseDelay * ($this->multiplier ** $retryCount);
     }
-    
+
     /**
      * Calculate linear backoff delay
      */
@@ -182,7 +182,7 @@ class RetryHandler
     {
         return $this->baseDelay + ($this->baseDelay * $retryCount);
     }
-    
+
     /**
      * Apply jitter to delay to avoid thundering herd
      */
@@ -191,10 +191,10 @@ class RetryHandler
         // Add random jitter of ±25%
         $jitterRange = (int) ($delay * 0.25);
         $jitter = mt_rand(-$jitterRange, $jitterRange);
-        
+
         return max($this->baseDelay, $delay + $jitter);
     }
-    
+
     /**
      * Legacy sleep method for backward compatibility
      */
@@ -207,7 +207,7 @@ class RetryHandler
     {
         return $this->maxRetries;
     }
-    
+
     /**
      * Check if enhanced retry mode is enabled
      */
@@ -215,7 +215,7 @@ class RetryHandler
     {
         return $this->enhancedMode;
     }
-    
+
     /**
      * Get the current backoff strategy
      */
@@ -223,7 +223,7 @@ class RetryHandler
     {
         return $this->backoffStrategy;
     }
-    
+
     /**
      * Check if jitter is enabled
      */
@@ -231,7 +231,7 @@ class RetryHandler
     {
         return $this->jitter;
     }
-    
+
     /**
      * Get retry statistics for debugging
      */
@@ -249,19 +249,19 @@ class RetryHandler
             'non_retryable_status_codes' => $this->nonRetryableStatusCodes,
         ];
     }
-    
+
     /**
      * Simulate delay calculation for testing/debugging
      */
     public function simulateDelay(int $retryCount): int
     {
         $delay = $this->calculateDelay($retryCount);
-        
+
         if ($this->jitter) {
             // For simulation, return the average jitter effect
             return $delay;
         }
-        
+
         return min($delay, $this->maxDelay);
     }
 }

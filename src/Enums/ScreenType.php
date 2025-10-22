@@ -131,7 +131,7 @@ enum ScreenType: string
     public function isPerformanceBased(): bool
     {
         return match ($this) {
-            self::GAINERS, self::LOSERS, self::PRE_GAINERS, self::PRE_LOSERS, 
+            self::GAINERS, self::LOSERS, self::PRE_GAINERS, self::PRE_LOSERS,
             self::POST_GAINERS, self::POST_LOSERS => true,
             self::ACTIVE, self::ALL_STOCKS, self::ALL_ETFS => false,
         };
@@ -144,7 +144,7 @@ enum ScreenType: string
     {
         return match ($this) {
             self::GAINERS, self::PRE_GAINERS, self::POST_GAINERS => true,
-            self::LOSERS, self::PRE_LOSERS, self::POST_LOSERS, 
+            self::LOSERS, self::PRE_LOSERS, self::POST_LOSERS,
             self::ACTIVE, self::ALL_STOCKS, self::ALL_ETFS => false,
         };
     }
@@ -167,7 +167,7 @@ enum ScreenType: string
     {
         return match ($this) {
             self::ALL_STOCKS, self::ALL_ETFS => true,
-            self::ACTIVE, self::GAINERS, self::LOSERS, self::PRE_GAINERS, 
+            self::ACTIVE, self::GAINERS, self::LOSERS, self::PRE_GAINERS,
             self::PRE_LOSERS, self::POST_GAINERS, self::POST_LOSERS => false,
         };
     }
@@ -257,7 +257,7 @@ enum ScreenType: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid screen type: {$value}");
     }
 

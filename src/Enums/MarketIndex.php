@@ -183,7 +183,7 @@ enum MarketIndex: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid market index: {$value}");
     }
 

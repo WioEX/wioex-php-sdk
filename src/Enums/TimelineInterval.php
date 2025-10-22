@@ -20,16 +20,16 @@ enum TimelineInterval: string
     case FIVE_MINUTES = '5min';
     case FIFTEEN_MINUTES = '15min';
     case THIRTY_MINUTES = '30min';
-    
+
     // Hour intervals (medium frequency)
     case ONE_HOUR = '1hour';
     case FIVE_HOURS = '5hour';
-    
+
     // Daily/Weekly/Monthly intervals (low frequency)
     case ONE_DAY = '1day';
     case ONE_WEEK = '1week';
     case ONE_MONTH = '1month';
-    
+
     // Period-based intervals (optimized for specific timeframes)
     case PERIOD_1D = '1d';      // 1 day period with 5-minute intervals
     case PERIOD_1W = '1w';      // 1 week period with 30-minute intervals
@@ -108,7 +108,7 @@ enum TimelineInterval: string
      */
     public function supportsSessionFiltering(): bool
     {
-        return in_array($this, self::getMinuteIntervals(), true) || 
+        return in_array($this, self::getMinuteIntervals(), true) ||
                $this === self::PERIOD_1D; // 1d period uses 5min intervals
     }
 
@@ -125,16 +125,16 @@ enum TimelineInterval: string
             self::FIVE_MINUTES => 300,     // 5 minutes
             self::FIFTEEN_MINUTES => 900,  // 15 minutes
             self::THIRTY_MINUTES => 1800,  // 30 minutes
-            
+
             // Medium frequency intervals
             self::ONE_HOUR => 3600,        // 1 hour
             self::FIVE_HOURS => 3600,      // 1 hour
-            
+
             // Low frequency intervals - longer cache
             self::ONE_DAY => 3600,         // 1 hour
             self::ONE_WEEK => 7200,        // 2 hours
             self::ONE_MONTH => 14400,      // 4 hours
-            
+
             // Period-based intervals - optimized per period
             self::PERIOD_1D => 300,        // 5 minutes (intraday)
             self::PERIOD_1W => 1800,       // 30 minutes
@@ -201,7 +201,7 @@ enum TimelineInterval: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid timeline interval: {$value}");
     }
 

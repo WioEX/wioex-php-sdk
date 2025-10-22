@@ -134,7 +134,7 @@ enum TriggerType: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid trigger type: {$value}");
     }
 

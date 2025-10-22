@@ -28,7 +28,7 @@ class CacheManager implements CacheInterface
     {
         $this->config = $config;
         $this->defaultDriver = $config['default'] ?? 'memory';
-        
+
         $this->initializeDrivers();
         $this->driver = $this->getDriver($this->defaultDriver);
     }
@@ -36,7 +36,7 @@ class CacheManager implements CacheInterface
     private function initializeDrivers(): void
     {
         $driverConfigs = $this->config['drivers'] ?? [];
-        
+
         // Register default drivers if not explicitly configured
         if (!isset($driverConfigs['memory'])) {
             $driverConfigs['memory'] = [
@@ -44,7 +44,7 @@ class CacheManager implements CacheInterface
                 'config' => $this->config['memory'] ?? []
             ];
         }
-        
+
         if (!isset($driverConfigs['file'])) {
             $driverConfigs['file'] = [
                 'driver' => 'file',
@@ -72,11 +72,11 @@ class CacheManager implements CacheInterface
     public function driver(string $name = null): CacheInterface
     {
         $driverName = $name ?? $this->defaultDriver;
-        
+
         if (!isset($this->drivers[$driverName])) {
             throw new InvalidArgumentException("Cache driver '{$driverName}' is not configured");
         }
-        
+
         return $this->drivers[$driverName];
     }
 
@@ -138,13 +138,13 @@ class CacheManager implements CacheInterface
     public function getStatistics(): array
     {
         $allStats = [];
-        
+
         foreach ($this->drivers as $name => $driver) {
             $stats = $driver->getStatistics();
             $stats['driver_name'] = $name;
             $allStats[$name] = $stats;
         }
-        
+
         return [
             'default_driver' => $this->defaultDriver,
             'available_drivers' => array_keys($this->drivers),
@@ -201,14 +201,14 @@ class CacheManager implements CacheInterface
     public function remember(string $key, callable $callback, int $ttl = 0)
     {
         $value = $this->get($key);
-        
+
         if ($value !== null) {
             return $value;
         }
-        
+
         $value = $callback();
         $this->set($key, $value, $ttl);
-        
+
         return $value;
     }
 
@@ -272,7 +272,7 @@ class CacheManager implements CacheInterface
     public function getAllDriversHealth(): array
     {
         $health = [];
-        
+
         foreach ($this->drivers as $name => $driver) {
             $health[$name] = [
                 'healthy' => $driver->isHealthy(),
@@ -280,29 +280,29 @@ class CacheManager implements CacheInterface
                 'statistics' => $driver->getStatistics(),
             ];
         }
-        
+
         return $health;
     }
 
     public function flushAllDrivers(): array
     {
         $results = [];
-        
+
         foreach ($this->drivers as $name => $driver) {
             $results[$name] = $driver->clear();
         }
-        
+
         return $results;
     }
 
     public function flushExpiredAllDrivers(): array
     {
         $results = [];
-        
+
         foreach ($this->drivers as $name => $driver) {
             $results[$name] = $driver->flushExpired();
         }
-        
+
         return $results;
     }
 
@@ -311,7 +311,7 @@ class CacheManager implements CacheInterface
         if (!isset($this->drivers[$driver])) {
             throw new InvalidArgumentException("Driver '{$driver}' is not configured");
         }
-        
+
         $this->defaultDriver = $driver;
         $this->driver = $this->drivers[$driver];
     }
@@ -336,12 +336,12 @@ class CacheManager implements CacheInterface
         if ($name === $this->defaultDriver) {
             throw new InvalidArgumentException("Cannot remove the default driver '{$name}'");
         }
-        
+
         if (isset($this->drivers[$name])) {
             unset($this->drivers[$name]);
             return true;
         }
-        
+
         return false;
     }
 
@@ -370,7 +370,7 @@ class CacheManager implements CacheInterface
         if (!property_exists($this, 'macros')) {
             $this->macros = [];
         }
-        
+
         $this->macros[$name] = $macro;
     }
 
@@ -379,7 +379,7 @@ class CacheManager implements CacheInterface
         if (isset($this->macros[$method])) {
             return call_user_func_array($this->macros[$method], $parameters);
         }
-        
+
         throw new InvalidArgumentException("Method '{$method}' does not exist on CacheManager");
     }
 }

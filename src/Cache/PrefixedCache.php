@@ -44,25 +44,25 @@ class PrefixedCache implements CacheInterface
     {
         $prefixedKeys = array_map([$this, 'prefixedKey'], $keys);
         $results = $this->cache->getMultiple($prefixedKeys);
-        
+
         // Map back to original keys
         $mappedResults = [];
         foreach ($keys as $originalKey) {
             $prefixedKey = $this->prefixedKey($originalKey);
             $mappedResults[$originalKey] = $results[$prefixedKey] ?? null;
         }
-        
+
         return $mappedResults;
     }
 
     public function setMultiple(array $items, int $ttl = 0): bool
     {
         $prefixedItems = [];
-        
+
         foreach ($items as $key => $value) {
             $prefixedItems[$this->prefixedKey($key)] = $value;
         }
-        
+
         return $this->cache->setMultiple($prefixedItems, $ttl);
     }
 
@@ -85,7 +85,7 @@ class PrefixedCache implements CacheInterface
     public function getStatistics(): array
     {
         $stats = $this->cache->getStatistics();
-        
+
         return array_merge($stats, [
             'prefixed_cache' => true,
             'prefix' => $this->prefix,
@@ -96,7 +96,7 @@ class PrefixedCache implements CacheInterface
     public function getDriverInfo(): array
     {
         $info = $this->cache->getDriverInfo();
-        
+
         return array_merge($info, [
             'prefixed_cache' => true,
             'prefix' => $this->prefix,
@@ -122,7 +122,7 @@ class PrefixedCache implements CacheInterface
     {
         $prefixedPattern = $this->prefixedKey($pattern);
         $keys = $this->cache->getKeys($prefixedPattern);
-        
+
         // Remove prefix from results and filter only keys with our prefix
         return array_map(
             [$this, 'unprefixedKey'],
@@ -143,11 +143,11 @@ class PrefixedCache implements CacheInterface
     public function flush(): bool
     {
         $keys = $this->getAllPrefixedKeys();
-        
+
         if (empty($keys)) {
             return true;
         }
-        
+
         return $this->cache->deleteMultiple($keys);
     }
 
@@ -175,14 +175,14 @@ class PrefixedCache implements CacheInterface
     public function remember(string $key, callable $callback, int $ttl = 0)
     {
         $value = $this->get($key);
-        
+
         if ($value !== null) {
             return $value;
         }
-        
+
         $value = $callback();
         $this->set($key, $value, $ttl);
-        
+
         return $value;
     }
 
@@ -238,7 +238,7 @@ class PrefixedCache implements CacheInterface
         if ($this->hasPrefix($prefixedKey)) {
             return substr($prefixedKey, strlen($this->prefix));
         }
-        
+
         return $prefixedKey;
     }
 
@@ -250,7 +250,7 @@ class PrefixedCache implements CacheInterface
     private function getAllPrefixedKeys(): array
     {
         $allKeys = $this->cache->getKeys('*');
-        
+
         return array_filter($allKeys, [$this, 'hasPrefix']);
     }
 
@@ -312,32 +312,32 @@ class BulkPrefixedCache
     public function execute(): array
     {
         $results = [];
-        
+
         foreach ($this->operations as $operation) {
             [$method, $key] = $operation;
-            
+
             switch ($method) {
                 case 'set':
                     [, , $value, $ttl] = $operation;
                     $results[] = $this->cache->set($key, $value, $ttl);
                     break;
-                    
+
                 case 'delete':
                     $results[] = $this->cache->delete($key);
                     break;
-                    
+
                 case 'increment':
                     [, , $step] = $operation;
                     $results[] = $this->cache->increment($key, $step);
                     break;
-                    
+
                 case 'decrement':
                     [, , $step] = $operation;
                     $results[] = $this->cache->decrement($key, $step);
                     break;
             }
         }
-        
+
         $this->operations = [];
         return $results;
     }
@@ -378,12 +378,12 @@ class AtomicPrefixedCache
     {
         $lockKey = "lock:{$key}";
         $lockValue = uniqid('', true);
-        
+
         if ($this->cache->set($lockKey, $lockValue, $timeout)) {
             $this->locks[$key] = $lockValue;
             return true;
         }
-        
+
         return false;
     }
 
@@ -392,15 +392,15 @@ class AtomicPrefixedCache
         if (!isset($this->locks[$key])) {
             return false;
         }
-        
+
         $lockKey = "lock:{$key}";
         $currentLock = $this->cache->get($lockKey);
-        
+
         if ($currentLock === $this->locks[$key]) {
             unset($this->locks[$key]);
             return $this->cache->delete($lockKey);
         }
-        
+
         return false;
     }
 
@@ -409,7 +409,7 @@ class AtomicPrefixedCache
         if (!$this->lock($key, $timeout)) {
             throw new \RuntimeException("Could not acquire lock for key: {$key}");
         }
-        
+
         try {
             return $callback($this->cache);
         } finally {

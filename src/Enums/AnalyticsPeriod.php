@@ -115,7 +115,7 @@ enum AnalyticsPeriod: string
                 'Long-term usage patterns',
                 'Strategic insights'
             ],
-        );
+        };
     }
 
     /**
@@ -185,7 +185,7 @@ enum AnalyticsPeriod: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid analytics period: {$value}");
     }
 

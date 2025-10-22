@@ -9,7 +9,7 @@ use Wioex\SDK\Http\Response;
 class Streaming extends Resource
 {
     private ?array $cachedTokenData = null;
-    
+
     /**
      * Get WebSocket streaming authentication token
      *
@@ -32,12 +32,12 @@ class Streaming extends Resource
     public function getToken(): Response
     {
         $response = parent::post('/v1/stream/token');
-        
+
         // Cache token data for helper methods
         if ($response->successful()) {
             $this->cachedTokenData = $response->data();
         }
-        
+
         return $response;
     }
 
@@ -63,14 +63,14 @@ class Streaming extends Resource
     {
         // Clear cached data before refreshing
         $this->cachedTokenData = null;
-        
+
         $response = parent::post('/v1/stream/token/refresh');
-        
+
         // Cache new token data
         if ($response->successful()) {
             $this->cachedTokenData = $response->data();
         }
-        
+
         return $response;
     }
 
@@ -90,7 +90,7 @@ class Streaming extends Resource
      *     $isValid = $validation['valid'];
      *     $expiresAt = $validation['expires_at'];
      *     $permissions = $validation['permissions'];
-     *     
+     *
      *     if ($isValid) {
      *         echo "Token is valid until: {$expiresAt}\n";
      *     } else {
@@ -123,7 +123,7 @@ class Streaming extends Resource
      *     'data_types' => ['stocks', 'indices'],
      *     'region' => 'us-east'
      * ]);
-     * 
+     *
      * if ($wsInfo->successful()) {
      *     $url = $wsInfo['websocket_url'];
      *     $protocols = $wsInfo['supported_protocols'];
@@ -154,7 +154,7 @@ class Streaming extends Resource
      *     $isOnline = $status['online'];
      *     $latency = $status['avg_latency_ms'];
      *     $connections = $status['active_connections'];
-     *     
+     *
      *     echo "Streaming Status: " . ($isOnline ? 'Online' : 'Offline') . "\n";
      *     echo "Average Latency: {$latency}ms\n";
      *     echo "Active Connections: {$connections}\n";
@@ -183,7 +183,7 @@ class Streaming extends Resource
      *     $expiresAt = $expiry['expires_at'];
      *     $timeRemaining = $expiry['time_remaining_seconds'];
      *     $shouldRenew = $expiry['should_renew_soon'];
-     *     
+     *
      *     if ($shouldRenew) {
      *         echo "Token expires in {$timeRemaining} seconds - consider refreshing\n";
      *     }
@@ -193,7 +193,7 @@ class Streaming extends Resource
     public function getTokenExpiry(?string $token = null): Response
     {
         $params = [];
-        
+
         if ($token !== null) {
             $params['token'] = $token;
         } elseif ($this->cachedTokenData && isset($this->cachedTokenData['token'])) {
@@ -205,7 +205,7 @@ class Streaming extends Resource
                 $params['token'] = $tokenResponse['token'];
             }
         }
-        
+
         return parent::post('/v1/stream/token/expiry', $params);
     }
 
@@ -225,7 +225,7 @@ class Streaming extends Resource
      * if ($revocation->successful()) {
      *     echo "Token successfully revoked\n";
      * }
-     * 
+     *
      * // Revoke specific token
      * $revocation = $client->streaming()->revokeToken($specificToken);
      * ```
@@ -233,7 +233,7 @@ class Streaming extends Resource
     public function revokeToken(?string $token = null): Response
     {
         $params = [];
-        
+
         if ($token !== null) {
             $params['token'] = $token;
         } elseif ($this->cachedTokenData && isset($this->cachedTokenData['token'])) {
@@ -243,7 +243,7 @@ class Streaming extends Resource
         } else {
             throw new \InvalidArgumentException('No token provided and no cached token available');
         }
-        
+
         return parent::post('/v1/stream/token/revoke', $params);
     }
 
@@ -263,7 +263,7 @@ class Streaming extends Resource
      * $channels = $client->streaming()->getAvailableChannels([
      *     'category' => 'stocks'
      * ]);
-     * 
+     *
      * if ($channels->successful()) {
      *     foreach ($channels['channels'] as $channel) {
      *         echo "Channel: {$channel['name']} - {$channel['description']}\n";
@@ -293,7 +293,7 @@ class Streaming extends Resource
      * if ($ping->successful()) {
      *     $latency = $ping['latency_ms'];
      *     $success = $ping['success'];
-     *     
+     *
      *     if ($success) {
      *         echo "Ping successful: {$latency}ms\n";
      *     } else {
@@ -324,12 +324,12 @@ class Streaming extends Resource
      *     'period' => 'week',
      *     'detailed' => true
      * ]);
-     * 
+     *
      * if ($usage->successful()) {
      *     $connections = $usage['total_connections'];
      *     $dataTransferred = $usage['data_transferred_mb'];
      *     $quotaUsed = $usage['quota_used_percent'];
-     *     
+     *
      *     echo "Weekly connections: {$connections}\n";
      *     echo "Data transferred: {$dataTransferred}MB\n";
      *     echo "Quota used: {$quotaUsed}%\n";

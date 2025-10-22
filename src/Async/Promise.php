@@ -9,8 +9,8 @@ use Wioex\SDK\Enums\PromiseState;
 class Promise
 {
     private PromiseState $state;
-    private $value = null;
-    private $reason = null;
+    private mixed $value = null;
+    private mixed $reason = null;
     private array $onFulfilled = [];
     private array $onRejected = [];
 
@@ -19,16 +19,16 @@ class Promise
         $this->state = PromiseState::PENDING;
     }
 
-    public function then(callable $onFulfilled = null, callable $onRejected = null): self
+    public function then(?callable $onFulfilled = null, ?callable $onRejected = null): self
     {
         $promise = new self();
-        
-        $this->onFulfilled[] = function($value) use ($promise, $onFulfilled) {
+
+        $this->onFulfilled[] = function ($value) use ($promise, $onFulfilled) {
             if ($onFulfilled === null) {
                 $promise->resolve($value);
                 return;
             }
-            
+
             try {
                 $result = $onFulfilled($value);
                 if ($result instanceof Promise) {
@@ -43,13 +43,13 @@ class Promise
                 $promise->reject($e);
             }
         };
-        
-        $this->onRejected[] = function($reason) use ($promise, $onRejected) {
+
+        $this->onRejected[] = function ($reason) use ($promise, $onRejected) {
             if ($onRejected === null) {
                 $promise->reject($reason);
                 return;
             }
-            
+
             try {
                 $result = $onRejected($reason);
                 if ($result instanceof Promise) {
@@ -64,13 +64,13 @@ class Promise
                 $promise->reject($e);
             }
         };
-        
+
         if ($this->state->isFulfilled()) {
             $this->handleFulfilled();
         } elseif ($this->state->isRejected()) {
             $this->handleRejected();
         }
-        
+
         return $promise;
     }
 
@@ -82,34 +82,34 @@ class Promise
     public function finally(callable $onFinally): self
     {
         return $this->then(
-            function($value) use ($onFinally) {
+            function ($value) use ($onFinally) {
                 $onFinally();
                 return $value;
             },
-            function($reason) use ($onFinally) {
+            function ($reason) use ($onFinally) {
                 $onFinally();
                 throw $reason;
             }
         );
     }
 
-    public function resolve($value): void
+    public function resolve(mixed $value): void
     {
         if (!$this->state->isPending()) {
             return;
         }
-        
+
         $this->state = PromiseState::FULFILLED;
         $this->value = $value;
         $this->handleFulfilled();
     }
 
-    public function reject($reason): void
+    public function reject(mixed $reason): void
     {
         if (!$this->state->isPending()) {
             return;
         }
-        
+
         $this->state = PromiseState::REJECTED;
         $this->reason = $reason;
         $this->handleRejected();
@@ -120,12 +120,12 @@ class Promise
         return $this->state;
     }
 
-    public function getValue()
+    public function getValue(): mixed
     {
         return $this->value;
     }
 
-    public function getReason()
+    public function getReason(): mixed
     {
         return $this->reason;
     }
@@ -166,14 +166,14 @@ class Promise
         $this->onRejected = [];
     }
 
-    public static function resolve($value): self
+    public static function resolve(mixed $value): self
     {
         $promise = new self();
         $promise->resolve($value);
         return $promise;
     }
 
-    public static function reject($reason): self
+    public static function reject(mixed $reason): self
     {
         $promise = new self();
         $promise->reject($reason);
@@ -185,33 +185,33 @@ class Promise
         $promise = new self();
         $results = [];
         $remaining = count($promises);
-        
+
         if ($remaining === 0) {
             $promise->resolve([]);
             return $promise;
         }
-        
+
         foreach ($promises as $index => $p) {
             if (!$p instanceof Promise) {
                 $p = Promise::resolve($p);
             }
-            
+
             $p->then(
-                function($value) use (&$results, &$remaining, $index, $promise) {
+                function ($value) use (&$results, &$remaining, $index, $promise) {
                     $results[$index] = $value;
                     $remaining--;
-                    
+
                     if ($remaining === 0) {
                         ksort($results);
                         $promise->resolve(array_values($results));
                     }
                 },
-                function($reason) use ($promise) {
+                function ($reason) use ($promise) {
                     $promise->reject($reason);
                 }
             );
         }
-        
+
         return $promise;
     }
 
@@ -220,31 +220,31 @@ class Promise
         $promise = new self();
         $results = [];
         $remaining = count($promises);
-        
+
         if ($remaining === 0) {
             $promise->resolve([]);
             return $promise;
         }
-        
+
         foreach ($promises as $index => $p) {
             if (!$p instanceof Promise) {
                 $p = Promise::resolve($p);
             }
-            
+
             $p->then(
-                function($value) use (&$results, &$remaining, $index, $promise) {
+                function ($value) use (&$results, &$remaining, $index, $promise) {
                     $results[$index] = ['status' => 'fulfilled', 'value' => $value];
                     $remaining--;
-                    
+
                     if ($remaining === 0) {
                         ksort($results);
                         $promise->resolve(array_values($results));
                     }
                 },
-                function($reason) use (&$results, &$remaining, $index, $promise) {
+                function ($reason) use (&$results, &$remaining, $index, $promise) {
                     $results[$index] = ['status' => 'rejected', 'reason' => $reason];
                     $remaining--;
-                    
+
                     if ($remaining === 0) {
                         ksort($results);
                         $promise->resolve(array_values($results));
@@ -252,25 +252,25 @@ class Promise
                 }
             );
         }
-        
+
         return $promise;
     }
 
     public static function race(array $promises): self
     {
         $promise = new self();
-        
+
         foreach ($promises as $p) {
             if (!$p instanceof Promise) {
                 $p = Promise::resolve($p);
             }
-            
+
             $p->then(
                 fn($value) => $promise->resolve($value),
                 fn($reason) => $promise->reject($reason)
             );
         }
-        
+
         return $promise;
     }
 
@@ -279,32 +279,32 @@ class Promise
         $promise = new self();
         $errors = [];
         $remaining = count($promises);
-        
+
         if ($remaining === 0) {
             $promise->reject(new \Exception('No promises provided'));
             return $promise;
         }
-        
+
         foreach ($promises as $index => $p) {
             if (!$p instanceof Promise) {
                 $p = Promise::resolve($p);
             }
-            
+
             $p->then(
-                function($value) use ($promise) {
+                function ($value) use ($promise) {
                     $promise->resolve($value);
                 },
-                function($reason) use (&$errors, &$remaining, $index, $promise) {
+                function ($reason) use (&$errors, &$remaining, $index, $promise) {
                     $errors[$index] = $reason;
                     $remaining--;
-                    
+
                     if ($remaining === 0) {
                         $promise->reject(new AggregateException('All promises rejected', $errors));
                     }
                 }
             );
         }
-        
+
         return $promise;
     }
 }

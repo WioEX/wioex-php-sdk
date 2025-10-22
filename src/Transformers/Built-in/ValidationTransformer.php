@@ -22,25 +22,25 @@ class ValidationTransformer extends AbstractTransformer
     public function transform(array $data, array $context = []): array
     {
         $result = $data;
-        
+
         // Apply default values
         $result = $this->applyDefaults($result);
-        
+
         // Sanitize data if enabled
         if ($this->getOption('sanitize_data', false)) {
             $result = $this->sanitizeData($result);
         }
-        
+
         // Validate data
         $validationResult = $this->validateData($result);
-        
+
         if (!$validationResult['valid'] && $this->getOption('throw_on_validation_error', true)) {
             throw TransformationException::validationFailed(
                 $this->getName(),
                 implode(', ', $validationResult['errors'])
             );
         }
-        
+
         return $result;
     }
 
@@ -57,13 +57,13 @@ class ValidationTransformer extends AbstractTransformer
     private function applyDefaults(array $data): array
     {
         $defaults = $this->getOption('default_values', []);
-        
+
         foreach ($defaults as $field => $defaultValue) {
             if (!isset($data[$field])) {
                 $data[$field] = $defaultValue;
             }
         }
-        
+
         return $data;
     }
 
@@ -83,25 +83,25 @@ class ValidationTransformer extends AbstractTransformer
         $rules = $this->getOption('rules', []);
         $requiredFields = $this->getOption('required_fields', []);
         $customValidators = $this->getOption('custom_validators', []);
-        
+
         // Check required fields
         foreach ($requiredFields as $field) {
             if (!isset($data[$field]) || $data[$field] === null || $data[$field] === '') {
                 $errors[] = "Required field '{$field}' is missing or empty";
             }
         }
-        
+
         // Apply validation rules
         foreach ($rules as $field => $fieldRules) {
             if (!isset($data[$field])) {
                 continue;
             }
-            
+
             $value = $data[$field];
             $fieldErrors = $this->validateField($field, $value, $fieldRules);
             $errors = array_merge($errors, $fieldErrors);
         }
-        
+
         // Apply custom validators
         foreach ($customValidators as $validator) {
             if (is_callable($validator)) {
@@ -111,7 +111,7 @@ class ValidationTransformer extends AbstractTransformer
                 }
             }
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors,
@@ -121,14 +121,14 @@ class ValidationTransformer extends AbstractTransformer
     private function validateField(string $field, $value, array $rules): array
     {
         $errors = [];
-        
+
         foreach ($rules as $rule => $parameter) {
             $error = $this->validateRule($field, $value, $rule, $parameter);
             if ($error !== null) {
                 $errors[] = $error;
             }
         }
-        
+
         return $errors;
     }
 
@@ -140,70 +140,70 @@ class ValidationTransformer extends AbstractTransformer
                     return "Field '{$field}' must be of type {$parameter}";
                 }
                 break;
-                
+
             case 'min_length':
                 if (is_string($value) && strlen($value) < $parameter) {
                     return "Field '{$field}' must be at least {$parameter} characters long";
                 }
                 break;
-                
+
             case 'max_length':
                 if (is_string($value) && strlen($value) > $parameter) {
                     return "Field '{$field}' must not exceed {$parameter} characters";
                 }
                 break;
-                
+
             case 'min_value':
                 if (is_numeric($value) && $value < $parameter) {
                     return "Field '{$field}' must be at least {$parameter}";
                 }
                 break;
-                
+
             case 'max_value':
                 if (is_numeric($value) && $value > $parameter) {
                     return "Field '{$field}' must not exceed {$parameter}";
                 }
                 break;
-                
+
             case 'pattern':
                 if (is_string($value) && !preg_match($parameter, $value)) {
                     return "Field '{$field}' does not match required pattern";
                 }
                 break;
-                
+
             case 'in':
                 if (!in_array($value, $parameter, true)) {
                     $allowed = implode(', ', $parameter);
                     return "Field '{$field}' must be one of: {$allowed}";
                 }
                 break;
-                
+
             case 'not_in':
                 if (in_array($value, $parameter, true)) {
                     $forbidden = implode(', ', $parameter);
                     return "Field '{$field}' must not be one of: {$forbidden}";
                 }
                 break;
-                
+
             case 'email':
                 if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
                     return "Field '{$field}' must be a valid email address";
                 }
                 break;
-                
+
             case 'url':
                 if (!filter_var($value, FILTER_VALIDATE_URL)) {
                     return "Field '{$field}' must be a valid URL";
                 }
                 break;
-                
+
             case 'date':
                 if (!$this->validateDate($value, $parameter)) {
                     return "Field '{$field}' must be a valid date in format {$parameter}";
                 }
                 break;
         }
-        
+
         return null;
     }
 
@@ -226,7 +226,7 @@ class ValidationTransformer extends AbstractTransformer
         if (!is_string($value)) {
             return false;
         }
-        
+
         $date = \DateTime::createFromFormat($format, $value);
         return $date && $date->format($format) === $value;
     }
@@ -241,7 +241,7 @@ class ValidationTransformer extends AbstractTransformer
         return !empty($data);
     }
 
-    public function addRule(string $field, string $rule, $parameter = null): self
+    public function addRule(string $field, string $rule, mixed $parameter = null): self
     {
         $rules = $this->getOption('rules', []);
         if (!isset($rules[$field])) {
@@ -249,7 +249,7 @@ class ValidationTransformer extends AbstractTransformer
         }
         $rules[$field][$rule] = $parameter;
         $this->setOption('rules', $rules);
-        
+
         return $this;
     }
 
@@ -260,16 +260,16 @@ class ValidationTransformer extends AbstractTransformer
             $required[] = $field;
             $this->setOption('required_fields', $required);
         }
-        
+
         return $this;
     }
 
-    public function addDefault(string $field, $value): self
+    public function addDefault(string $field, mixed $value): self
     {
         $defaults = $this->getOption('default_values', []);
         $defaults[$field] = $value;
         $this->setOption('default_values', $defaults);
-        
+
         return $this;
     }
 
@@ -278,7 +278,7 @@ class ValidationTransformer extends AbstractTransformer
         $validators = $this->getOption('custom_validators', []);
         $validators[] = $validator;
         $this->setOption('custom_validators', $validators);
-        
+
         return $this;
     }
 }

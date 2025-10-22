@@ -23,7 +23,7 @@ enum CurrencyCode: string
     case NZD = 'NZD'; // New Zealand Dollar
     case SEK = 'SEK'; // Swedish Krona
     case NOK = 'NOK'; // Norwegian Krone
-    
+
     // Other major currencies
     case CNY = 'CNY'; // Chinese Yuan
     case HKD = 'HKD'; // Hong Kong Dollar
@@ -201,7 +201,7 @@ enum CurrencyCode: string
     public static function fromString(string $value): self
     {
         $normalizedValue = strtoupper($value);
-        return self::tryFrom($normalizedValue) 
+        return self::tryFrom($normalizedValue)
             ?? throw new \InvalidArgumentException("Invalid currency code: {$value}");
     }
 

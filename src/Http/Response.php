@@ -8,6 +8,8 @@ use ArrayAccess;
 use Psr\Http\Message\ResponseInterface;
 use Wioex\SDK\Transformers\TransformerPipeline;
 use Wioex\SDK\Transformers\TransformerInterface;
+use Wioex\SDK\Validation\SchemaValidator;
+use Wioex\SDK\Validation\ValidationReport;
 
 /**
  * @implements ArrayAccess<string, mixed>
@@ -18,6 +20,8 @@ class Response implements ArrayAccess
     private ?array $decodedData = null;
     private ?array $transformedData = null;
     private ?TransformerPipeline $pipeline = null;
+    private ?SchemaValidator $validator = null;
+    private ?ValidationReport $validationReport = null;
 
     public function __construct(ResponseInterface $response)
     {
@@ -124,15 +128,15 @@ class Response implements ArrayAccess
         if ($pipeline !== null) {
             $this->pipeline = $pipeline;
         }
-        
+
         if ($this->pipeline === null) {
             return $this->data();
         }
-        
+
         if ($this->transformedData === null) {
             $this->transformedData = $this->pipeline->transform($this->data());
         }
-        
+
         return $this->transformedData;
     }
 
@@ -141,10 +145,10 @@ class Response implements ArrayAccess
         if ($this->pipeline === null) {
             $this->pipeline = new TransformerPipeline();
         }
-        
+
         $this->pipeline->add($transformer);
         $this->transformedData = null; // Reset transformed data
-        
+
         return $this;
     }
 
@@ -153,15 +157,15 @@ class Response implements ArrayAccess
         if ($this->pipeline === null) {
             $this->pipeline = new TransformerPipeline();
         }
-        
+
         foreach ($transformers as $transformer) {
             if ($transformer instanceof TransformerInterface) {
                 $this->pipeline->add($transformer);
             }
         }
-        
+
         $this->transformedData = null; // Reset transformed data
-        
+
         return $this;
     }
 
@@ -169,7 +173,7 @@ class Response implements ArrayAccess
     {
         $this->pipeline = $pipeline;
         $this->transformedData = null; // Reset transformed data
-        
+
         return $this;
     }
 
@@ -182,7 +186,7 @@ class Response implements ArrayAccess
     {
         $this->pipeline = null;
         $this->transformedData = null;
-        
+
         return $this;
     }
 
@@ -217,13 +221,13 @@ class Response implements ArrayAccess
     {
         $data = $this->hasTransformations() ? $this->transform() : $this->data();
         $result = [];
-        
+
         foreach ($data as $item) {
             if (is_array($item) && isset($item[$key])) {
                 $result[] = $item[$key];
             }
         }
-        
+
         return $result;
     }
 
@@ -267,15 +271,125 @@ class Response implements ArrayAccess
         return !$this->isEmpty();
     }
 
+    public function validate(SchemaValidator $validator = null, string $schemaName = ''): ValidationReport
+    {
+        if ($validator !== null) {
+            $this->validator = $validator;
+        }
+
+        if ($this->validator === null) {
+            throw new \RuntimeException('No validator configured for response validation');
+        }
+
+        $data = $this->hasTransformations() ? $this->transform() : $this->data();
+        $this->validationReport = $this->validator->validate($data, $schemaName);
+
+        return $this->validationReport;
+    }
+
+    public function withValidator(SchemaValidator $validator): self
+    {
+        $this->validator = $validator;
+        $this->validationReport = null; // Reset validation report
+        return $this;
+    }
+
+    public function withValidation(string $schemaName = ''): self
+    {
+        if ($this->validator === null) {
+            throw new \RuntimeException('No validator configured. Use withValidator() first.');
+        }
+
+        $this->validate($this->validator, $schemaName);
+        return $this;
+    }
+
+    public function isValid(): bool
+    {
+        return $this->validationReport?->isValid() ?? true;
+    }
+
+    public function hasValidationErrors(): bool
+    {
+        return $this->validationReport?->hasErrors() ?? false;
+    }
+
+    public function getValidationReport(): ?ValidationReport
+    {
+        return $this->validationReport;
+    }
+
+    public function getValidationErrors(): array
+    {
+        return $this->validationReport?->getErrors() ?? [];
+    }
+
+    public function throwIfInvalid(string $message = 'Response validation failed'): self
+    {
+        $this->validationReport?->throwIfInvalid($message);
+        return $this;
+    }
+
+    public function validateStockQuote(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::stockQuoteSchema());
+    }
+
+    public function validateNews(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::newsSchema());
+    }
+
+    public function validateMarketStatus(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::marketStatusSchema());
+    }
+
+    public function validateTimeline(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::timelineSchema());
+    }
+
+    public function validateErrorResponse(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::errorResponseSchema());
+    }
+
+    public function hasValidator(): bool
+    {
+        return $this->validator !== null;
+    }
+
+    public function getValidator(): ?SchemaValidator
+    {
+        return $this->validator;
+    }
+
+    public function clearValidation(): self
+    {
+        $this->validator = null;
+        $this->validationReport = null;
+        return $this;
+    }
+
     public function getMetadata(): array
     {
-        return [
+        $metadata = [
             'status_code' => $this->status(),
             'headers' => $this->headers(),
             'has_transformations' => $this->hasTransformations(),
             'transformer_count' => $this->pipeline ? count($this->pipeline->getTransformers()) : 0,
             'data_count' => $this->count(),
             'response_size' => strlen($this->json()),
+            'has_validator' => $this->hasValidator(),
+            'has_validation_report' => $this->validationReport !== null,
+            'is_valid' => $this->isValid(),
         ];
+
+        if ($this->validationReport !== null) {
+            $metadata['validation'] = $this->validationReport->getSummary();
+        }
+
+        return $metadata;
     }
 }

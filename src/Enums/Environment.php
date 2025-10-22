@@ -89,7 +89,7 @@ enum Environment: string
     public static function fromString(string $env): self
     {
         $env = strtolower(trim($env));
-        
+
         return match ($env) {
             'development', 'dev' => self::DEV,
             'staging', 'stage' => self::STAGING,
@@ -147,6 +147,131 @@ enum Environment: string
         };
     }
 
+    public function shouldEnableMetrics(): bool
+    {
+        return !$this->isTesting();
+    }
+
+    public function getMetricsInterval(): int
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 30,  // 30 seconds
+            self::STAGING => 60,                              // 1 minute
+            self::PRODUCTION, self::PROD => 300,              // 5 minutes
+            self::TESTING, self::TEST => 10,                 // 10 seconds
+        };
+    }
+
+    public function getMetricsRetention(): int
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 3600,    // 1 hour
+            self::STAGING => 86400,                               // 24 hours
+            self::PRODUCTION, self::PROD => 604800,               // 7 days
+            self::TESTING, self::TEST => 300,                    // 5 minutes
+        };
+    }
+
+    public function shouldExportMetrics(): bool
+    {
+        return $this->isProduction() || $this->isStaging();
+    }
+
+    public function shouldEnableValidation(): bool
+    {
+        return !$this->isTesting();
+    }
+
+    public function shouldEnableMiddleware(): bool
+    {
+        return true; // Middleware is enabled in all environments
+    }
+
+    public function shouldEnableConnectionPooling(): bool
+    {
+        return !$this->isTesting();
+    }
+
+    public function getMinConnections(): int
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 1,
+            self::STAGING => 2,
+            self::PRODUCTION, self::PROD => 3,
+            self::TESTING, self::TEST => 1,
+        };
+    }
+
+    public function getMaxConnections(): int
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 5,
+            self::STAGING => 10,
+            self::PRODUCTION, self::PROD => 20,
+            self::TESTING, self::TEST => 2,
+        };
+    }
+
+    public function getDefaultPoolStrategy(): string
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 'round_robin',
+            self::STAGING => 'least_connections',
+            self::PRODUCTION, self::PROD => 'adaptive',
+            self::TESTING, self::TEST => 'fifo',
+        };
+    }
+
+    public function getCleanupInterval(): int
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 120,  // 2 minutes
+            self::STAGING => 180,                              // 3 minutes
+            self::PRODUCTION, self::PROD => 300,               // 5 minutes
+            self::TESTING, self::TEST => 60,                  // 1 minute
+        };
+    }
+
+    public function getDefaultExportFormat(): string
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 'json',
+            self::STAGING => 'csv',
+            self::PRODUCTION, self::PROD => 'csv',
+            self::TESTING, self::TEST => 'json',
+        };
+    }
+
+    public function getMaxExportSize(): int
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 10 * 1024 * 1024,  // 10MB
+            self::STAGING => 25 * 1024 * 1024,                              // 25MB
+            self::PRODUCTION, self::PROD => 100 * 1024 * 1024,              // 100MB
+            self::TESTING, self::TEST => 5 * 1024 * 1024,                   // 5MB
+        };
+    }
+
+    public function getTempDirectory(): string
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => sys_get_temp_dir() . '/wioex_dev',
+            self::STAGING => sys_get_temp_dir() . '/wioex_staging',
+            self::PRODUCTION, self::PROD => sys_get_temp_dir() . '/wioex_prod',
+            self::TESTING, self::TEST => sys_get_temp_dir() . '/wioex_test',
+        };
+    }
+
+    public function getMonitoringLevel(): string
+    {
+        return match ($this) {
+            self::DEVELOPMENT, self::DEV, self::LOCAL => 'verbose',
+            self::STAGING => 'detailed',
+            self::PRODUCTION, self::PROD => 'essential',
+            self::TESTING, self::TEST => 'minimal',
+        };
+    }
+
     public function getPerformanceProfile(): array
     {
         return match ($this) {
@@ -174,6 +299,6 @@ enum Environment: string
                 'retry_attempts' => 1,
                 'connection_timeout' => 5,
             ],
-        ];
+        };
     }
 }
