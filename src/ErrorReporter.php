@@ -7,6 +7,8 @@ namespace Wioex\SDK;
 use Wioex\SDK\Exceptions\WioexException;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\Utils;
 use Throwable;
 
 /**
@@ -21,6 +23,31 @@ class ErrorReporter
     private Config $config;
     private ?GuzzleClient $client = null;
     private bool $enabled;
+    
+    // Enhanced reporting features
+    private array $errorQueue = [];
+    private array $reportingStats = [
+        'total_reports' => 0,
+        'successful_reports' => 0,
+        'failed_reports' => 0,
+        'last_report_time' => null,
+        'rate_limit_hits' => 0
+    ];
+    
+    // Rate limiting
+    private int $maxReportsPerMinute = 10;
+    private array $reportTimes = [];
+    
+    // Batch reporting
+    private int $batchSize = 5;
+    private float $batchTimeout = 30.0; // seconds
+    private ?float $lastBatchTime = null;
+    
+    // Privacy enhancement levels
+    private const PRIVACY_MINIMAL = 'minimal';
+    private const PRIVACY_STANDARD = 'standard';
+    private const PRIVACY_DETAILED = 'detailed';
+    private const PRIVACY_DEBUG = 'debug';
 
     public function __construct(Config $config)
     {
@@ -71,7 +98,7 @@ class ErrorReporter
         $level = $this->config->getErrorReportingLevel();
 
         $data = [
-            'sdk_version' => '1.0.0',
+            'sdk_version' => $this->config->getSdkVersion(),
             'sdk_type' => 'php',
             'runtime' => 'PHP/' . PHP_VERSION,
             'api_key_id' => $this->config->getApiKeyIdentification(), // Hashed API key for customer identification
@@ -290,7 +317,7 @@ class ErrorReporter
                 'json' => $data,
                 'headers' => [
                     'Content-Type' => 'application/json',
-                    'X-SDK-Version' => '1.0.0',
+                    'X-SDK-Version' => $this->config->getSdkVersion(),
                 ],
             ]);
         } catch (GuzzleException $e) {
@@ -299,10 +326,388 @@ class ErrorReporter
     }
 
     /**
+     * Report an error asynchronously (non-blocking)
+     *
+     * @param Throwable $exception The exception to report
+     * @param array<string, mixed> $context Additional context
+     * @return PromiseInterface|bool Promise for async operation, or false if disabled
+     */
+    public function reportAsync(Throwable $exception, array $context = [])
+    {
+        if (!$this->enabled) {
+            return false;
+        }
+
+        if (!$this->checkRateLimit()) {
+            $this->reportingStats['rate_limit_hits']++;
+            return false;
+        }
+
+        try {
+            $data = $this->buildErrorData($exception, $context);
+            return $this->sendReportAsync($data);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Add error to batch queue for later reporting
+     *
+     * @param Throwable $exception The exception to queue
+     * @param array<string, mixed> $context Additional context
+     * @return bool True if queued successfully
+     */
+    public function queueError(Throwable $exception, array $context = []): bool
+    {
+        if (!$this->enabled) {
+            return false;
+        }
+
+        if (!$this->checkRateLimit()) {
+            $this->reportingStats['rate_limit_hits']++;
+            return false;
+        }
+
+        try {
+            $data = $this->buildErrorData($exception, $context);
+            $this->errorQueue[] = $data;
+
+            // Auto-flush if batch size reached
+            if (count($this->errorQueue) >= $this->batchSize) {
+                $this->flushErrorQueue();
+            }
+
+            // Auto-flush if timeout reached
+            if ($this->lastBatchTime !== null && 
+                (microtime(true) - $this->lastBatchTime) >= $this->batchTimeout) {
+                $this->flushErrorQueue();
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Flush all queued errors in a single batch request
+     *
+     * @return bool True if flushed successfully
+     */
+    public function flushErrorQueue(): bool
+    {
+        if (empty($this->errorQueue) || !$this->enabled) {
+            return false;
+        }
+
+        try {
+            $batchData = [
+                'sdk_version' => $this->config->getSdkVersion(),
+                'api_key_id' => $this->config->getApiKeyIdentification(),
+                'privacy_mode' => $this->config->getErrorReportingLevel(),
+                'telemetry_version' => '2.0',
+                'batch_size' => count($this->errorQueue),
+                'events' => array_map(function($errorData) {
+                    return [
+                        'type' => 'error',
+                        'data' => $errorData,
+                        'timestamp' => $errorData['timestamp'] ?? time() * 1000
+                    ];
+                }, $this->errorQueue)
+            ];
+
+            $this->sendBatchReport($batchData);
+            $this->errorQueue = [];
+            $this->lastBatchTime = microtime(true);
+            
+            return true;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Enhanced privacy control - sanitize data based on enhanced privacy levels
+     *
+     * @param array<string, mixed> $data Raw data to sanitize
+     * @param string $privacyLevel Privacy level (minimal, standard, detailed, debug)
+     * @return array<string, mixed> Sanitized data
+     */
+    public function enhancedSanitizeData(array $data, string $privacyLevel = self::PRIVACY_STANDARD): array
+    {
+        switch ($privacyLevel) {
+            case self::PRIVACY_MINIMAL:
+                return $this->sanitizeMinimal($data);
+            case self::PRIVACY_STANDARD:
+                return $this->sanitizeStandard($data);
+            case self::PRIVACY_DETAILED:
+                return $this->sanitizeDetailed($data);
+            case self::PRIVACY_DEBUG:
+                return $this->sanitizeDebug($data);
+            default:
+                return $this->sanitizeStandard($data);
+        }
+    }
+
+    /**
+     * Get error reporting statistics
+     *
+     * @return array<string, mixed> Reporting statistics
+     */
+    public function getReportingStats(): array
+    {
+        return array_merge($this->reportingStats, [
+            'queue_size' => count($this->errorQueue),
+            'rate_limit_status' => $this->getRateLimitStatus(),
+            'batch_config' => [
+                'batch_size' => $this->batchSize,
+                'batch_timeout' => $this->batchTimeout,
+                'max_reports_per_minute' => $this->maxReportsPerMinute
+            ]
+        ]);
+    }
+
+    /**
+     * Configure batch reporting settings
+     *
+     * @param int $batchSize Number of errors per batch
+     * @param float $batchTimeout Timeout in seconds before auto-flush
+     * @return self
+     */
+    public function configureBatchReporting(int $batchSize = 5, float $batchTimeout = 30.0): self
+    {
+        $this->batchSize = max(1, min($batchSize, 20)); // Limit between 1-20
+        $this->batchTimeout = max(5.0, min($batchTimeout, 300.0)); // Limit between 5s-5min
+        return $this;
+    }
+
+    /**
+     * Configure rate limiting
+     *
+     * @param int $maxReportsPerMinute Maximum reports allowed per minute
+     * @return self
+     */
+    public function configureRateLimit(int $maxReportsPerMinute = 10): self
+    {
+        $this->maxReportsPerMinute = max(1, min($maxReportsPerMinute, 60));
+        return $this;
+    }
+
+    /**
      * Check if error reporting is enabled
      */
     public function isEnabled(): bool
     {
         return $this->enabled;
+    }
+
+    /**
+     * Check rate limiting status
+     */
+    private function checkRateLimit(): bool
+    {
+        $now = time();
+        
+        // Clean old entries (older than 1 minute)
+        $this->reportTimes = array_filter(
+            $this->reportTimes, 
+            fn($time) => ($now - $time) < 60
+        );
+        
+        return count($this->reportTimes) < $this->maxReportsPerMinute;
+    }
+
+    /**
+     * Get current rate limit status
+     *
+     * @return array<string, mixed> Rate limit information
+     */
+    private function getRateLimitStatus(): array
+    {
+        $now = time();
+        $recentReports = array_filter(
+            $this->reportTimes, 
+            fn($time) => ($now - $time) < 60
+        );
+        
+        return [
+            'reports_in_last_minute' => count($recentReports),
+            'reports_remaining' => max(0, $this->maxReportsPerMinute - count($recentReports)),
+            'rate_limited' => count($recentReports) >= $this->maxReportsPerMinute
+        ];
+    }
+
+    /**
+     * Send error report asynchronously
+     */
+    private function sendReportAsync(array $data): PromiseInterface
+    {
+        if ($this->client === null) {
+            throw new \RuntimeException('HTTP client not initialized');
+        }
+
+        $endpoint = $this->config->getErrorReportingEndpoint();
+        
+        $this->recordReportAttempt();
+        
+        return $this->client->postAsync($endpoint, [
+            'json' => $data,
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'X-SDK-Version' => $this->config->getSdkVersion(),
+            ],
+        ])->then(
+            function ($response) {
+                $this->reportingStats['successful_reports']++;
+                return $response;
+            },
+            function ($exception) {
+                $this->reportingStats['failed_reports']++;
+                throw $exception;
+            }
+        );
+    }
+
+    /**
+     * Send batch error report
+     */
+    private function sendBatchReport(array $batchData): void
+    {
+        if ($this->client === null) {
+            return;
+        }
+
+        try {
+            $endpoint = $this->config->getTelemetryEndpoint() ?? '/v2/sdk/telemetry';
+            
+            $this->recordReportAttempt();
+            
+            $response = $this->client->post($endpoint, [
+                'json' => $batchData,
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'X-SDK-Version' => $this->config->getSdkVersion(),
+                ],
+            ]);
+            
+            if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
+                $this->reportingStats['successful_reports'] += count($batchData['events']);
+            } else {
+                $this->reportingStats['failed_reports'] += count($batchData['events']);
+            }
+        } catch (GuzzleException $e) {
+            $this->reportingStats['failed_reports'] += count($batchData['events']);
+        }
+    }
+
+    /**
+     * Record report attempt for rate limiting
+     */
+    private function recordReportAttempt(): void
+    {
+        $this->reportTimes[] = time();
+        $this->reportingStats['total_reports']++;
+        $this->reportingStats['last_report_time'] = date('c');
+    }
+
+    /**
+     * Minimal privacy sanitization - only essential error information
+     */
+    private function sanitizeMinimal(array $data): array
+    {
+        return [
+            'error' => [
+                'type' => $data['error']['type'] ?? 'Unknown',
+                'message' => '[REDACTED]',
+                'code' => $data['error']['code'] ?? null
+            ],
+            'timestamp' => $data['timestamp'] ?? time() * 1000,
+            'sdk_version' => $data['sdk_version'] ?? 'unknown'
+        ];
+    }
+
+    /**
+     * Standard privacy sanitization - balanced approach
+     */
+    private function sanitizeStandard(array $data): array
+    {
+        $sanitized = $data;
+        
+        // Sanitize error message to remove potential sensitive data
+        if (isset($sanitized['error']['message'])) {
+            $sanitized['error']['message'] = $this->sanitizeErrorMessage($sanitized['error']['message']);
+        }
+        
+        // Remove or sanitize context
+        if (isset($sanitized['context'])) {
+            $sanitized['context'] = $this->sanitizeContext($sanitized['context'], 'standard');
+        }
+        
+        // Limit stack trace
+        if (isset($sanitized['error']['stack_trace'])) {
+            $sanitized['error']['stack_trace'] = array_slice($sanitized['error']['stack_trace'], 0, 5);
+        }
+        
+        return $sanitized;
+    }
+
+    /**
+     * Detailed privacy sanitization - more information but still safe
+     */
+    private function sanitizeDetailed(array $data): array
+    {
+        $sanitized = $data;
+        
+        // Keep more context but sanitize sensitive keys
+        if (isset($sanitized['context'])) {
+            $sanitized['context'] = $this->sanitizeContext($sanitized['context'], 'detailed');
+        }
+        
+        return $sanitized;
+    }
+
+    /**
+     * Debug privacy sanitization - maximum information for debugging
+     */
+    private function sanitizeDebug(array $data): array
+    {
+        // In debug mode, return data with minimal sanitization
+        $sanitized = $data;
+        
+        // Still remove critical sensitive data
+        if (isset($sanitized['context'])) {
+            $criticalKeys = ['api_key', 'password', 'secret', 'token'];
+            foreach ($criticalKeys as $key) {
+                if (isset($sanitized['context'][$key])) {
+                    $sanitized['context'][$key] = '[REDACTED]';
+                }
+            }
+        }
+        
+        return $sanitized;
+    }
+
+    /**
+     * Sanitize error message to remove potential sensitive information
+     */
+    private function sanitizeErrorMessage(string $message): string
+    {
+        // Patterns to remove from error messages
+        $patterns = [
+            '/api[_-]?key[_-:]?\s*[^\s\]},]{10,}/i' => '[API_KEY]',
+            '/token[_-:]?\s*[^\s\]},]{10,}/i' => '[TOKEN]',
+            '/secret[_-:]?\s*[^\s\]},]{10,}/i' => '[SECRET]',
+            '/password[_-:]?\s*[^\s\]},]{4,}/i' => '[PASSWORD]',
+            '/authorization:\s*bearer\s+[^\s\]},]+/i' => 'authorization: bearer [TOKEN]',
+            '/\/[a-z]:[^\/\s\]},]+/i' => '/[PATH]', // Windows paths
+            '/\/home\/[^\/\s\]},]+/i' => '/home/[USER]', // Unix home paths
+        ];
+        
+        foreach ($patterns as $pattern => $replacement) {
+            $message = preg_replace($pattern, $replacement, $message);
+        }
+        
+        return $message;
     }
 }
