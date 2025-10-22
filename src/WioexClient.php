@@ -15,6 +15,7 @@ use Wioex\SDK\Resources\Stocks;
 use Wioex\SDK\Resources\Streaming;
 use Wioex\SDK\Configuration\ConfigurationManager;
 use Wioex\SDK\Enums\Environment;
+use Wioex\SDK\Version;
 
 class WioexClient
 {
@@ -652,12 +653,50 @@ class WioexClient
     }
 
     /**
+     * Get bulk operation optimizer for strategy analysis
+     *
+     * @return \Wioex\SDK\Optimization\BulkOperationOptimizer
+     * 
+     * @example
+     * ```php
+     * $optimizer = $client->optimizer();
+     * $analysis = $optimizer->analyzeOperations([
+     *     'quotes' => 500,
+     *     'timeline' => 100,
+     *     'info' => 50
+     * ]);
+     * 
+     * echo "Total credits: {$analysis['total_credits']}\n";
+     * echo "Credit savings: {$analysis['overall_credit_savings_percent']}%\n";
+     * echo "Optimization score: {$analysis['optimization_score']}/100\n";
+     * 
+     * foreach ($analysis['recommendations'] as $recommendation) {
+     *     echo "• {$recommendation['message']}\n";
+     * }
+     * ```
+     */
+    public function optimizer(): \Wioex\SDK\Optimization\BulkOperationOptimizer
+    {
+        return new \Wioex\SDK\Optimization\BulkOperationOptimizer();
+    }
+
+    /**
      * Get SDK version
      *
      * @return string
      */
     public static function getVersion(): string
     {
-        return '2.0.0';
+        return Version::current();
+    }
+
+    /**
+     * Get full SDK version information
+     *
+     * @return array
+     */
+    public static function getVersionInfo(): array
+    {
+        return Version::info();
     }
 }
