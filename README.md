@@ -2,7 +2,7 @@
 
 Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client library for accessing stocks, trading signals, news, currency, and financial market data.
 
-**Current Version: 1.2.1** | **Released: October 22, 2025** | **PHP 8.1+**
+**Current Version: 1.3.0** | **Released: October 22, 2025** | **PHP 8.1+**
 
 [![PHP Version](https://img.shields.io/packagist/php-v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Latest Version](https://img.shields.io/packagist/v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
@@ -43,8 +43,9 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - ✅ **Public Endpoints** - Some endpoints work without API key for frontend usage
 - **Session Filtering** - Filter intraday data by trading sessions (v1.2.0)
 - **Advanced Timeline** - Date-based filtering and convenience methods (v1.2.0)
-- **API Parameter Alignment** - Consistent parameter naming across endpoints (v1.2.1)
-- **Enhanced Error Handling** - Support for centralized error format with backward compatibility (v1.2.1)
+- **WebSocket Streaming** - Real-time market data authentication and streaming (v1.3.0)
+- **API Parameter Alignment** - Consistent parameter naming across endpoints (v1.3.0)
+- **Enhanced Error Handling** - Support for centralized error format with backward compatibility (v1.3.0)
 - **Trading Signals** - Auto-included signals and comprehensive signal data (v1.1.0)
 - **Market Status** - Real-time market hours with public access option (v1.1.0)
 
@@ -614,7 +615,7 @@ fetch('https://api.wioex.com/v2/market/status')
 - Frontend widgets without exposing API keys
 - Mobile apps with public data display
 
-### Streaming (v1.2.1)
+### Streaming (v1.3.0)
 
 The Streaming resource provides WebSocket authentication tokens for real-time market data streaming.
 
