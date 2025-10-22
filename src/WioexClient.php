@@ -12,6 +12,7 @@ use Wioex\SDK\Resources\News;
 use Wioex\SDK\Resources\Screens;
 use Wioex\SDK\Resources\Signals;
 use Wioex\SDK\Resources\Stocks;
+use Wioex\SDK\Resources\Streaming;
 
 class WioexClient
 {
@@ -25,11 +26,19 @@ class WioexClient
     private ?News $news = null;
     private ?Currency $currency = null;
     private ?Account $account = null;
+    private ?Streaming $streaming = null;
 
     /**
      * Create a new WioEX API client instance
      *
-     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array} $options Configuration options:
+     * @param array{
+     *     api_key?: string,
+     *     base_url?: string,
+     *     timeout?: int,
+     *     connect_timeout?: int,
+     *     retry?: array,
+     *     headers?: array
+     * } $options Configuration options:
      *   - api_key: string (required) Your WioEX API key
      *   - base_url: string (optional) API base URL, defaults to https://api.wioex.com
      *   - timeout: int (optional) Request timeout in seconds, defaults to 30
@@ -203,6 +212,29 @@ class WioexClient
     }
 
     /**
+     * Access WebSocket streaming endpoints
+     *
+     * @return Streaming
+     *
+     * @example
+     * ```php
+     * $token = $client->streaming()->getToken();
+     * if ($token->successful()) {
+     *     $auth = $token['token'];
+     *     $wsUrl = $token['websocket_url'];
+     * }
+     * ```
+     */
+    public function streaming(): Streaming
+    {
+        if ($this->streaming === null) {
+            $this->streaming = new Streaming($this->httpClient);
+        }
+
+        return $this->streaming;
+    }
+
+    /**
      * Get the configuration instance
      *
      * @return Config
@@ -219,6 +251,6 @@ class WioexClient
      */
     public static function getVersion(): string
     {
-        return '1.1.0';
+        return '1.2.1';
     }
 }

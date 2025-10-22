@@ -23,7 +23,20 @@ class Config
     private bool $includeResponseData;
 
     /**
-     * @param array{api_key?: string, base_url?: string, timeout?: int, connect_timeout?: int, retry?: array, headers?: array, error_reporting?: bool, error_reporting_endpoint?: string, include_stack_trace?: bool, error_reporting_level?: string, include_request_data?: bool, include_response_data?: bool} $options
+     * @param array{
+     *     api_key?: string,
+     *     base_url?: string,
+     *     timeout?: int,
+     *     connect_timeout?: int,
+     *     retry?: array,
+     *     headers?: array,
+     *     error_reporting?: bool,
+     *     error_reporting_endpoint?: string,
+     *     include_stack_trace?: bool,
+     *     error_reporting_level?: string,
+     *     include_request_data?: bool,
+     *     include_response_data?: bool
+     * } $options
      */
     public function __construct(array $options = [])
     {

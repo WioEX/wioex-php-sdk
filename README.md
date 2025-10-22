@@ -19,6 +19,7 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
   - [Stock Screens](#stock-screens) - Gainers, Losers, Active, IPOs
   - [Trading Signals](#trading-signals-new) - Active signals, History
   - [Market Status](#market-status-new) - Real-time market hours (public access)
+  - [Streaming](#streaming-new) - WebSocket authentication tokens for real-time data
   - [News](#news) - Latest news, Company analysis
   - [Currency](#currency) - Exchange rates, Conversion, Historical data
   - [Account](#account) - Balance, Usage, Analytics
@@ -40,10 +41,12 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - ✅ **Type Safe** - Full IDE autocomplete support
 - ✅ **Zero Config** - Works out of the box with sensible defaults
 - ✅ **Public Endpoints** - Some endpoints work without API key for frontend usage
-- ⭐ **Session Filtering** - Filter intraday data by trading sessions (v1.2.0)
-- ⭐ **Advanced Timeline** - Date-based filtering and convenience methods (v1.2.0)
-- ⭐ **Trading Signals** - Auto-included signals and comprehensive signal data (v1.1.0)
-- ⭐ **Market Status** - Real-time market hours with public access option (v1.1.0)
+- **Session Filtering** - Filter intraday data by trading sessions (v1.2.0)
+- **Advanced Timeline** - Date-based filtering and convenience methods (v1.2.0)
+- **API Parameter Alignment** - Consistent parameter naming across endpoints (v1.2.1)
+- **Enhanced Error Handling** - Support for centralized error format with backward compatibility (v1.2.1)
+- **Trading Signals** - Auto-included signals and comprehensive signal data (v1.1.0)
+- **Market Status** - Real-time market hours with public access option (v1.1.0)
 
 ## Requirements
 
@@ -137,6 +140,55 @@ $client = new WioexClient([
     ]
 ]);
 ```
+
+## Breaking Changes & Migration Guide
+
+### API Parameter Changes (v1.2.1)
+
+**Important:** v1.2.1 introduces a breaking change for **direct API users only**. SDK users are **not affected** due to backward compatibility.
+
+#### For SDK Users - No Action Required
+
+Your existing SDK code continues to work unchanged:
+
+```php
+// This works exactly the same in v1.2.1
+$result = $client->stocks()->quote('AAPL');
+$result = $client->stocks()->quote('AAPL,GOOGL,MSFT');
+```
+
+#### For Direct API Users - Action Required
+
+If you're making direct HTTP calls to the WioEX API, update your parameter names:
+
+```php
+// Old format (no longer supported)
+GET /v2/stocks/get?ticker=AAPL&api_key=your-key
+
+// New format (v1.2.1+)
+GET /v2/stocks/get?stocks=AAPL&api_key=your-key
+```
+
+**Migration Example:**
+```php
+// Before v1.2.1
+$response = file_get_contents("https://api.wioex.com/v2/stocks/get?ticker=AAPL&api_key={$apiKey}");
+
+// After v1.2.1  
+$response = file_get_contents("https://api.wioex.com/v2/stocks/get?stocks=AAPL&api_key={$apiKey}");
+```
+
+**Why This Change?**
+- **Consistency**: Aligns parameter naming across all endpoints
+- **Clarity**: `stocks` parameter better reflects multiple symbol support
+- **API Standards**: Follows RESTful naming conventions
+
+**Affected Endpoints:**
+- `GET /v2/stocks/get` - Changed `ticker` → `stocks`
+
+**Backward Compatibility:**
+- **SDK Users**: Fully backward compatible
+- **Direct API Users**: Must update parameter names
 
 ## Usage
 
@@ -556,11 +608,85 @@ fetch('https://api.wioex.com/v2/market/status')
 - `early-close` - Market closes early (check `close_time`)
 
 **Use Cases:**
-- ✅ Display market hours on your website
-- ✅ Show "Market Open/Closed" indicators
-- ✅ Schedule trading operations
-- ✅ Frontend widgets without exposing API keys
-- ✅ Mobile apps with public data display
+- Display market hours on your website
+- Show "Market Open/Closed" indicators
+- Schedule trading operations
+- Frontend widgets without exposing API keys
+- Mobile apps with public data display
+
+### Streaming (v1.2.1)
+
+The Streaming resource provides WebSocket authentication tokens for real-time market data streaming.
+
+#### Get Authentication Token
+
+```php
+// Get WebSocket streaming token
+$tokenResponse = $client->streaming()->getToken();
+
+if ($tokenResponse->successful()) {
+    $data = $tokenResponse->data();
+    
+    $token = $data['token'];                    // Authentication token
+    $websocketUrl = $data['websocket_url'];     // WebSocket connection URL
+    $expiresAt = $data['expires_at'];           // Token expiration time
+    $expiresIn = $data['expires_in'];           // Seconds until expiration
+    
+    echo "Token: {$token}\n";
+    echo "WebSocket URL: {$websocketUrl}\n";
+    echo "Expires in: {$expiresIn} seconds\n";
+}
+```
+
+**Response Structure:**
+```json
+{
+  "success": true,
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "websocket_url": "wss://stream.wioex.com/v1/ws",
+  "expires_at": "2025-10-22T08:30:00Z",
+  "expires_in": 3600
+}
+```
+
+**WebSocket Usage Example:**
+```javascript
+// Use token in WebSocket connection
+const ws = new WebSocket(websocket_url);
+
+ws.onopen = function() {
+    // Authenticate with token
+    ws.send(JSON.stringify({
+        'action': 'auth',
+        'token': token_from_php_sdk
+    }));
+};
+
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    console.log('Real-time market data:', data);
+};
+
+// Subscribe to specific symbols
+ws.send(JSON.stringify({
+    'action': 'subscribe',
+    'symbols': ['AAPL', 'GOOGL', 'MSFT']
+}));
+```
+
+**Token Features:**
+- **Secure Authentication** - JWT-based token for WebSocket connections
+- **Temporary Access** - Tokens expire after 1 hour for security
+- **Real-time Data** - Access to live market data streams
+- **Symbol Subscription** - Subscribe to specific stock symbols
+- **Rate Limited** - Subject to API rate limits and subscription quotas
+
+**Use Cases:**
+- Real-time stock price displays
+- Live trading dashboards
+- Market data widgets
+- Algorithmic trading systems
+- Financial data visualization
 
 ### Currency
 
@@ -707,6 +833,57 @@ try {
 }
 ```
 
+### Enhanced Error Format Support (v1.2.1)
+
+The SDK now supports both legacy and new centralized error formats with automatic detection:
+
+#### Legacy Error Format
+```json
+{
+  "error": "Invalid ticker parameter"
+}
+```
+
+#### New Centralized Error Format (v1.2.1)
+```json
+{
+  "error": {
+    "code": "INVALID_TICKER_SYMBOLS",
+    "title": "Invalid Ticker Symbols",
+    "message": "One or more ticker symbols are not found in our database.",
+    "error_code": 100116,
+    "suggestions": ["Check ticker symbol spelling", "Verify symbols are supported"],
+    "timestamp": "2025-10-22T06:39:03+00:00",
+    "request_id": "req_7e1e08097872e4ee"
+  }
+}
+```
+
+#### Automatic Error Format Detection
+
+The SDK automatically detects and parses both formats seamlessly:
+
+```php
+try {
+    $result = $client->stocks()->quote('INVALID_SYMBOL');
+} catch (ValidationException $e) {
+    // Works with both old and new error formats
+    echo "Error: " . $e->getMessage(); // Always returns user-friendly message
+    
+    // Additional context available from new format
+    $context = $e->getContext();
+    if (isset($context['suggestions'])) {
+        echo "Suggestions: " . implode(', ', $context['suggestions']);
+    }
+}
+```
+
+**Benefits of Enhanced Error Handling:**
+- **Backward Compatibility** - Existing code continues to work unchanged
+- **Rich Error Context** - New format provides error codes, suggestions, and request IDs
+- **Automatic Detection** - No code changes needed to support new format
+- **Developer Experience** - Better debugging with structured error information
+
 ### Automatic Retry
 
 The SDK automatically retries failed requests with exponential backoff:
@@ -755,8 +932,9 @@ See the `/examples` directory for more usage examples:
 
 - `basic-usage.php` - Basic usage patterns and getting started
 - `stocks-example.php` - Comprehensive stock operations
-- `timeline-advanced-example.php` - ⭐ **NEW** Session filtering and date-based timeline data
-- `test_price_changes.php` - ⭐ **NEW** Price changes across multiple timeframes  
+- `timeline-advanced-example.php` - Session filtering and date-based timeline data
+- `test_price_changes.php` - Price changes across multiple timeframes  
+- `streaming-example.php` - **NEW** WebSocket authentication and real-time streaming setup
 - `error-handling.php` - Error handling patterns and exception management
 - `test_signals.php` - Trading signals examples and filtering
 - `test_stock_with_signal.php` - Stock data with auto-included signals

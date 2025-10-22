@@ -189,9 +189,8 @@ class Client
                 } elseif (isset($data['error']['title']) && is_string($data['error']['title'])) {
                     $errorMessage = $data['error']['title'];
                 }
-            }
-            // Legacy error format: { "error": "message" } or { "message": "message" }
-            elseif (isset($data['error']) && is_string($data['error'])) {
+            } elseif (isset($data['error']) && is_string($data['error'])) {
+                // Legacy error format: { "error": "message" } or { "message": "message" }
                 $errorMessage = $data['error'];
             } elseif (isset($data['message']) && is_string($data['message'])) {
                 $errorMessage = $data['message'];
