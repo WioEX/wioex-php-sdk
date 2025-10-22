@@ -26,6 +26,8 @@ class Config
     private array $rateLimitConfig;
     /** @var array{enabled: bool, attempts: int, backoff: string, base_delay: int, max_delay: int, jitter: bool, exponential_base: float} */
     private array $enhancedRetryConfig;
+    /** @var array{enabled: bool, auto_report_errors: bool, performance_tracking: bool, privacy_mode: string, sampling_rate: float, endpoint: string, flush_interval: int, max_queue_size: int, filters: array} */
+    private array $telemetryConfig;
 
     /**
      * @param array{
@@ -42,7 +44,8 @@ class Config
      *     include_request_data?: bool,
      *     include_response_data?: bool,
      *     rate_limit?: array,
-     *     enhanced_retry?: array
+     *     enhanced_retry?: array,
+     *     telemetry?: array
      * } $options
      */
     public function __construct(array $options = [])
@@ -86,9 +89,27 @@ class Config
             'exponential_base' => (float)($enhancedRetry['exponential_base'] ?? 2.0) // exponential multiplier
         ];
 
+        // Telemetry configuration for comprehensive SDK monitoring
+        $telemetry = $options['telemetry'] ?? [];
+        $this->telemetryConfig = [
+            'enabled' => (bool)($telemetry['enabled'] ?? false), // Opt-in by default
+            'auto_report_errors' => (bool)($telemetry['auto_report_errors'] ?? true),
+            'performance_tracking' => (bool)($telemetry['performance_tracking'] ?? true),
+            'privacy_mode' => $telemetry['privacy_mode'] ?? 'production', // production, development, debug
+            'sampling_rate' => (float)($telemetry['sampling_rate'] ?? 0.1), // 10% sampling by default
+            'endpoint' => $telemetry['endpoint'] ?? 'https://api.wioex.com/v2/sdk/telemetry',
+            'flush_interval' => (int)($telemetry['flush_interval'] ?? 30), // seconds
+            'max_queue_size' => (int)($telemetry['max_queue_size'] ?? 100),
+            'filters' => array_merge([
+                'exclude_sensitive_headers' => true,
+                'anonymize_ip' => true,
+                'sanitize_stack_traces' => true
+            ], $telemetry['filters'] ?? [])
+        ];
+
         $this->headers = array_merge([
             'Accept' => 'application/json',
-            'User-Agent' => 'WioEX-PHP-SDK/1.4.0',
+            'User-Agent' => 'WioEX-PHP-SDK/2.0.0',
         ], $options['headers'] ?? []);
 
         // Error reporting configuration
@@ -109,6 +130,7 @@ class Config
         $this->validate();
         $this->validateRateLimitConfig();
         $this->validateEnhancedRetryConfig();
+        $this->validateTelemetryConfig();
     }
 
     private function validate(): void
@@ -177,6 +199,32 @@ class Config
 
         if ($this->enhancedRetryConfig['exponential_base'] <= 1.0) {
             throw new InvalidArgumentException('Enhanced retry exponential base must be greater than 1.0');
+        }
+    }
+
+    private function validateTelemetryConfig(): void
+    {
+        if ($this->telemetryConfig['sampling_rate'] < 0.0 || $this->telemetryConfig['sampling_rate'] > 1.0) {
+            throw new InvalidArgumentException('Telemetry sampling rate must be between 0.0 and 1.0');
+        }
+
+        $validPrivacyModes = ['production', 'development', 'debug'];
+        if (!in_array($this->telemetryConfig['privacy_mode'], $validPrivacyModes, true)) {
+            throw new InvalidArgumentException(
+                'Invalid telemetry privacy mode. Must be one of: ' . implode(', ', $validPrivacyModes)
+            );
+        }
+
+        if ($this->telemetryConfig['flush_interval'] < 1) {
+            throw new InvalidArgumentException('Telemetry flush interval must be at least 1 second');
+        }
+
+        if ($this->telemetryConfig['max_queue_size'] < 1) {
+            throw new InvalidArgumentException('Telemetry max queue size must be at least 1');
+        }
+
+        if (filter_var($this->telemetryConfig['endpoint'], FILTER_VALIDATE_URL) === false) {
+            throw new InvalidArgumentException('Invalid telemetry endpoint URL');
         }
     }
 
@@ -249,6 +297,40 @@ class Config
         return $this->enhancedRetryConfig['enabled'];
     }
 
+    /**
+     * Get telemetry configuration
+     *
+     * @return array{enabled: bool, auto_report_errors: bool, performance_tracking: bool, privacy_mode: string, sampling_rate: float, endpoint: string, flush_interval: int, max_queue_size: int, filters: array}
+     */
+    public function getTelemetryConfig(): array
+    {
+        return $this->telemetryConfig;
+    }
+
+    /**
+     * Check if telemetry is enabled
+     */
+    public function isTelemetryEnabled(): bool
+    {
+        return $this->telemetryConfig['enabled'];
+    }
+
+    /**
+     * Get telemetry endpoint URL
+     */
+    public function getTelemetryEndpoint(): string
+    {
+        return $this->telemetryConfig['endpoint'];
+    }
+
+    /**
+     * Get SDK version
+     */
+    public function getSdkVersion(): string
+    {
+        return '2.0.0';
+    }
+
     public function getHeaders(): array
     {
         return $this->headers;
@@ -314,6 +396,7 @@ class Config
             'include_response_data' => $this->includeResponseData,
             'rate_limit' => $this->rateLimitConfig,
             'enhanced_retry' => $this->enhancedRetryConfig,
+            'telemetry' => $this->telemetryConfig,
         ];
     }
 
