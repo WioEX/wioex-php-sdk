@@ -165,10 +165,11 @@ $telemetry->trackUsage('/v2/stocks/bulk/quote', [
 
 | Operation | Individual Calls | Bulk Operations | Improvement |
 |-----------|------------------|-----------------|-------------|
-| 100 stocks | ~20 seconds | ~2 seconds | **90% faster** |
-| 500 stocks | ~100 seconds | ~30 seconds | **95% faster** |
-| Network requests | 500 requests | 10 requests | **98% reduction** |
-| API quota usage | 500 calls | 10 calls | **98% more efficient** |
+| 100 quotes | ~20 seconds | ~3.5 seconds | **82% faster** |
+| 500 quotes | ~100 seconds | ~17 seconds | **83% faster** |
+| 100 timeline/info/financials | ~20 seconds | ~20 seconds | **No improvement** |
+| Network requests (quotes) | 500 requests | ~17 requests | **97% reduction** |
+| API quota usage (quotes) | 500 calls | ~17 calls | **97% more efficient** |
 
 ### Available Bulk Methods
 
@@ -180,7 +181,7 @@ $quotes = $client->stocks()->quoteBulk(['AAPL', 'TSLA', 'GOOGL']);
 
 // Advanced configuration
 $quotes = $client->stocks()->quoteBulk($symbols, [
-    'chunk_size' => 50,              // Symbols per request
+    'chunk_size' => 30,              // Symbols per request (API limit)
     'chunk_delay' => 0.1,            // Delay between chunks (seconds)
     'fail_on_partial_errors' => false // Continue if some chunks fail
 ]);
@@ -394,9 +395,9 @@ $client->getErrorReporter()->enhancedSanitizeData($errorData, 'minimal');
 ### Bulk Operations Optimization
 
 1. **Chunk Sizing**:
-   - Quotes: 50 symbols per chunk (default)
-   - Timeline: 25 symbols per chunk (data-intensive)
-   - Info/Financials: 50 symbols per chunk
+   - Quotes: 30 symbols per chunk (API limit)
+   - Timeline: 1 symbol per chunk (API limitation)
+   - Info/Financials: 1 symbol per chunk (API limitation)
 
 2. **Timing**:
    - Quotes: 0.1s delay between chunks
@@ -522,8 +523,8 @@ try {
 | Feature | Limit | Notes |
 |---------|-------|-------|
 | Bulk operation symbols | 1,000 per request | Automatic chunking |
-| Chunk size (quotes) | 50 symbols | Configurable, max 100 |
-| Chunk size (timeline) | 25 symbols | Configurable, max 50 |
+| Chunk size (quotes) | 30 symbols | API limit, not configurable |
+| Chunk size (timeline/info/financials) | 1 symbol | API limitation, single requests only |
 | Error reports per minute | 60 | Configurable rate limiting |
 | Telemetry batch size | 20 events | Automatic batching |
 | Sampling rate | 0.0 - 1.0 | 0% to 100% |

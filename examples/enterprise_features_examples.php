@@ -259,17 +259,19 @@ function example4_bulk_quotes($client)
         echo "Portfolio size: " . count($portfolioSymbols) . " stocks\n";
         
         // Performance comparison demonstration
-        echo "\n--- Performance Comparison ---\n";
+        echo "\n--- Performance Comparison for QUOTES ---\n";
+        echo "Note: Performance improvement applies to QUOTES only.\n";
+        echo "Timeline/Info/Financials use individual API calls (1 symbol per request).\n\n";
         
         // Method 1: Individual calls (simulated timing)
         $individualStartTime = microtime(true);
-        echo "Individual calls would take: ~" . (count($portfolioSymbols) * 0.2) . " seconds\n";
+        echo "Individual quote calls would take: ~" . (count($portfolioSymbols) * 0.2) . " seconds\n";
         
-        // Method 2: Bulk operation with chunking
+        // Method 2: Bulk quote operation with chunking
         $bulkStartTime = microtime(true);
         
         $bulkQuotes = $client->stocks()->quoteBulk($portfolioSymbols, [
-            'chunk_size' => 50,              // 50 symbols per chunk
+            'chunk_size' => 30,              // 30 symbols per chunk (API limit)
             'chunk_delay' => 0.1,            // 100ms between chunks
             'fail_on_partial_errors' => false // Continue on errors
         ]);
@@ -598,10 +600,11 @@ function example8_best_practices()
     echo "🚀 Bulk Operations Best Practices:\n\n";
     
     echo "Performance Optimization:\n";
-    echo "- Use appropriate chunk sizes (50 for quotes, 25 for timelines)\n";
-    echo "- Configure delays between chunks (0.1s for quotes, 0.2s for timelines)\n";
+    echo "- Use appropriate chunk sizes (30 for quotes, 1 for timeline/info/financials)\n";
+    echo "- Configure delays between chunks (0.1s for quotes, 0.2s for others)\n";
     echo "- Enable partial failure handling for resilience\n";
-    echo "- Monitor bulk operation statistics\n\n";
+    echo "- Monitor bulk operation statistics\n";
+    echo "- Remember: Only quotes get true bulk processing, others are automated individual calls\n\n";
     
     echo "Scalability Guidelines:\n";
     echo "- Maximum 1000 symbols per bulk operation\n";
@@ -619,10 +622,11 @@ function example8_best_practices()
     
     echo "Expected Performance Improvements:\n";
     echo "- Individual API calls: ~200ms per request\n";
-    echo "- Bulk operations (50 symbols): ~95% faster\n";
-    echo "- Portfolio of 500 stocks: 30 seconds vs 8-10 minutes\n";
-    echo "- Network overhead reduction: ~90% fewer HTTP requests\n";
-    echo "- Rate limit efficiency: 50x better API quota usage\n\n";
+    echo "- Bulk QUOTES (30 symbols): ~93% faster (500 stocks: ~17 requests vs 500)\n";
+    echo "- Bulk TIMELINE/INFO/FINANCIALS: Same as individual (1 symbol per request)\n";
+    echo "- Credit consumption: QUOTES save ~93% credits, others same as individual\n";
+    echo "- Network requests: QUOTES reduce by ~93%, others unchanged\n";
+    echo "- Mixed operations: Performance varies by operation type\n\n";
 }
 
 // =============================================================================

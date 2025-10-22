@@ -21,11 +21,19 @@ class BulkRequestManager
     private float $chunkDelay;
     private bool $failOnPartialErrors;
 
-    // Performance optimization constants
-    private const MAX_SYMBOLS_PER_CHUNK = 50;
+    // Performance optimization constants - Updated for real API limits
+    private const MAX_SYMBOLS_PER_CHUNK = 30; // Reduced to match API limit for quotes
     private const DEFAULT_CHUNK_DELAY = 0.1; // 100ms between chunks
     private const MAX_TOTAL_SYMBOLS = 1000;
     private const CHUNK_TIMEOUT_MULTIPLIER = 1.5;
+    
+    // Endpoint-specific limits based on real API constraints
+    private const ENDPOINT_LIMITS = [
+        'quotes' => 30,      // /v2/stocks/get supports up to 30 symbols
+        'timeline' => 1,     // /v2/stocks/chart/timeline supports only 1 symbol
+        'info' => 1,         // /v2/stocks/info supports only 1 symbol
+        'financials' => 1    // /v2/stocks/financials supports only 1 symbol
+    ];
 
     public function __construct(
         Client $client,
@@ -42,7 +50,7 @@ class BulkRequestManager
     /**
      * Execute bulk request with intelligent chunking
      *
-     * @param string $endpoint Base API endpoint
+     * @param string $endpoint Base API endpoint (will be mapped to real endpoints)
      * @param array<string> $symbols Array of stock symbols
      * @param array<string, mixed> $options Request options
      * @return Response Merged response from all chunks
@@ -54,6 +62,12 @@ class BulkRequestManager
         // Validate input
         $this->validateBulkRequest($symbols, $options);
 
+        // Map bulk endpoint to real API endpoint and get limits
+        $endpointInfo = $this->mapBulkEndpoint($endpoint);
+        $realEndpoint = $endpointInfo['endpoint'];
+        $maxSymbolsPerRequest = $endpointInfo['max_symbols'];
+        $endpointType = $endpointInfo['type'];
+
         // Remove duplicates and normalize symbols
         $symbols = array_unique(array_map('strtoupper', array_filter($symbols)));
 
@@ -63,18 +77,18 @@ class BulkRequestManager
 
         // Single symbol optimization
         if (count($symbols) === 1) {
-            return $this->executeSingleRequest($endpoint, $symbols[0], $options);
+            return $this->executeSingleRequest($realEndpoint, $symbols[0], $options, $endpointType);
         }
 
-        // Chunk symbols for processing
-        $chunks = $this->chunkSymbols($symbols);
+        // Chunk symbols based on endpoint-specific limits
+        $chunks = $this->chunkSymbolsForEndpoint($symbols, $maxSymbolsPerRequest);
         $responses = [];
         $errors = [];
         $totalProcessed = 0;
 
         foreach ($chunks as $chunkIndex => $chunk) {
             try {
-                $chunkResponse = $this->executeChunkRequest($endpoint, $chunk, $options, $chunkIndex);
+                $chunkResponse = $this->executeChunkRequest($realEndpoint, $chunk, $options, $chunkIndex, $endpointType);
                 $responses[] = $chunkResponse;
                 $totalProcessed += count($chunk);
 
@@ -120,19 +134,20 @@ class BulkRequestManager
     /**
      * Execute single symbol request (optimization path)
      */
-    private function executeSingleRequest(string $endpoint, string $symbol, array $options): Response
+    private function executeSingleRequest(string $endpoint, string $symbol, array $options, string $endpointType): Response
     {
-        // For single symbols, use the existing individual endpoint logic
-        $url = $this->buildUrl($endpoint, [$symbol], $options);
+        // Build URL based on endpoint type
+        $url = $this->buildUrlForEndpoint($endpoint, [$symbol], $options, $endpointType);
         return $this->client->get($url);
     }
 
     /**
      * Execute request for a chunk of symbols
      */
-    private function executeChunkRequest(string $endpoint, array $chunk, array $options, int $chunkIndex): Response
+    private function executeChunkRequest(string $endpoint, array $chunk, array $options, int $chunkIndex, string $endpointType): Response
     {
-        $url = $this->buildUrl($endpoint, $chunk, $options);
+        // Build URL based on endpoint type and chunk
+        $url = $this->buildUrlForEndpoint($endpoint, $chunk, $options, $endpointType);
         
         // Increase timeout for larger chunks
         $chunkTimeout = $this->calculateChunkTimeout(count($chunk));
@@ -142,16 +157,51 @@ class BulkRequestManager
     }
 
     /**
-     * Build URL for bulk request
+     * Build URL for specific endpoint type
      */
-    private function buildUrl(string $endpoint, array $symbols, array $options): string
+    private function buildUrlForEndpoint(string $endpoint, array $symbols, array $options, string $endpointType): string
     {
-        $symbolsParam = implode(',', $symbols);
         $url = $endpoint;
-
-        // Add symbols as query parameter for bulk endpoints
-        $separator = strpos($url, '?') !== false ? '&' : '?';
-        $url .= $separator . 'symbols=' . urlencode($symbolsParam);
+        
+        // Handle different endpoint types based on their API requirements
+        switch ($endpointType) {
+            case 'quotes':
+                // /v2/stocks/get supports multiple symbols via 'stocks' parameter
+                $symbolsParam = implode(',', $symbols);
+                $separator = strpos($url, '?') !== false ? '&' : '?';
+                $url .= $separator . 'stocks=' . urlencode($symbolsParam);
+                break;
+                
+            case 'timeline':
+                // /v2/stocks/chart/timeline supports single symbol via 'ticker' parameter
+                if (count($symbols) > 1) {
+                    throw new ValidationException('Timeline endpoint only supports single symbol per request');
+                }
+                $separator = strpos($url, '?') !== false ? '&' : '?';
+                $url .= $separator . 'ticker=' . urlencode($symbols[0]);
+                break;
+                
+            case 'info':
+                // /v2/stocks/info supports single symbol via 'ticker' parameter
+                if (count($symbols) > 1) {
+                    throw new ValidationException('Info endpoint only supports single symbol per request');
+                }
+                $separator = strpos($url, '?') !== false ? '&' : '?';
+                $url .= $separator . 'ticker=' . urlencode($symbols[0]);
+                break;
+                
+            case 'financials':
+                // /v2/stocks/financials supports single symbol via 'ticker' parameter
+                if (count($symbols) > 1) {
+                    throw new ValidationException('Financials endpoint only supports single symbol per request');
+                }
+                $separator = strpos($url, '?') !== false ? '&' : '?';
+                $url .= $separator . 'ticker=' . urlencode($symbols[0]);
+                break;
+                
+            default:
+                throw new ValidationException("Unknown endpoint type: {$endpointType}");
+        }
 
         // Add other query parameters
         unset($options['timeout']); // Don't include timeout in URL
@@ -165,7 +215,7 @@ class BulkRequestManager
     }
 
     /**
-     * Chunk symbols into manageable groups
+     * Chunk symbols into manageable groups (legacy method)
      *
      * @param array<string> $symbols
      * @return array<int, array<string>>
@@ -173,6 +223,18 @@ class BulkRequestManager
     private function chunkSymbols(array $symbols): array
     {
         return array_chunk($symbols, $this->maxSymbolsPerChunk);
+    }
+    
+    /**
+     * Chunk symbols based on endpoint-specific limits
+     *
+     * @param array<string> $symbols
+     * @param int $maxSymbolsPerRequest
+     * @return array<int, array<string>>
+     */
+    private function chunkSymbolsForEndpoint(array $symbols, int $maxSymbolsPerRequest): array
+    {
+        return array_chunk($symbols, $maxSymbolsPerRequest);
     }
 
     /**
@@ -306,6 +368,46 @@ class BulkRequestManager
     }
 
     /**
+     * Map bulk endpoint to real API endpoint with limits
+     *
+     * @param string $bulkEndpoint The bulk endpoint (e.g., /v2/stocks/bulk/quote)
+     * @return array<string, mixed> Endpoint info with real endpoint, limits, and type
+     * @throws ValidationException
+     */
+    private function mapBulkEndpoint(string $bulkEndpoint): array
+    {
+        // Map bulk endpoints to real API endpoints
+        $endpointMapping = [
+            '/v2/stocks/bulk/quote' => [
+                'endpoint' => '/v2/stocks/get',
+                'max_symbols' => self::ENDPOINT_LIMITS['quotes'],
+                'type' => 'quotes'
+            ],
+            '/v2/stocks/bulk/timeline' => [
+                'endpoint' => '/v2/stocks/chart/timeline',
+                'max_symbols' => self::ENDPOINT_LIMITS['timeline'],
+                'type' => 'timeline'
+            ],
+            '/v2/stocks/bulk/info' => [
+                'endpoint' => '/v2/stocks/info',
+                'max_symbols' => self::ENDPOINT_LIMITS['info'],
+                'type' => 'info'
+            ],
+            '/v2/stocks/bulk/financials' => [
+                'endpoint' => '/v2/stocks/financials',
+                'max_symbols' => self::ENDPOINT_LIMITS['financials'],
+                'type' => 'financials'
+            ]
+        ];
+
+        if (!isset($endpointMapping[$bulkEndpoint])) {
+            throw new ValidationException("Unknown bulk endpoint: {$bulkEndpoint}");
+        }
+
+        return $endpointMapping[$bulkEndpoint];
+    }
+
+    /**
      * Get current configuration
      *
      * @return array<string, mixed>
@@ -316,7 +418,8 @@ class BulkRequestManager
             'max_symbols_per_chunk' => $this->maxSymbolsPerChunk,
             'chunk_delay_seconds' => $this->chunkDelay,
             'fail_on_partial_errors' => $this->failOnPartialErrors,
-            'max_total_symbols' => self::MAX_TOTAL_SYMBOLS
+            'max_total_symbols' => self::MAX_TOTAL_SYMBOLS,
+            'endpoint_limits' => self::ENDPOINT_LIMITS
         ];
     }
 
