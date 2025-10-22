@@ -7,7 +7,7 @@ use Wioex\SDK\Config;
 
 /**
  * Bulk Operations Example
- * 
+ *
  * This example demonstrates how to use the enhanced bulk operations
  * for efficient processing of large datasets with batching and performance optimization.
  */
@@ -29,18 +29,18 @@ echo "=== WioEX Bulk Operations Example ===\n\n";
 try {
     // 1. Bulk Quote Requests
     echo "1. Bulk Quote Operations:\n";
-    
+
     // Define symbols for bulk operations
     $symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD', 'INTC', 'CRM'];
-    
+
     // Basic bulk quotes
     echo "   a) Basic bulk quotes for " . count($symbols) . " symbols...\n";
     $quotes = $client->stocks()->quoteBulk($symbols);
-    
+
     echo "   ✓ Retrieved " . count($quotes['data']) . " quotes\n";
     echo "   ✓ Processing time: " . $quotes['metadata']['processing_time'] . "ms\n";
     echo "   ✓ Batch count: " . $quotes['metadata']['batch_count'] . "\n";
-    
+
     // Display sample quote
     if (!empty($quotes['data'])) {
         $sample = reset($quotes['data']);
@@ -57,7 +57,7 @@ try {
         'include_fundamentals' => true,
         'continue_on_error' => true,
     ]);
-    
+
     echo "   ✓ Batch processing completed\n";
     echo "   ✓ Successful: " . $advancedQuotes['metadata']['successful_requests'] . "\n";
     echo "   ✓ Failed: " . $advancedQuotes['metadata']['failed_requests'] . "\n";
@@ -65,10 +65,10 @@ try {
 
     // 2. Bulk Timeline Data
     echo "2. Bulk Timeline Operations:\n";
-    
+
     $timelineSymbols = ['AAPL', 'GOOGL', 'MSFT'];
     echo "   Getting 1-month timeline data for " . count($timelineSymbols) . " symbols...\n";
-    
+
     $timelines = $client->stocks()->timelineBulk($timelineSymbols, [
         'period' => '1M',
         'interval' => '1d',
@@ -76,10 +76,10 @@ try {
         'include_volume' => true,
         'include_adjusted' => true,
     ]);
-    
+
     echo "   ✓ Retrieved timeline data for " . count($timelines['data']) . " symbols\n";
     echo "   ✓ Processing time: " . $timelines['metadata']['processing_time'] . "ms\n";
-    
+
     // Display sample timeline data
     if (!empty($timelines['data'])) {
         $sampleSymbol = array_key_first($timelines['data']);
@@ -91,20 +91,20 @@ try {
 
     // 3. Bulk Company Information
     echo "3. Bulk Company Info Operations:\n";
-    
+
     $infoSymbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN'];
     echo "   Getting company information for " . count($infoSymbols) . " symbols...\n";
-    
+
     $companyInfo = $client->stocks()->infoBulk($infoSymbols, [
         'include_fundamentals' => true,
         'include_financials' => true,
         'include_analysts' => true,
         'batch_size' => 2,
     ]);
-    
+
     echo "   ✓ Retrieved company info for " . count($companyInfo['data']) . " companies\n";
     echo "   ✓ Processing time: " . $companyInfo['metadata']['processing_time'] . "ms\n";
-    
+
     // Display sample company info
     if (!empty($companyInfo['data'])) {
         $sampleCompany = reset($companyInfo['data']);
@@ -116,7 +116,7 @@ try {
 
     // 4. Mixed Batch Processing
     echo "4. Mixed Batch Processing:\n";
-    
+
     echo "   Processing mixed operations in a single batch...\n";
     $mixedOperations = [
         ['type' => 'quote', 'symbol' => 'AAPL'],
@@ -125,13 +125,13 @@ try {
         ['type' => 'timeline', 'symbol' => 'AMZN', 'period' => '5d'],
         ['type' => 'quote', 'symbol' => 'TSLA'],
     ];
-    
+
     $mixedResults = $client->stocks()->batchProcess($mixedOperations, [
         'batch_size' => 3,
         'continue_on_error' => true,
         'delay_between_batches' => 50,
     ]);
-    
+
     echo "   ✓ Mixed batch completed\n";
     echo "   ✓ Total operations: " . count($mixedOperations) . "\n";
     echo "   ✓ Successful: " . $mixedResults['metadata']['successful_requests'] . "\n";
@@ -140,19 +140,19 @@ try {
 
     // 5. Bulk Search Operations
     echo "5. Bulk Search Operations:\n";
-    
+
     $searchQueries = ['technology stocks', 'dividend stocks', 'growth stocks', 'value stocks'];
     echo "   Performing bulk search for " . count($searchQueries) . " queries...\n";
-    
+
     $searchResults = $client->stocks()->searchBulk($searchQueries, [
         'limit' => 5,
         'include_details' => true,
         'batch_size' => 2,
     ]);
-    
+
     echo "   ✓ Search completed for " . count($searchResults['data']) . " queries\n";
     echo "   ✓ Processing time: " . $searchResults['metadata']['processing_time'] . "ms\n";
-    
+
     // Display search results summary
     foreach ($searchResults['data'] as $query => $results) {
         echo "   🔍 '{$query}': " . count($results) . " results\n";
@@ -161,9 +161,9 @@ try {
 
     // 6. Performance Optimization Examples
     echo "6. Performance Optimization Tips:\n\n";
-    
+
     echo "   a) Optimal Batch Sizing:\n";
-    $performanceTest = function($batchSize) use ($client, $symbols) {
+    $performanceTest = function ($batchSize) use ($client, $symbols) {
         $start = microtime(true);
         $result = $client->stocks()->quoteBulk(array_slice($symbols, 0, 6), [
             'batch_size' => $batchSize,
@@ -171,7 +171,7 @@ try {
         $duration = (microtime(true) - $start) * 1000;
         return ['duration' => $duration, 'batch_count' => $result['metadata']['batch_count']];
     };
-    
+
     $batchSizes = [2, 3, 6];
     foreach ($batchSizes as $size) {
         $result = $performanceTest($size);
@@ -199,7 +199,7 @@ try {
 
     // 7. Advanced Usage Patterns
     echo "7. Advanced Usage Patterns:\n\n";
-    
+
     echo "   a) Progressive Data Loading:\n";
     echo "```php\n";
     echo "class ProgressiveLoader {\n";
@@ -237,10 +237,9 @@ try {
     echo "    \$cache->set(\$cacheKey, \$quotes, 300); // 5 minutes\n";
     echo "}\n";
     echo "```\n\n";
-
 } catch (Exception $e) {
     echo "❌ Error: " . $e->getMessage() . "\n";
-    
+
     if ($e instanceof \Wioex\SDK\Exceptions\RateLimitException) {
         echo "💡 Rate limit exceeded. Consider:\n";
         echo "   - Increasing batch delays\n";

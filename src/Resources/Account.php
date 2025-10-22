@@ -21,7 +21,7 @@ class Account extends Resource
     /**
      * Get API usage statistics for a time period
      * @param UsagePeriod|int|null $days Time period (default: 30 days)
-     * 
+     *
      * @example Using ENUM (recommended):
      * ```php
      * $usage = $client->account()->usage(UsagePeriod::THIRTY_DAYS);
@@ -42,7 +42,7 @@ class Account extends Resource
     /**
      * Get detailed analytics and insights about your API usage
      * @param AnalyticsPeriod|string $period Analysis period (default: month)
-     * 
+     *
      * @example Using ENUM (recommended):
      * ```php
      * $analytics = $client->account()->analytics(AnalyticsPeriod::MONTH);

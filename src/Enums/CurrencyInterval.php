@@ -190,7 +190,7 @@ enum CurrencyInterval: string
                 'Structural economic changes',
                 'Multi-year trend analysis'
             ],
-        ];
+        };
     }
 
     /**
@@ -202,7 +202,7 @@ enum CurrencyInterval: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid currency interval: {$value}");
     }
 

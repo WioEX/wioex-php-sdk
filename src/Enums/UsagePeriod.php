@@ -9,7 +9,7 @@ namespace Wioex\SDK\Enums;
  *
  * Represents different time periods for API usage analytics:
  * - SEVEN_DAYS: Last 7 days of usage
- * - THIRTY_DAYS: Last 30 days of usage  
+ * - THIRTY_DAYS: Last 30 days of usage
  * - NINETY_DAYS: Last 90 days of usage
  */
 enum UsagePeriod: int
@@ -139,7 +139,7 @@ enum UsagePeriod: int
      */
     public static function fromInt(int $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid usage period: {$value} days. Valid periods: 7, 30, 90");
     }
 

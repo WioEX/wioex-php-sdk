@@ -28,15 +28,15 @@ class TaggedCache implements CacheInterface
     public function set(string $key, $value, int $ttl = 0): bool
     {
         $taggedKey = $this->taggedKey($key);
-        
+
         // Store the main cache item
         $result = $this->cache->set($taggedKey, $value, $ttl);
-        
+
         if ($result) {
             // Update tag indexes
             $this->updateTagIndexes($key, $ttl);
         }
-        
+
         return $result;
     }
 
@@ -53,11 +53,11 @@ class TaggedCache implements CacheInterface
     {
         $taggedKey = $this->taggedKey($key);
         $result = $this->cache->delete($taggedKey);
-        
+
         if ($result) {
             $this->removeFromTagIndexes($key);
         }
-        
+
         return $result;
     }
 
@@ -70,36 +70,36 @@ class TaggedCache implements CacheInterface
     {
         $validKeys = array_filter($keys, [$this, 'isValidTaggedKey']);
         $taggedKeys = array_map([$this, 'taggedKey'], $validKeys);
-        
+
         $results = $this->cache->getMultiple($taggedKeys);
-        
+
         // Map back to original keys
         $mappedResults = [];
         foreach ($validKeys as $originalKey) {
             $taggedKey = $this->taggedKey($originalKey);
             $mappedResults[$originalKey] = $results[$taggedKey] ?? null;
         }
-        
+
         return $mappedResults;
     }
 
     public function setMultiple(array $items, int $ttl = 0): bool
     {
         $taggedItems = [];
-        
+
         foreach ($items as $key => $value) {
             $taggedKey = $this->taggedKey($key);
             $taggedItems[$taggedKey] = $value;
         }
-        
+
         $result = $this->cache->setMultiple($taggedItems, $ttl);
-        
+
         if ($result) {
             foreach (array_keys($items) as $key) {
                 $this->updateTagIndexes($key, $ttl);
             }
         }
-        
+
         return $result;
     }
 
@@ -107,15 +107,15 @@ class TaggedCache implements CacheInterface
     {
         $validKeys = array_filter($keys, [$this, 'isValidTaggedKey']);
         $taggedKeys = array_map([$this, 'taggedKey'], $validKeys);
-        
+
         $result = $this->cache->deleteMultiple($taggedKeys);
-        
+
         if ($result) {
             foreach ($validKeys as $key) {
                 $this->removeFromTagIndexes($key);
             }
         }
-        
+
         return $result;
     }
 
@@ -140,7 +140,7 @@ class TaggedCache implements CacheInterface
     public function getStatistics(): array
     {
         $stats = $this->cache->getStatistics();
-        
+
         return array_merge($stats, [
             'tagged_cache' => true,
             'tags' => $this->tags,
@@ -152,7 +152,7 @@ class TaggedCache implements CacheInterface
     public function getDriverInfo(): array
     {
         $info = $this->cache->getDriverInfo();
-        
+
         return array_merge($info, [
             'tagged_cache' => true,
             'tags' => $this->tags,
@@ -187,7 +187,7 @@ class TaggedCache implements CacheInterface
     {
         $taggedPattern = $this->taggedKey($pattern);
         $keys = $this->cache->getKeys($taggedPattern);
-        
+
         // Remove tag prefix from results
         return array_map([$this, 'untaggedKey'], $keys);
     }
@@ -209,11 +209,11 @@ class TaggedCache implements CacheInterface
     public function flush(): bool
     {
         $flushed = 0;
-        
+
         foreach ($this->tags as $tag) {
             $tagKey = $this->getTagKey($tag);
             $items = $this->cache->get($tagKey) ?? [];
-            
+
             if (is_array($items)) {
                 foreach ($items as $item) {
                     if ($this->cache->delete($item)) {
@@ -221,10 +221,10 @@ class TaggedCache implements CacheInterface
                     }
                 }
             }
-            
+
             $this->cache->delete($tagKey);
         }
-        
+
         return $flushed > 0;
     }
 
@@ -233,16 +233,16 @@ class TaggedCache implements CacheInterface
         if (!in_array($tag, $this->tags, true)) {
             return false;
         }
-        
+
         $tagKey = $this->getTagKey($tag);
         $items = $this->cache->get($tagKey) ?? [];
-        
+
         if (is_array($items)) {
             foreach ($items as $item) {
                 $this->cache->delete($item);
             }
         }
-        
+
         return $this->cache->delete($tagKey);
     }
 
@@ -256,7 +256,7 @@ class TaggedCache implements CacheInterface
         if (!in_array($tag, $this->tags, true)) {
             $this->tags[] = $tag;
         }
-        
+
         return $this;
     }
 
@@ -266,7 +266,7 @@ class TaggedCache implements CacheInterface
             $this->tags,
             fn($t) => $t !== $tag
         ));
-        
+
         return $this;
     }
 
@@ -285,11 +285,11 @@ class TaggedCache implements CacheInterface
     {
         $tagHash = md5(implode('|', $this->tags));
         $prefix = "tagged:{$tagHash}:";
-        
+
         if (strpos($taggedKey, $prefix) === 0) {
             return substr($taggedKey, strlen($prefix));
         }
-        
+
         return $taggedKey;
     }
 
@@ -303,30 +303,30 @@ class TaggedCache implements CacheInterface
         foreach ($this->tags as $tag) {
             $tagKey = $this->getTagKey($tag);
             $items = $this->cache->get($tagKey) ?? [];
-            
+
             if (is_array($items) && in_array($this->taggedKey($key), $items, true)) {
                 return true;
             }
         }
-        
+
         return true; // Allow new items to be cached
     }
 
     private function updateTagIndexes(string $key, int $ttl): void
     {
         $taggedKey = $this->taggedKey($key);
-        
+
         foreach ($this->tags as $tag) {
             $tagKey = $this->getTagKey($tag);
             $items = $this->cache->get($tagKey) ?? [];
-            
+
             if (!is_array($items)) {
                 $items = [];
             }
-            
+
             if (!in_array($taggedKey, $items, true)) {
                 $items[] = $taggedKey;
-                
+
                 // Set tag index TTL to be longer than item TTL
                 $tagTtl = $ttl > 0 ? $ttl + 3600 : 0;
                 $this->cache->set($tagKey, $items, $tagTtl);
@@ -337,17 +337,17 @@ class TaggedCache implements CacheInterface
     private function removeFromTagIndexes(string $key): void
     {
         $taggedKey = $this->taggedKey($key);
-        
+
         foreach ($this->tags as $tag) {
             $tagKey = $this->getTagKey($tag);
             $items = $this->cache->get($tagKey) ?? [];
-            
+
             if (is_array($items)) {
                 $items = array_values(array_filter(
                     $items,
                     fn($item) => $item !== $taggedKey
                 ));
-                
+
                 if (empty($items)) {
                     $this->cache->delete($tagKey);
                 } else {
@@ -360,13 +360,13 @@ class TaggedCache implements CacheInterface
     private function countItemsInTags(): array
     {
         $counts = [];
-        
+
         foreach ($this->tags as $tag) {
             $tagKey = $this->getTagKey($tag);
             $items = $this->cache->get($tagKey) ?? [];
             $counts[$tag] = is_array($items) ? count($items) : 0;
         }
-        
+
         return $counts;
     }
 }

@@ -59,16 +59,16 @@ $intervals = [
     '5min' => 'Every 5 minutes (5min cache)',
     '15min' => 'Every 15 minutes (15min cache)',
     '30min' => 'Every 30 minutes (30min cache)',
-    
+
     // Hour intervals
     '1hour' => 'Every hour (1hr cache)',
     '5hour' => 'Every 5 hours (1hr cache)',
-    
+
     // Daily/Weekly/Monthly
     '1day' => 'Daily intervals (1hr cache)',
     '1week' => 'Weekly intervals (2hr cache)',
     '1month' => 'Monthly intervals (4hr cache)',
-    
+
     // Period-based intervals (optimized for timeframes)
     '1d' => '1 day period with 5min intervals (5min cache)',
     '1w' => '1 week period with 30min intervals (30min cache)',
@@ -182,15 +182,15 @@ foreach ($cachingExamples as $interval => $response) {
     $ttl = $response['metadata']['cache']['ttl_seconds'];
     $minutes = round($ttl / 60);
     $hours = round($ttl / 3600);
-    
+
     if ($ttl < 3600) {
         $readable = $minutes . " minutes";
     } else {
         $readable = $hours . " hours";
     }
-    
-    echo "  {$interval}: {$ttl}s ({$readable}) - " . 
-         ($ttl <= 300 ? "High frequency" : 
+
+    echo "  {$interval}: {$ttl}s ({$readable}) - " .
+         ($ttl <= 300 ? "High frequency" :
           ($ttl <= 3600 ? "Medium frequency" : "Low frequency")) . "\n";
 }
 echo "\n";
@@ -250,10 +250,10 @@ foreach ($performanceTests as $interval) {
         'size' => 1
     ]);
     $end = microtime(true);
-    
+
     $responseTime = round(($end - $start) * 1000, 2);
     $cacheStatus = $response['metadata']['cache']['status'];
-    
+
     echo "  {$interval}: {$responseTime}ms (Cache: {$cacheStatus})\n";
 }
 

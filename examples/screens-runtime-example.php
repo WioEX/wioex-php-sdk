@@ -362,5 +362,3 @@ echo "• Smart filtering for day trading and volatility screening\n";
 echo "• Market sentiment analysis with automated calculations\n";
 echo "• ENUM helper methods for categorization and discovery\n";
 echo "• Runtime parameter validation with helpful error messages\n";
-
-?>

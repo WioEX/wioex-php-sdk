@@ -88,7 +88,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
         if ($callback === null) {
             return new self(array_filter($this->items));
         }
-        
+
         return new self(array_filter($this->items, $callback, ARRAY_FILTER_USE_BOTH));
     }
 
@@ -111,7 +111,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
     public function pluck(string $key): self
     {
         $result = [];
-        
+
         foreach ($this->items as $item) {
             if (is_array($item) && isset($item[$key])) {
                 $result[] = $item[$key];
@@ -119,7 +119,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
                 $result[] = $item->$key;
             }
         }
-        
+
         return new self($result);
     }
 
@@ -130,10 +130,10 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
             $value = $operator;
             $operator = '=';
         }
-        
+
         return $this->filter(function ($item) use ($key, $operator, $value) {
             $itemValue = is_array($item) ? ($item[$key] ?? null) : (is_object($item) ? ($item->$key ?? null) : null);
-            
+
             return match ($operator) {
                 '=' => $itemValue == $value,
                 '==' => $itemValue == $value,
@@ -176,15 +176,15 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
     public function sortBy(string $key, int $direction = SORT_ASC): self
     {
         $items = $this->items;
-        
+
         uasort($items, function ($a, $b) use ($key, $direction) {
             $aValue = is_array($a) ? ($a[$key] ?? null) : (is_object($a) ? ($a->$key ?? null) : null);
             $bValue = is_array($b) ? ($b[$key] ?? null) : (is_object($b) ? ($b->$key ?? null) : null);
-            
+
             $comparison = $aValue <=> $bValue;
             return $direction === SORT_DESC ? -$comparison : $comparison;
         });
-        
+
         return new self($items);
     }
 
@@ -196,17 +196,17 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
     public function groupBy(string $key): self
     {
         $groups = [];
-        
+
         foreach ($this->items as $item) {
             $groupKey = is_array($item) ? ($item[$key] ?? 'null') : (is_object($item) ? ($item->$key ?? 'null') : 'null');
-            
+
             if (!isset($groups[$groupKey])) {
                 $groups[$groupKey] = [];
             }
-            
+
             $groups[$groupKey][] = $item;
         }
-        
+
         return new self($groups);
     }
 
@@ -215,19 +215,19 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
         if ($key === null) {
             return new self(array_unique($this->items, SORT_REGULAR));
         }
-        
+
         $unique = [];
         $seen = [];
-        
+
         foreach ($this->items as $item) {
             $value = is_array($item) ? ($item[$key] ?? null) : (is_object($item) ? ($item->$key ?? null) : null);
-            
+
             if (!in_array($value, $seen, true)) {
                 $seen[] = $value;
                 $unique[] = $item;
             }
         }
-        
+
         return new self($unique);
     }
 
@@ -255,12 +255,12 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
     public function flatten(int $depth = 1): self
     {
         $items = $this->items;
-        
+
         while ($depth > 0 && $this->hasNestedArrays($items)) {
             $items = $this->flattenOnce($items);
             $depth--;
         }
-        
+
         return new self($items);
     }
 
@@ -321,14 +321,14 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
         if ($key === null) {
             return in_array($value, $this->items, true);
         }
-        
+
         foreach ($this->items as $item) {
             $itemValue = is_array($item) ? ($item[$key] ?? null) : (is_object($item) ? ($item->$key ?? null) : null);
             if ($itemValue === $value) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -337,7 +337,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
         if ($key === null) {
             return array_sum(array_filter($this->items, 'is_numeric'));
         }
-        
+
         return $this->pluck($key)->sum();
     }
 
@@ -352,7 +352,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
         if ($key === null) {
             return min($this->items);
         }
-        
+
         return min($this->pluck($key)->all());
     }
 
@@ -361,7 +361,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
         if ($key === null) {
             return max($this->items);
         }
-        
+
         return max($this->pluck($key)->all());
     }
 
@@ -457,7 +457,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
     private function flattenOnce(array $items): array
     {
         $result = [];
-        
+
         foreach ($items as $key => $value) {
             if (is_array($value)) {
                 foreach ($value as $subValue) {
@@ -467,7 +467,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
                 $result[] = $value;
             }
         }
-        
+
         return $result;
     }
 }

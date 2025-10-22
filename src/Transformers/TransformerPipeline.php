@@ -32,10 +32,10 @@ class TransformerPipeline
             'transformer' => $transformer,
             'priority' => $priority,
         ];
-        
+
         // Sort by priority (higher priority first)
         usort($this->transformers, fn($a, $b) => $b['priority'] <=> $a['priority']);
-        
+
         return $this;
     }
 
@@ -51,7 +51,7 @@ class TransformerPipeline
             $this->transformers,
             fn($item) => $item['transformer']->getName() !== $transformerName
         );
-        
+
         return $this;
     }
 
@@ -66,22 +66,22 @@ class TransformerPipeline
         $startTime = microtime(true);
         $originalData = $data;
         $this->statistics['total_executions']++;
-        
+
         try {
             // Apply middleware before transformation
             foreach ($this->middleware as $middleware) {
                 $data = $middleware($data, $context, 'before') ?? $data;
             }
-            
+
             // Execute transformers
             foreach ($this->transformers as $item) {
                 $transformer = $item['transformer'];
-                
+
                 // Check if transformer supports this data
                 if (!$transformer->supports($data, $context)) {
                     continue;
                 }
-                
+
                 // Validate input if enabled
                 if ($this->validateInput && !$transformer->validate($data, $context)) {
                     if ($this->stopOnError) {
@@ -91,15 +91,14 @@ class TransformerPipeline
                     }
                     continue;
                 }
-                
+
                 try {
                     $transformedData = $transformer->transform($data, $context);
                     $data = $transformedData;
-                    
+
                     // Track successful execution
-                    $this->statistics['transformers_executed'][$transformer->getName()] = 
+                    $this->statistics['transformers_executed'][$transformer->getName()] =
                         ($this->statistics['transformers_executed'][$transformer->getName()] ?? 0) + 1;
-                        
                 } catch (\Throwable $e) {
                     if ($this->stopOnError) {
                         throw new TransformationException(
@@ -111,21 +110,20 @@ class TransformerPipeline
                     // Continue with original data if error handling is lenient
                 }
             }
-            
+
             // Apply middleware after transformation
             foreach (array_reverse($this->middleware) as $middleware) {
                 $data = $middleware($data, $context, 'after') ?? $data;
             }
-            
+
             $this->statistics['successful_executions']++;
-            
         } catch (\Throwable $e) {
             $this->statistics['failed_executions']++;
             throw $e;
         } finally {
             $this->statistics['total_processing_time'] += microtime(true) - $startTime;
         }
-        
+
         return $data;
     }
 
@@ -134,10 +132,10 @@ class TransformerPipeline
         $startTime = microtime(true);
         $steps = [];
         $errors = [];
-        
+
         try {
             $result = $this->transform($data, $context);
-            
+
             return new PipelineResult(
                 $result,
                 true,
@@ -145,7 +143,6 @@ class TransformerPipeline
                 $errors,
                 microtime(true) - $startTime
             );
-            
         } catch (\Throwable $e) {
             return new PipelineResult(
                 $data,
@@ -189,11 +186,11 @@ class TransformerPipeline
     {
         $totalTime = $this->statistics['total_processing_time'];
         $totalExecutions = $this->statistics['total_executions'];
-        
+
         return array_merge($this->statistics, [
             'average_processing_time' => $totalExecutions > 0 ? $totalTime / $totalExecutions : 0,
-            'success_rate' => $totalExecutions > 0 
-                ? ($this->statistics['successful_executions'] / $totalExecutions) * 100 
+            'success_rate' => $totalExecutions > 0
+                ? ($this->statistics['successful_executions'] / $totalExecutions) * 100
                 : 0,
             'transformer_count' => count($this->transformers),
             'middleware_count' => count($this->middleware),
@@ -209,7 +206,7 @@ class TransformerPipeline
             'total_processing_time' => 0.0,
             'transformers_executed' => [],
         ];
-        
+
         return $this;
     }
 
@@ -231,10 +228,10 @@ class TransformerPipeline
             'stop_on_error' => $this->stopOnError,
             'validate_input' => $this->validateInput,
         ]);
-        
+
         $clone->transformers = $this->transformers;
         $clone->middleware = $this->middleware;
-        
+
         return $clone;
     }
 
@@ -243,14 +240,14 @@ class TransformerPipeline
         foreach ($other->transformers as $item) {
             $this->transformers[] = $item;
         }
-        
+
         foreach ($other->middleware as $middleware) {
             $this->middleware[] = $middleware;
         }
-        
+
         // Re-sort by priority
         usort($this->transformers, fn($a, $b) => $b['priority'] <=> $a['priority']);
-        
+
         return $this;
     }
 

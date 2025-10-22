@@ -167,7 +167,7 @@ foreach ($methods as $method => $description) {
     $response = $client->stocks()->$method($symbol, ['size' => 1]);
     $ttl = $response['metadata']['cache']['ttl_seconds'];
     $status = $response['metadata']['cache']['status'];
-    
+
     if ($ttl < 3600) {
         $readable = round($ttl / 60) . " minutes";
     } elseif ($ttl < 86400) {
@@ -175,7 +175,7 @@ foreach ($methods as $method => $description) {
     } else {
         $readable = round($ttl / 86400) . " days";
     }
-    
+
     echo sprintf(
         "  %-20s: %s (%s)\n",
         $method,
@@ -194,7 +194,7 @@ $scalping = $client->stocks()->timelineFiveMinute($symbol, ['size' => 20]);
 $recent = array_slice($scalping['data']['timeline'], -5);
 $volatility = 0;
 for ($i = 1; $i < count($recent); $i++) {
-    $volatility += abs($recent[$i]['close'] - $recent[$i-1]['close']);
+    $volatility += abs($recent[$i]['close'] - $recent[$i - 1]['close']);
 }
 $avgVolatility = $volatility / (count($recent) - 1);
 echo "  Average 5-min volatility: \$" . number_format($avgVolatility, 3) . "\n";

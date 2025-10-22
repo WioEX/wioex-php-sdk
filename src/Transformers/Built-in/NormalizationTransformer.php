@@ -25,27 +25,27 @@ class NormalizationTransformer extends AbstractTransformer
     public function transform(array $data, array $context = []): array
     {
         $result = $data;
-        
+
         if ($this->getOption('normalize_keys', true)) {
             $result = $this->normalizeKeys($result);
         }
-        
+
         if ($this->getOption('normalize_values', true)) {
             $result = $this->normalizeValues($result);
         }
-        
+
         if ($this->getOption('remove_empty_arrays', false)) {
             $result = $this->removeEmptyArrays($result);
         }
-        
+
         if ($this->getOption('remove_null_values', false)) {
             $result = $this->removeNullValues($result);
         }
-        
+
         if ($this->getOption('flatten_single_arrays', false)) {
             $result = $this->flattenSingleArrays($result);
         }
-        
+
         return $result;
     }
 
@@ -63,17 +63,17 @@ class NormalizationTransformer extends AbstractTransformer
     {
         $result = [];
         $keyCase = $this->getOption('key_case', 'snake_case');
-        
+
         foreach ($data as $key => $value) {
             $normalizedKey = $this->normalizeKeyCase($key, $keyCase);
-            
+
             if (is_array($value)) {
                 $result[$normalizedKey] = $this->normalizeKeys($value);
             } else {
                 $result[$normalizedKey] = $value;
             }
         }
-        
+
         return $result;
     }
 
@@ -114,7 +114,7 @@ class NormalizationTransformer extends AbstractTransformer
     private function normalizeValues(array $data): array
     {
         $result = [];
-        
+
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $result[$key] = $this->normalizeValues($value);
@@ -122,7 +122,7 @@ class NormalizationTransformer extends AbstractTransformer
                 $result[$key] = $this->normalizeValue($value);
             }
         }
-        
+
         return $result;
     }
 
@@ -132,22 +132,22 @@ class NormalizationTransformer extends AbstractTransformer
         if (is_string($value) && $this->getOption('trim_strings', true)) {
             $value = trim($value);
         }
-        
+
         // Convert numeric strings
         if (is_string($value) && $this->getOption('convert_numeric_strings', true)) {
             if (is_numeric($value)) {
                 $value = strpos($value, '.') !== false ? (float) $value : (int) $value;
             }
         }
-        
+
         // Normalize booleans
         if ($this->getOption('normalize_booleans', true)) {
             $value = $this->normalizeBooleanValue($value);
         }
-        
+
         // Normalize dates
         $value = $this->normalizeDateValue($value);
-        
+
         return $value;
     }
 
@@ -162,7 +162,7 @@ class NormalizationTransformer extends AbstractTransformer
                 return false;
             }
         }
-        
+
         return $value;
     }
 
@@ -171,13 +171,13 @@ class NormalizationTransformer extends AbstractTransformer
         if (!is_string($value)) {
             return $value;
         }
-        
+
         // Try to parse as date
         $timestamp = strtotime($value);
         if ($timestamp !== false) {
             $dateFormat = $this->getOption('date_format', 'Y-m-d H:i:s');
             $timezone = $this->getOption('timezone', 'UTC');
-            
+
             try {
                 $date = new \DateTime('@' . $timestamp);
                 $date->setTimezone(new \DateTimeZone($timezone));
@@ -187,14 +187,14 @@ class NormalizationTransformer extends AbstractTransformer
                 return $value;
             }
         }
-        
+
         return $value;
     }
 
     private function removeEmptyArrays(array $data): array
     {
         $result = [];
-        
+
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $cleaned = $this->removeEmptyArrays($value);
@@ -205,14 +205,14 @@ class NormalizationTransformer extends AbstractTransformer
                 $result[$key] = $value;
             }
         }
-        
+
         return $result;
     }
 
     private function removeNullValues(array $data): array
     {
         $result = [];
-        
+
         foreach ($data as $key => $value) {
             if ($value !== null) {
                 if (is_array($value)) {
@@ -222,14 +222,14 @@ class NormalizationTransformer extends AbstractTransformer
                 }
             }
         }
-        
+
         return $result;
     }
 
     private function flattenSingleArrays(array $data): array
     {
         $result = [];
-        
+
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 if (count($value) === 1 && isset($value[0])) {
@@ -242,7 +242,7 @@ class NormalizationTransformer extends AbstractTransformer
                 $result[$key] = $value;
             }
         }
-        
+
         return $result;
     }
 
@@ -262,7 +262,7 @@ class NormalizationTransformer extends AbstractTransformer
         if (in_array($case, $validCases, true)) {
             $this->setOption('key_case', $case);
         }
-        
+
         return $this;
     }
 
@@ -270,7 +270,7 @@ class NormalizationTransformer extends AbstractTransformer
     {
         $this->setOption('date_format', $format);
         $this->setOption('timezone', $timezone);
-        
+
         return $this;
     }
 }

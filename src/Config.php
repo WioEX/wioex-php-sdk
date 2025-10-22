@@ -63,7 +63,7 @@ class Config
             'multiplier' => (int)($retry['multiplier'] ?? 2),
             'max_delay' => (int)($retry['max_delay'] ?? 5000) // max 5 seconds
         ];
-        
+
         // Enhanced rate limiting configuration
         $rateLimit = $options['rate_limit'] ?? [];
         $this->rateLimitConfig = [
@@ -73,7 +73,7 @@ class Config
             'strategy' => $rateLimit['strategy'] ?? 'sliding_window', // sliding_window, fixed_window, token_bucket
             'burst_allowance' => (int)($rateLimit['burst_allowance'] ?? 10) // extra requests for burst
         ];
-        
+
         // Enhanced retry configuration with intelligent backoff
         $enhancedRetry = $options['enhanced_retry'] ?? [];
         $this->enhancedRetryConfig = [
@@ -127,54 +127,54 @@ class Config
 
         // ErrorReportingLevel ENUM validation is handled in fromString() method
     }
-    
+
     private function validateRateLimitConfig(): void
     {
         if ($this->rateLimitConfig['requests'] < 1) {
             throw new InvalidArgumentException('Rate limit requests must be at least 1');
         }
-        
+
         if ($this->rateLimitConfig['window'] < 1) {
             throw new InvalidArgumentException('Rate limit window must be at least 1 second');
         }
-        
+
         $validStrategies = ['sliding_window', 'fixed_window', 'token_bucket'];
         if (!in_array($this->rateLimitConfig['strategy'], $validStrategies, true)) {
             throw new InvalidArgumentException(
                 'Invalid rate limit strategy. Must be one of: ' . implode(', ', $validStrategies)
             );
         }
-        
+
         if ($this->rateLimitConfig['burst_allowance'] < 0) {
             throw new InvalidArgumentException('Rate limit burst allowance cannot be negative');
         }
     }
-    
+
     private function validateEnhancedRetryConfig(): void
     {
         if ($this->enhancedRetryConfig['attempts'] < 1) {
             throw new InvalidArgumentException('Enhanced retry attempts must be at least 1');
         }
-        
+
         if ($this->enhancedRetryConfig['attempts'] > 10) {
             throw new InvalidArgumentException('Enhanced retry attempts cannot exceed 10');
         }
-        
+
         $validBackoffStrategies = ['exponential', 'linear', 'fixed'];
         if (!in_array($this->enhancedRetryConfig['backoff'], $validBackoffStrategies, true)) {
             throw new InvalidArgumentException(
                 'Invalid retry backoff strategy. Must be one of: ' . implode(', ', $validBackoffStrategies)
             );
         }
-        
+
         if ($this->enhancedRetryConfig['base_delay'] < 1) {
             throw new InvalidArgumentException('Enhanced retry base delay must be at least 1ms');
         }
-        
+
         if ($this->enhancedRetryConfig['max_delay'] < $this->enhancedRetryConfig['base_delay']) {
             throw new InvalidArgumentException('Enhanced retry max delay must be greater than or equal to base delay');
         }
-        
+
         if ($this->enhancedRetryConfig['exponential_base'] <= 1.0) {
             throw new InvalidArgumentException('Enhanced retry exponential base must be greater than 1.0');
         }
@@ -212,27 +212,27 @@ class Config
     {
         return $this->retryConfig;
     }
-    
+
     /**
      * Get rate limiting configuration
-     * 
+     *
      * @return array{enabled: bool, requests: int, window: int, strategy: string, burst_allowance: int}
      */
     public function getRateLimitConfig(): array
     {
         return $this->rateLimitConfig;
     }
-    
+
     /**
      * Get enhanced retry configuration
-     * 
+     *
      * @return array{enabled: bool, attempts: int, backoff: string, base_delay: int, max_delay: int, jitter: bool, exponential_base: float}
      */
     public function getEnhancedRetryConfig(): array
     {
         return $this->enhancedRetryConfig;
     }
-    
+
     /**
      * Check if rate limiting is enabled
      */
@@ -240,7 +240,7 @@ class Config
     {
         return $this->rateLimitConfig['enabled'];
     }
-    
+
     /**
      * Check if enhanced retry is enabled
      */
@@ -315,5 +315,51 @@ class Config
             'rate_limit' => $this->rateLimitConfig,
             'enhanced_retry' => $this->enhancedRetryConfig,
         ];
+    }
+
+    /**
+     * Check if caching is enabled
+     */
+    public function isCacheEnabled(): bool
+    {
+        return false; // Default disabled, can be enabled via configuration
+    }
+
+    /**
+     * Get cache configuration
+     */
+    public function getCacheConfig(): array
+    {
+        return [
+            'driver' => 'memory',
+            'ttl' => 300,
+        ];
+    }
+
+    /**
+     * Check if monitoring is enabled
+     */
+    public function isMonitoringEnabled(): bool
+    {
+        return false; // Default disabled, can be enabled via configuration
+    }
+
+    /**
+     * Get monitoring configuration
+     */
+    public function getMonitoringConfig(): array
+    {
+        return [
+            'enabled' => false,
+            'metrics_interval' => 60,
+        ];
+    }
+
+    /**
+     * Get environment for configuration
+     */
+    public function getEnvironment(): \Wioex\SDK\Enums\Environment
+    {
+        return \Wioex\SDK\Enums\Environment::PRODUCTION;
     }
 }

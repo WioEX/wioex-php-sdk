@@ -13,11 +13,14 @@ use Wioex\SDK\Resources\Screens;
 use Wioex\SDK\Resources\Signals;
 use Wioex\SDK\Resources\Stocks;
 use Wioex\SDK\Resources\Streaming;
+use Wioex\SDK\Configuration\ConfigurationManager;
+use Wioex\SDK\Enums\Environment;
 
 class WioexClient
 {
     private Config $config;
     private Client $httpClient;
+    private ?ConfigurationManager $configManager = null;
 
     private ?Stocks $stocks = null;
     private ?Screens $screens = null;
@@ -61,10 +64,127 @@ class WioexClient
      * ]);
      * ```
      */
-    public function __construct(array $options)
+    public function __construct(array $options, ?ConfigurationManager $configManager = null)
     {
         $this->config = new Config($options);
         $this->httpClient = new Client($this->config);
+        $this->configManager = $configManager;
+    }
+
+    /**
+     * Create client from configuration file
+     *
+     * @param string $configPath Path to configuration file (.php, .json, .yaml, .env)
+     * @return self
+     *
+     * @example
+     * ```php
+     * $client = WioexClient::fromConfig('config/wioex.php');
+     * ```
+     */
+    public static function fromConfig(string $configPath): self
+    {
+        $configManager = ConfigurationManager::create()
+            ->addSource(\Wioex\SDK\Enums\ConfigurationSource::fromPath($configPath), $configPath);
+
+        $configData = $configManager->load();
+        return new self($configData, $configManager);
+    }
+
+    /**
+     * Create client for specific environment
+     *
+     * @param Environment $environment
+     * @param string $basePath
+     * @return self
+     *
+     * @example
+     * ```php
+     * $client = WioexClient::fromEnvironment(Environment::PRODUCTION);
+     * $client->setEnvironment(Environment::DEVELOPMENT);
+     * ```
+     */
+    public static function fromEnvironment(Environment $environment, string $basePath = ''): self
+    {
+        $configManager = ConfigurationManager::create($environment, $basePath);
+        $configData = $configManager->load();
+
+        return new self($configData, $configManager);
+    }
+
+    /**
+     * Set environment and reload configuration
+     *
+     * @param Environment $environment
+     * @return self
+     *
+     * @example
+     * ```php
+     * $client->setEnvironment(Environment::PRODUCTION);
+     * ```
+     */
+    public function setEnvironment(Environment $environment): self
+    {
+        if ($this->configManager === null) {
+            $this->configManager = ConfigurationManager::create($environment);
+        }
+
+        $this->configManager->setEnvironment($environment);
+        $newConfigData = $this->configManager->reload();
+
+        // Update client configuration
+        $this->config = new Config($newConfigData);
+        $this->httpClient = new Client($this->config);
+
+        // Reset resource instances to use new client
+        $this->resetResources();
+
+        return $this;
+    }
+
+    /**
+     * Get current environment
+     *
+     * @return Environment|null
+     */
+    public function getEnvironment(): ?Environment
+    {
+        return $this->configManager?->getEnvironment();
+    }
+
+    /**
+     * Configure client with new options
+     *
+     * @param array $options
+     * @return self
+     *
+     * @example
+     * ```php
+     * $client->configure([
+     *     'logging' => ['driver' => 'monolog', 'level' => 'info'],
+     *     'metrics' => ['track_latency' => true, 'track_errors' => true]
+     * ]);
+     * ```
+     */
+    public function configure(array $options): self
+    {
+        if ($this->configManager === null) {
+            $this->configManager = ConfigurationManager::create();
+        }
+
+        foreach ($options as $key => $value) {
+            $this->configManager->set($key, $value);
+        }
+
+        // Reload configuration and update client
+        $newConfigData = $this->configManager->reload();
+        $this->config = new Config($newConfigData);
+        $this->httpClient = new Client($this->config);
+
+        // Reset resource instances to use new client
+        $this->resetResources();
+
+        return $this;
     }
 
     /**
@@ -245,12 +365,299 @@ class WioexClient
     }
 
     /**
+     * Reset all resource instances to use updated client
+     */
+    private function resetResources(): void
+    {
+        $this->stocks = null;
+        $this->screens = null;
+        $this->signals = null;
+        $this->markets = null;
+        $this->news = null;
+        $this->currency = null;
+        $this->account = null;
+        $this->streaming = null;
+    }
+
+    /**
+     * Watch configuration changes
+     *
+     * @param callable $callback
+     * @return string Watcher ID
+     */
+    public function watchConfiguration(callable $callback): string
+    {
+        if ($this->configManager === null) {
+            throw new \RuntimeException('Configuration manager not available');
+        }
+
+        return $this->configManager->watch(function ($oldConfig, $newConfig) use ($callback) {
+            // Update client with new configuration
+            $this->config = new Config($newConfig);
+            $this->httpClient = new Client($this->config);
+            $this->resetResources();
+
+            // Notify callback
+            $callback($oldConfig, $newConfig, $this);
+        });
+    }
+
+    /**
+     * Stop watching configuration changes
+     *
+     * @param string $watcherId
+     * @return bool
+     */
+    public function unwatchConfiguration(string $watcherId): bool
+    {
+        return $this->configManager?->unwatch($watcherId) ?? false;
+    }
+
+    /**
+     * Check if configuration is valid
+     *
+     * @return bool
+     */
+    public function isConfigurationValid(): bool
+    {
+        return $this->configManager?->isValid() ?? true;
+    }
+
+    /**
+     * Get configuration validation results
+     *
+     * @return array
+     */
+    public function getConfigurationValidation(): array
+    {
+        return $this->configManager?->getValidationResults() ?? ['state' => 'unknown'];
+    }
+
+    /**
+     * Export configuration to file
+     *
+     * @param \Wioex\SDK\Enums\ConfigurationSource $target
+     * @param string $path
+     * @return bool
+     */
+    public function exportConfiguration(\Wioex\SDK\Enums\ConfigurationSource $target, string $path = ''): bool
+    {
+        if ($this->configManager === null) {
+            throw new \RuntimeException('Configuration manager not available');
+        }
+
+        return $this->configManager->export($target, $path);
+    }
+
+    /**
+     * Get configuration statistics
+     *
+     * @return array
+     */
+    public function getConfigurationStatistics(): array
+    {
+        return $this->configManager?->getStatistics() ?? [];
+    }
+
+    /**
+     * Get configuration manager
+     *
+     * @return ConfigurationManager|null
+     */
+    public function getConfigManager(): ?ConfigurationManager
+    {
+        return $this->configManager;
+    }
+
+    /**
+     * Get async client instance
+     *
+     * @return \Wioex\SDK\Async\AsyncClient
+     */
+    public function async(): \Wioex\SDK\Async\AsyncClient
+    {
+        return new \Wioex\SDK\Async\AsyncClient($this->config);
+    }
+
+    /**
+     * Get cache interface
+     *
+     * @return \Wioex\SDK\Cache\CacheInterface|null
+     */
+    public function getCache(): ?\Wioex\SDK\Cache\CacheInterface
+    {
+        return $this->httpClient->getCache();
+    }
+
+    /**
+     * Enable debug mode
+     *
+     * @return self
+     */
+    public function enableDebug(): self
+    {
+        return $this->configure(['debug' => true]);
+    }
+
+    /**
+     * Disable debug mode
+     *
+     * @return self
+     */
+    public function disableDebug(): self
+    {
+        return $this->configure(['debug' => false]);
+    }
+
+    /**
+     * Set request timeout
+     *
+     * @param int $timeout
+     * @return self
+     */
+    public function setTimeout(int $timeout): self
+    {
+        return $this->configure(['timeout' => $timeout]);
+    }
+
+    /**
+     * Set API key
+     *
+     * @param string $apiKey
+     * @return self
+     */
+    public function setApiKey(string $apiKey): self
+    {
+        return $this->configure(['api_key' => $apiKey]);
+    }
+
+    /**
+     * Set base URL
+     *
+     * @param string $baseUrl
+     * @return self
+     */
+    public function setBaseUrl(string $baseUrl): self
+    {
+        return $this->configure(['base_url' => $baseUrl]);
+    }
+
+    /**
+     * Enable caching with configuration
+     *
+     * @param array $cacheConfig
+     * @return self
+     */
+    public function enableCaching(array $cacheConfig = []): self
+    {
+        $defaultConfig = [
+            'cache' => array_merge([
+                'default' => 'file',
+                'file' => ['cache_dir' => sys_get_temp_dir() . '/wioex_cache']
+            ], $cacheConfig)
+        ];
+
+        return $this->configure($defaultConfig);
+    }
+
+    /**
+     * Enable rate limiting with configuration
+     *
+     * @param array $rateLimitConfig
+     * @return self
+     */
+    public function enableRateLimiting(array $rateLimitConfig = []): self
+    {
+        $defaultConfig = [
+            'rate_limiting' => array_merge([
+                'enabled' => true,
+                'requests' => 100,
+                'window' => 60,
+                'strategy' => 'sliding_window'
+            ], $rateLimitConfig)
+        ];
+
+        return $this->configure($defaultConfig);
+    }
+
+    /**
+     * Enable logging with configuration
+     *
+     * @param array $loggingConfig
+     * @return self
+     */
+    public function enableLogging(array $loggingConfig = []): self
+    {
+        $defaultConfig = [
+            'logging' => array_merge([
+                'enabled' => true,
+                'driver' => 'monolog',
+                'level' => 'info'
+            ], $loggingConfig)
+        ];
+
+        return $this->configure($defaultConfig);
+    }
+
+    /**
+     * Enable metrics tracking with configuration
+     *
+     * @param array $metricsConfig
+     * @return self
+     */
+    public function enableMetrics(array $metricsConfig = []): self
+    {
+        $defaultConfig = [
+            'metrics' => array_merge([
+                'track_latency' => true,
+                'track_errors' => true,
+                'track_cache_hits' => true
+            ], $metricsConfig)
+        ];
+
+        return $this->configure($defaultConfig);
+    }
+
+    /**
+     * Perform health check
+     *
+     * @return array
+     */
+    public function healthCheck(): array
+    {
+        $health = [
+            'client' => [
+                'status' => 'healthy',
+                'config_valid' => $this->isConfigurationValid(),
+                'environment' => $this->getEnvironment()?->value ?? 'unknown',
+            ],
+            'configuration' => $this->getConfigurationValidation(),
+        ];
+
+        // Add cache health if available
+        try {
+            $health['cache'] = $this->getCache()->isHealthy();
+        } catch (\Throwable $e) {
+            $health['cache'] = false;
+        }
+
+        // Add async health if available
+        try {
+            $health['async'] = $this->async()->getEventLoop()->getHealthMetrics();
+        } catch (\Throwable $e) {
+            $health['async'] = ['is_healthy' => false, 'error' => $e->getMessage()];
+        }
+
+        return $health;
+    }
+
+    /**
      * Get SDK version
      *
      * @return string
      */
     public static function getVersion(): string
     {
-        return '1.5.0';
+        return '2.0.0';
     }
 }

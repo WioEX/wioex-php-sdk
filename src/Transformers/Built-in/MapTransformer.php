@@ -19,16 +19,16 @@ class MapTransformer extends AbstractTransformer
     public function transform(array $data, array $context = []): array
     {
         $result = $this->getOption('preserve_unmapped', true) ? $data : [];
-        
+
         // Apply field mappings (rename fields)
         $result = $this->applyFieldMappings($result, $data);
-        
+
         // Apply value mappings (transform values)
         $result = $this->applyValueMappings($result);
-        
+
         // Apply custom transformations
         $result = $this->applyTransformations($result);
-        
+
         return $result;
     }
 
@@ -45,29 +45,29 @@ class MapTransformer extends AbstractTransformer
     private function applyFieldMappings(array $result, array $data): array
     {
         $fieldMappings = $this->getOption('field_mappings', []);
-        
+
         foreach ($fieldMappings as $oldField => $newField) {
             if (isset($data[$oldField])) {
                 $result[$newField] = $data[$oldField];
-                
+
                 // Remove old field if not preserving unmapped
                 if (!$this->getOption('preserve_unmapped', true)) {
                     unset($result[$oldField]);
                 }
             }
         }
-        
+
         return $result;
     }
 
     private function applyValueMappings(array $data): array
     {
         $valueMappings = $this->getOption('value_mappings', []);
-        
+
         foreach ($valueMappings as $field => $mapping) {
             if (isset($data[$field])) {
                 $value = $data[$field];
-                
+
                 if (is_array($mapping)) {
                     // Direct value mapping
                     $data[$field] = $mapping[$value] ?? $value;
@@ -77,30 +77,30 @@ class MapTransformer extends AbstractTransformer
                 }
             }
         }
-        
+
         return $data;
     }
 
     private function applyTransformations(array $data): array
     {
         $transformations = $this->getOption('transformations', []);
-        
+
         foreach ($transformations as $transformation) {
             if (is_callable($transformation)) {
                 $data = $transformation($data);
             }
         }
-        
+
         return $data;
     }
 
     public function validate(array $data, array $context = []): bool
     {
         $strictMapping = $this->getOption('strict_mapping', false);
-        
+
         if ($strictMapping) {
             $fieldMappings = $this->getOption('field_mappings', []);
-            
+
             // Check if all mapped fields exist in data
             foreach (array_keys($fieldMappings) as $field) {
                 if (!isset($data[$field])) {
@@ -108,7 +108,7 @@ class MapTransformer extends AbstractTransformer
                 }
             }
         }
-        
+
         return true;
     }
 
@@ -122,7 +122,7 @@ class MapTransformer extends AbstractTransformer
         $mappings = $this->getOption('field_mappings', []);
         $mappings[$oldField] = $newField;
         $this->setOption('field_mappings', $mappings);
-        
+
         return $this;
     }
 
@@ -131,7 +131,7 @@ class MapTransformer extends AbstractTransformer
         $mappings = $this->getOption('value_mappings', []);
         $mappings[$field] = $mapping;
         $this->setOption('value_mappings', $mappings);
-        
+
         return $this;
     }
 
@@ -140,7 +140,7 @@ class MapTransformer extends AbstractTransformer
         $transformations = $this->getOption('transformations', []);
         $transformations[] = $transformation;
         $this->setOption('transformations', $transformations);
-        
+
         return $this;
     }
 }

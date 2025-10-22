@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 
 /**
  * Rate limiting middleware for WioEX SDK
- * 
+ *
  * Implements various rate limiting strategies to prevent API quota exhaustion
  * and ensure compliance with WioEX API limits.
  */
@@ -23,15 +23,15 @@ class RateLimitingMiddleware
     private int $windowSeconds;
     private string $strategy;
     private int $burstAllowance;
-    
+
     // Sliding window tracking
     private array $requestTimes = [];
-    
+
     // Token bucket implementation
     private float $tokens;
     private float $lastRefill;
     private float $refillRate;
-    
+
     // Fixed window tracking
     private int $fixedWindowStart;
     private int $fixedWindowCount;
@@ -46,7 +46,7 @@ class RateLimitingMiddleware
         $this->windowSeconds = $config['window'];
         $this->strategy = $config['strategy'];
         $this->burstAllowance = $config['burst_allowance'];
-        
+
         // Initialize strategy-specific state
         $this->initializeStrategy();
     }
@@ -63,7 +63,7 @@ class RateLimitingMiddleware
 
             // Check rate limit before making request
             $waitTime = $this->checkRateLimit();
-            
+
             if ($waitTime > 0) {
                 // If we need to wait, delay the request
                 return $this->delayRequest($handler, $request, $options, $waitTime);
@@ -82,19 +82,19 @@ class RateLimitingMiddleware
     private function initializeStrategy(): void
     {
         $now = microtime(true);
-        
+
         switch ($this->strategy) {
             case 'token_bucket':
                 $this->tokens = (float) ($this->maxRequests + $this->burstAllowance);
                 $this->lastRefill = $now;
                 $this->refillRate = ($this->maxRequests + $this->burstAllowance) / $this->windowSeconds;
                 break;
-                
+
             case 'fixed_window':
                 $this->fixedWindowStart = (int) $now;
                 $this->fixedWindowCount = 0;
                 break;
-                
+
             case 'sliding_window':
             default:
                 // Sliding window uses requestTimes array, no additional initialization needed
@@ -104,7 +104,7 @@ class RateLimitingMiddleware
 
     /**
      * Check if request should be rate limited
-     * 
+     *
      * @return int Wait time in milliseconds (0 if no wait needed)
      */
     private function checkRateLimit(): int
@@ -124,13 +124,13 @@ class RateLimitingMiddleware
     {
         $now = microtime(true);
         $windowStart = $now - $this->windowSeconds;
-        
+
         // Remove old requests outside the window
         $this->requestTimes = array_filter(
             $this->requestTimes,
             fn($time) => $time > $windowStart
         );
-        
+
         // Check if we're at the limit
         if (count($this->requestTimes) >= $this->maxRequests) {
             // Calculate wait time until oldest request falls out of window
@@ -138,7 +138,7 @@ class RateLimitingMiddleware
             $waitTime = ($oldestRequest + $this->windowSeconds - $now) * 1000;
             return max(0, (int) ceil($waitTime));
         }
-        
+
         return 0;
     }
 
@@ -148,20 +148,20 @@ class RateLimitingMiddleware
     private function checkFixedWindow(): int
     {
         $now = (int) microtime(true);
-        
+
         // Check if we're in a new window
         if ($now - $this->fixedWindowStart >= $this->windowSeconds) {
             $this->fixedWindowStart = $now;
             $this->fixedWindowCount = 0;
         }
-        
+
         // Check if we're at the limit
         if ($this->fixedWindowCount >= $this->maxRequests) {
             $windowEnd = $this->fixedWindowStart + $this->windowSeconds;
             $waitTime = ($windowEnd - $now) * 1000;
             return max(0, (int) $waitTime);
         }
-        
+
         return 0;
     }
 
@@ -171,7 +171,7 @@ class RateLimitingMiddleware
     private function checkTokenBucket(): int
     {
         $now = microtime(true);
-        
+
         // Refill tokens based on elapsed time
         $elapsed = $now - $this->lastRefill;
         $tokensToAdd = $elapsed * $this->refillRate;
@@ -180,14 +180,14 @@ class RateLimitingMiddleware
             $this->tokens + $tokensToAdd
         );
         $this->lastRefill = $now;
-        
+
         // Check if we have enough tokens
         if ($this->tokens < 1.0) {
             // Calculate wait time for next token
             $waitTime = (1.0 / $this->refillRate) * 1000;
             return (int) ceil($waitTime);
         }
-        
+
         return 0;
     }
 
@@ -197,16 +197,16 @@ class RateLimitingMiddleware
     private function recordRequest(): void
     {
         $now = microtime(true);
-        
+
         switch ($this->strategy) {
             case 'sliding_window':
                 $this->requestTimes[] = $now;
                 break;
-                
+
             case 'fixed_window':
                 $this->fixedWindowCount++;
                 break;
-                
+
             case 'token_bucket':
                 $this->tokens -= 1.0;
                 break;
@@ -226,13 +226,13 @@ class RateLimitingMiddleware
         $promise = new Promise(function () use (&$promise, $handler, $request, $options, $waitTimeMs) {
             // Sleep for the required time
             usleep($waitTimeMs * 1000);
-            
+
             // Record the request after delay
             $this->recordRequest();
-            
+
             // Make the actual request
             $actualPromise = $handler($request, $options);
-            
+
             if ($actualPromise instanceof PromiseInterface) {
                 $actualPromise->then(
                     function ($response) use ($promise) {
@@ -256,7 +256,7 @@ class RateLimitingMiddleware
     public function getStatus(): array
     {
         $now = microtime(true);
-        
+
         $status = [
             'enabled' => $this->enabled,
             'strategy' => $this->strategy,
@@ -264,7 +264,7 @@ class RateLimitingMiddleware
             'window_seconds' => $this->windowSeconds,
             'burst_allowance' => $this->burstAllowance,
         ];
-        
+
         switch ($this->strategy) {
             case 'sliding_window':
                 $windowStart = $now - $this->windowSeconds;
@@ -275,7 +275,7 @@ class RateLimitingMiddleware
                 $status['current_requests'] = count($activeRequests);
                 $status['remaining_requests'] = max(0, $this->maxRequests - count($activeRequests));
                 break;
-                
+
             case 'fixed_window':
                 if ($now - $this->fixedWindowStart >= $this->windowSeconds) {
                     $status['current_requests'] = 0;
@@ -286,7 +286,7 @@ class RateLimitingMiddleware
                 }
                 $status['window_reset_in'] = max(0, $this->windowSeconds - ($now - $this->fixedWindowStart));
                 break;
-                
+
             case 'token_bucket':
                 // Refresh tokens before reporting
                 $elapsed = $now - $this->lastRefill;
@@ -295,13 +295,13 @@ class RateLimitingMiddleware
                     $this->maxRequests + $this->burstAllowance,
                     $this->tokens + $tokensToAdd
                 );
-                
+
                 $status['current_tokens'] = $currentTokens;
                 $status['max_tokens'] = $this->maxRequests + $this->burstAllowance;
                 $status['refill_rate'] = $this->refillRate;
                 break;
         }
-        
+
         return $status;
     }
 
@@ -336,7 +336,7 @@ class RateLimitingMiddleware
     public function getStatistics(): array
     {
         $status = $this->getStatus();
-        
+
         return [
             'strategy' => $this->strategy,
             'configuration' => [
@@ -355,7 +355,7 @@ class RateLimitingMiddleware
     private function calculateEfficiencyMetrics(): array
     {
         $now = microtime(true);
-        
+
         switch ($this->strategy) {
             case 'sliding_window':
                 $windowStart = $now - $this->windowSeconds;
@@ -365,7 +365,7 @@ class RateLimitingMiddleware
                 );
                 $utilization = count($recentRequests) / $this->maxRequests;
                 break;
-                
+
             case 'fixed_window':
                 if ($now - $this->fixedWindowStart >= $this->windowSeconds) {
                     $utilization = 0.0;
@@ -373,7 +373,7 @@ class RateLimitingMiddleware
                     $utilization = $this->fixedWindowCount / $this->maxRequests;
                 }
                 break;
-                
+
             case 'token_bucket':
                 $elapsed = $now - $this->lastRefill;
                 $tokensToAdd = $elapsed * $this->refillRate;
@@ -383,11 +383,11 @@ class RateLimitingMiddleware
                 );
                 $utilization = 1.0 - ($currentTokens / ($this->maxRequests + $this->burstAllowance));
                 break;
-                
+
             default:
                 $utilization = 0.0;
         }
-        
+
         return [
             'utilization_percentage' => round($utilization * 100, 2),
             'requests_per_second' => $this->calculateRequestsPerSecond(),
@@ -403,15 +403,15 @@ class RateLimitingMiddleware
         if ($this->strategy !== 'sliding_window' || empty($this->requestTimes)) {
             return 0.0;
         }
-        
+
         $now = microtime(true);
         $oneSecondAgo = $now - 1.0;
-        
+
         $recentRequests = array_filter(
             $this->requestTimes,
             fn($time) => $time > $oneSecondAgo
         );
-        
+
         return (float) count($recentRequests);
     }
 

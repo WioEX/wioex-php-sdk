@@ -63,7 +63,6 @@ class EventLoop
 
             // Process operation queue
             $this->processOperationQueue();
-
         } finally {
             $tickTime = microtime(true) - $tickStart;
             $this->updateTickStatistics($tickTime);
@@ -146,7 +145,7 @@ class EventLoop
         usort($this->operationQueue, fn($a, $b) => $b['priority'] <=> $a['priority']);
 
         $this->statistics['total_operations']++;
-        $this->statistics['operations_by_type'][$type->value] = 
+        $this->statistics['operations_by_type'][$type->value] =
             ($this->statistics['operations_by_type'][$type->value] ?? 0) + 1;
     }
 
@@ -169,7 +168,7 @@ class EventLoop
     public function getPendingOperationsByType(): array
     {
         $byType = [];
-        
+
         foreach ($this->operationQueue as $operation) {
             $type = $operation['type']->value;
             $byType[$type] = ($byType[$type] ?? 0) + 1;
@@ -256,7 +255,7 @@ class EventLoop
 
     private function processOperationQueue(): void
     {
-        if (empty($this->operationQueue)) {
+        if (count($this->operationQueue) === 0) {
             return;
         }
 
@@ -274,21 +273,21 @@ class EventLoop
 
     private function shouldStop(): bool
     {
-        return $this->state->isStopping() || 
+        return $this->state->isStopping() ||
                ($this->state->isIdle() && $this->isEmpty());
     }
 
     private function isEmpty(): bool
     {
-        return empty($this->timers) && 
-               empty($this->nextTickCallbacks) && 
-               empty($this->operationQueue);
+        return count($this->timers) === 0 &&
+               count($this->nextTickCallbacks) === 0 &&
+               count($this->operationQueue) === 0;
     }
 
     private function updateTickStatistics(float $tickTime): void
     {
         $this->statistics['max_tick_time'] = max($this->statistics['max_tick_time'], $tickTime);
-        
+
         $totalTicks = $this->statistics['total_ticks'];
         $currentAvg = $this->statistics['avg_tick_time'];
         $this->statistics['avg_tick_time'] = (($currentAvg * ($totalTicks - 1)) + $tickTime) / $totalTicks;
@@ -297,7 +296,7 @@ class EventLoop
     public function getHealthMetrics(): array
     {
         $stats = $this->getStatistics();
-        
+
         return [
             'state' => $this->state->value,
             'is_healthy' => $this->isHealthy(),
@@ -318,14 +317,14 @@ class EventLoop
     private function isHealthy(): bool
     {
         $stats = $this->getStatistics();
-        
+
         // Consider unhealthy if:
         // - Average tick time is too high (> 10ms)
         // - Too many pending operations (> 1000)
         // - Event loop is stopped unexpectedly
-        
-        return $stats['avg_tick_time'] < 0.01 && 
-               $stats['pending_operations'] < 1000 && 
+
+        return $stats['avg_tick_time'] < 0.01 &&
+               $stats['pending_operations'] < 1000 &&
                ($this->state->isActive() || $this->state->isStopped());
     }
 }

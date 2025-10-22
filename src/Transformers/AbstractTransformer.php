@@ -59,7 +59,7 @@ abstract class AbstractTransformer implements TransformerInterface
     protected function applyToNestedArray(array $data, callable $callback): array
     {
         $result = [];
-        
+
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $result[$key] = $this->applyToNestedArray($value, $callback);
@@ -67,7 +67,7 @@ abstract class AbstractTransformer implements TransformerInterface
                 $result[$key] = $callback($value, $key, $data);
             }
         }
-        
+
         return $result;
     }
 
@@ -75,14 +75,14 @@ abstract class AbstractTransformer implements TransformerInterface
     {
         $keys = explode('.', $path);
         $current = $data;
-        
+
         foreach ($keys as $key) {
             if (!is_array($current) || !isset($current[$key])) {
                 return null;
             }
             $current = $current[$key];
         }
-        
+
         return $current;
     }
 
@@ -90,7 +90,7 @@ abstract class AbstractTransformer implements TransformerInterface
     {
         $keys = explode('.', $path);
         $current = &$data;
-        
+
         foreach ($keys as $i => $key) {
             if ($i === count($keys) - 1) {
                 $current[$key] = $value;
@@ -107,14 +107,14 @@ abstract class AbstractTransformer implements TransformerInterface
     {
         $keys = explode('.', $path);
         $current = &$data;
-        
+
         for ($i = 0; $i < count($keys) - 1; $i++) {
             if (!is_array($current) || !isset($current[$keys[$i]])) {
                 return;
             }
             $current = &$current[$keys[$i]];
         }
-        
+
         if (is_array($current)) {
             unset($current[end($keys)]);
         }

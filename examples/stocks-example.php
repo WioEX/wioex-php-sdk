@@ -151,7 +151,8 @@ foreach ($losers['data'] as $stock) {
 echo "\nMarket Sentiment Analysis:\n";
 $sentiment = $client->screens()->marketSentiment(MarketIndex::SP500, 30);
 echo sprintf("  Sentiment: %s\n", $sentiment['data']['sentiment']);
-echo sprintf("  Bullish: %.1f%% | Bearish: %.1f%%\n", 
+echo sprintf(
+    "  Bullish: %.1f%% | Bearish: %.1f%%\n",
     $sentiment['data']['metrics']['bullish_ratio'],
     $sentiment['data']['metrics']['bearish_ratio']
 );

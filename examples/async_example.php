@@ -10,7 +10,7 @@ use Wioex\SDK\Enums\AsyncOperationType;
 
 /**
  * Promise-based Async Support Example
- * 
+ *
  * This example demonstrates the Promise-based async functionality
  * including concurrent requests, batch processing, and event loop management.
  */
@@ -34,16 +34,15 @@ try {
     $basicPromise = Promise::resolve('Hello, World!');
     $result = $asyncClient->wait($basicPromise);
     echo "   ✓ Basic promise resolved: {$result}\n";
-    
+
     // Promise chaining
     $chainedPromise = Promise::resolve(10)
         ->then(fn($value) => $value * 2)
         ->then(fn($value) => $value + 5)
         ->then(fn($value) => "Final result: {$value}");
-    
+
     $chainResult = $asyncClient->wait($chainedPromise);
     echo "   ✓ Chained promise: {$chainResult}\n\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }
@@ -54,32 +53,32 @@ try {
     // Single async request
     echo "   a) Single async request...\n";
     $quotePromise = $asyncClient->getAsync('/v2/stocks/quote', ['symbol' => 'AAPL']);
-    
+
     $quotePromise->then(
-        function($response) {
+        function ($response) {
             $data = $response->data();
             echo "      ✓ AAPL Quote: \${$data['price']} ({$data['change_percent']}%)\n";
         },
-        function($error) {
+        function ($error) {
             echo "      ❌ Request failed: " . $error->getMessage() . "\n";
         }
     );
-    
+
     // Wait for completion
     $asyncClient->wait($quotePromise);
-    
+
     // Multiple concurrent requests
     echo "   b) Concurrent requests...\n";
     $symbols = ['AAPL', 'GOOGL', 'MSFT'];
     $promises = [];
-    
+
     foreach ($symbols as $symbol) {
         $promises[$symbol] = $asyncClient->getAsync('/v2/stocks/quote', ['symbol' => $symbol]);
     }
-    
+
     $allResults = Promise::allSettled($promises);
     $results = $asyncClient->wait($allResults);
-    
+
     foreach ($results as $symbol => $result) {
         if ($result['status'] === 'fulfilled') {
             $data = $result['value']->data();
@@ -89,7 +88,6 @@ try {
         }
     }
     echo "\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }
@@ -102,14 +100,13 @@ try {
         ['method' => 'GET', 'path' => '/v2/stocks/quote', 'options' => ['query' => ['symbol' => 'GOOGL']]],
         ['method' => 'GET', 'path' => '/v2/stocks/quote', 'options' => ['query' => ['symbol' => 'MSFT']]],
     ];
-    
+
     $bulkPromise = $asyncClient->bulkAsync($bulkRequests);
     $bulkResults = $asyncClient->wait($bulkPromise);
-    
+
     echo "   ✓ Bulk operation completed\n";
     echo "   📊 Successful requests: " . count(array_filter($bulkResults, fn($r) => $r['status'] === 'fulfilled')) . "\n";
     echo "   📊 Failed requests: " . count(array_filter($bulkResults, fn($r) => $r['status'] === 'rejected')) . "\n\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }
@@ -119,7 +116,7 @@ echo "4. Batch Processing with Concurrency Control:\n";
 try {
     $batchRequests = [];
     $symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META'];
-    
+
     foreach ($symbols as $symbol) {
         $batchRequests[] = [
             'method' => 'GET',
@@ -127,16 +124,15 @@ try {
             'options' => ['query' => ['symbol' => $symbol]]
         ];
     }
-    
+
     $batchPromise = $asyncClient->batchAsync($batchRequests, 3); // Concurrency of 3
     $batchResults = $asyncClient->wait($batchPromise);
-    
+
     echo "   ✓ Batch processing completed\n";
     echo "   📊 Total requests: {$batchResults['total']}\n";
     echo "   📊 Completed: {$batchResults['completed']}\n";
     echo "   📊 Successful: " . count($batchResults['results']) . "\n";
     echo "   📊 Failed: " . count($batchResults['errors']) . "\n\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }
@@ -148,29 +144,28 @@ try {
     echo "   a) Timeout operation...\n";
     $slowPromise = $asyncClient->delayAsync(2000); // 2 second delay
     $timeoutPromise = $asyncClient->timeoutAsync($slowPromise, 1000); // 1 second timeout
-    
+
     try {
         $asyncClient->wait($timeoutPromise);
         echo "      ✓ Operation completed within timeout\n";
     } catch (Exception $e) {
         echo "      ⏰ Operation timed out (expected)\n";
     }
-    
+
     // Retry example
     echo "   b) Retry operation...\n";
     $attempts = 0;
-    $retryOperation = function() use (&$attempts) {
+    $retryOperation = function () use (&$attempts) {
         $attempts++;
         if ($attempts < 3) {
             throw new Exception("Attempt {$attempts} failed");
         }
         return Promise::resolve("Success on attempt {$attempts}");
     };
-    
+
     $retryPromise = $asyncClient->retryAsync($retryOperation, 5, 100);
     $retryResult = $asyncClient->wait($retryPromise);
     echo "      ✓ Retry result: {$retryResult}\n\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }
@@ -206,22 +201,22 @@ try {
         Promise::resolve('Second'),
         Promise::resolve('Third'),
     ];
-    
+
     $allResult = Promise::all($allPromises);
     $allValues = $asyncClient->wait($allResult);
     echo "      ✓ All values: " . implode(', ', $allValues) . "\n";
-    
+
     // Promise.race - first to complete wins
     echo "   b) Promise.race pattern...\n";
     $racePromises = [
         $asyncClient->delayAsync(100)->then(fn() => 'Fast'),
         $asyncClient->delayAsync(200)->then(fn() => 'Slow'),
     ];
-    
+
     $raceResult = Promise::race($racePromises);
     $winner = $asyncClient->wait($raceResult);
     echo "      ✓ Race winner: {$winner}\n";
-    
+
     // Promise.any - first successful result
     echo "   c) Promise.any pattern...\n";
     $anyPromises = [
@@ -229,11 +224,10 @@ try {
         Promise::reject('Error 2'),
         Promise::resolve('Success!'),
     ];
-    
+
     $anyResult = Promise::any($anyPromises);
     $anyValue = $asyncClient->wait($anyResult);
     echo "      ✓ Any result: {$anyValue}\n\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }
@@ -241,19 +235,22 @@ try {
 echo "8. Real-world Example - Portfolio Monitoring:\n";
 
 try {
-    class AsyncPortfolioMonitor {
+    class AsyncPortfolioMonitor
+    {
         private AsyncClient $client;
-        
-        public function __construct(AsyncClient $client) {
+
+        public function __construct(AsyncClient $client)
+        {
             $this->client = $client;
         }
-        
-        public function monitorPortfolio(array $symbols): Promise {
+
+        public function monitorPortfolio(array $symbols): Promise
+        {
             $promises = [];
-            
+
             foreach ($symbols as $symbol) {
                 $promises[$symbol] = $this->client->getAsync('/v2/stocks/quote', ['symbol' => $symbol])
-                    ->then(function($response) use ($symbol) {
+                    ->then(function ($response) use ($symbol) {
                         $data = $response->data();
                         return [
                             'symbol' => $symbol,
@@ -262,7 +259,7 @@ try {
                             'status' => 'success'
                         ];
                     })
-                    ->catch(function($error) use ($symbol) {
+                    ->catch(function ($error) use ($symbol) {
                         return [
                             'symbol' => $symbol,
                             'error' => $error->getMessage(),
@@ -270,17 +267,17 @@ try {
                         ];
                     });
             }
-            
+
             return Promise::allSettled($promises);
         }
     }
-    
+
     $monitor = new AsyncPortfolioMonitor($asyncClient);
     $portfolioSymbols = ['AAPL', 'GOOGL', 'MSFT'];
-    
+
     $monitoringPromise = $monitor->monitorPortfolio($portfolioSymbols);
     $portfolioResults = $asyncClient->wait($monitoringPromise);
-    
+
     echo "   📊 Portfolio Monitoring Results:\n";
     foreach ($portfolioResults as $symbol => $result) {
         if ($result['status'] === 'fulfilled') {
@@ -293,7 +290,6 @@ try {
         }
     }
     echo "\n";
-    
 } catch (Exception $e) {
     echo "   ❌ Error: " . $e->getMessage() . "\n\n";
 }

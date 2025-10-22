@@ -169,7 +169,7 @@ enum ErrorReportingLevel: string
      */
     public static function fromString(string $value): self
     {
-        return self::tryFrom($value) 
+        return self::tryFrom($value)
             ?? throw new \InvalidArgumentException("Invalid error reporting level: {$value}");
     }
 

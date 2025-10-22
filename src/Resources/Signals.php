@@ -35,13 +35,13 @@ class Signals extends Resource
      *     'signal_type' => SignalType::BUY,
      *     'min_confidence' => 80
      * ]);
-     * 
+     *
      * // Get strong signals only
      * $client->signals()->active([
      *     'signal_type' => SignalType::STRONG_BUY
      * ]);
      * ```
-     * 
+     *
      * @example Backward compatibility with strings:
      * ```php
      * $client->signals()->active([
@@ -54,7 +54,7 @@ class Signals extends Resource
     {
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processSignalOptions($options);
-        
+
         return parent::get('/v2/stocks/signals/active', $processedOptions);
     }
 
@@ -79,18 +79,18 @@ class Signals extends Resource
      *     'symbol' => 'TSLA',
      *     'trigger_type' => TriggerType::TARGET
      * ]);
-     * 
+     *
      * // Get all profitable outcomes
      * $client->signals()->history([
      *     'trigger_type' => TriggerType::TARGET
      * ]);
-     * 
+     *
      * // Get stop loss triggers
      * $client->signals()->history([
      *     'trigger_type' => TriggerType::STOP_LOSS
      * ]);
      * ```
-     * 
+     *
      * @example Backward compatibility with strings:
      * ```php
      * $client->signals()->history([
@@ -103,30 +103,30 @@ class Signals extends Resource
     {
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processSignalOptions($options);
-        
+
         return parent::get('/v2/stocks/signals/history', $processedOptions);
     }
-    
+
     /**
      * Process signal options to convert ENUMs to strings
-     * 
+     *
      * @param array $options Raw options array
      * @return array Processed options with ENUM values converted to strings
      */
     private function processSignalOptions(array $options): array
     {
         $processed = $options;
-        
+
         // Convert SignalType ENUM to string
         if (isset($processed['signal_type']) && $processed['signal_type'] instanceof SignalType) {
             $processed['signal_type'] = $processed['signal_type']->value;
         }
-        
+
         // Convert TriggerType ENUM to string
         if (isset($processed['trigger_type']) && $processed['trigger_type'] instanceof TriggerType) {
             $processed['trigger_type'] = $processed['trigger_type']->value;
         }
-        
+
         return $processed;
     }
 }
