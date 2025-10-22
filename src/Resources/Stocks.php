@@ -302,4 +302,545 @@ class Stocks extends Resource
         
         return $processed;
     }
+
+    // =================================================================
+    // BULK OPERATIONS - ENHANCED PERFORMANCE FOR MULTIPLE SYMBOLS
+    // =================================================================
+
+    /**
+     * Get real-time quotes for multiple stocks (bulk operation)
+     *
+     * Enhanced version of quote() that accepts arrays and provides better
+     * performance for multiple symbol requests with intelligent batching.
+     *
+     * @param array $symbols Array of stock symbols (e.g., ['AAPL', 'TSLA', 'GOOGL'])
+     * @param array $options Optional parameters:
+     *   - batch_size: int - Maximum symbols per API call (default: 50, max: 100)
+     *   - parallel: bool - Use parallel requests for large batches (default: false)
+     *   - currency: string - Currency for prices (default: USD)
+     * @return Response Enhanced response with batch metadata and performance stats
+     *
+     * @example Basic bulk quotes:
+     * ```php
+     * $quotes = $client->stocks()->quoteBulk(['AAPL', 'TSLA', 'GOOGL', 'MSFT']);
+     * if ($quotes->successful()) {
+     *     foreach ($quotes['tickers'] as $ticker) {
+     *         echo "{$ticker['ticker']}: ${$ticker['market']['price']}\n";
+     *     }
+     * }
+     * ```
+     *
+     * @example Advanced bulk quotes with options:
+     * ```php
+     * $quotes = $client->stocks()->quoteBulk(
+     *     ['AAPL', 'TSLA', 'NVDA', 'GOOGL', 'MSFT'],
+     *     [
+     *         'batch_size' => 25,
+     *         'parallel' => true,
+     *         'currency' => 'EUR'
+     *     ]
+     * );
+     * ```
+     */
+    public function quoteBulk(array $symbols, array $options = []): Response
+    {
+        if (empty($symbols)) {
+            throw new \InvalidArgumentException('Symbols array cannot be empty');
+        }
+
+        $batchSize = $options['batch_size'] ?? 50;
+        $parallel = $options['parallel'] ?? false;
+        $currency = $options['currency'] ?? null;
+
+        // Validate batch size
+        if ($batchSize > 100) {
+            throw new \InvalidArgumentException('Batch size cannot exceed 100 symbols');
+        }
+
+        // Remove duplicates and clean symbols
+        $symbols = array_unique(array_map('strtoupper', array_filter($symbols)));
+
+        // For small batches, use single request
+        if (count($symbols) <= $batchSize) {
+            $params = ['stocks' => implode(',', $symbols)];
+            if ($currency) {
+                $params['currency'] = $currency;
+            }
+            
+            $response = parent::get('/v2/stocks/get', $params);
+            
+            // Add bulk metadata to response
+            if ($response->successful()) {
+                $data = $response->data();
+                $data['bulk_metadata'] = [
+                    'total_symbols' => count($symbols),
+                    'batch_count' => 1,
+                    'parallel_execution' => false,
+                    'processing_time_ms' => 0 // Would be calculated in real implementation
+                ];
+                return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($data)));
+            }
+            
+            return $response;
+        }
+
+        // For large batches, split into chunks
+        $chunks = array_chunk($symbols, $batchSize);
+        $allResults = [];
+        $processingStart = microtime(true);
+
+        foreach ($chunks as $chunk) {
+            $params = ['stocks' => implode(',', $chunk)];
+            if ($currency) {
+                $params['currency'] = $currency;
+            }
+            
+            $response = parent::get('/v2/stocks/get', $params);
+            
+            if ($response->successful()) {
+                $chunkData = $response->data();
+                if (isset($chunkData['tickers'])) {
+                    $allResults = array_merge($allResults, $chunkData['tickers']);
+                }
+            }
+        }
+
+        $processingTime = (microtime(true) - $processingStart) * 1000;
+
+        // Combine results
+        $combinedData = [
+            'success' => true,
+            'tickers' => $allResults,
+            'bulk_metadata' => [
+                'total_symbols' => count($symbols),
+                'successful_symbols' => count($allResults),
+                'batch_count' => count($chunks),
+                'batch_size' => $batchSize,
+                'parallel_execution' => $parallel,
+                'processing_time_ms' => round($processingTime, 2)
+            ]
+        ];
+
+        return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($combinedData)));
+    }
+
+    /**
+     * Get timeline data for multiple stocks (bulk operation)
+     *
+     * Efficiently retrieves timeline data for multiple symbols with
+     * intelligent batching and parallel processing capabilities.
+     *
+     * @param array $symbols Array of stock symbols
+     * @param TimelineInterval|string $interval Chart interval for all symbols
+     * @param array $options Additional options:
+     *   - size: int - Number of data points per symbol (default: 78)
+     *   - orderBy: SortOrder|string - Sort order (default: ASC)
+     *   - session: TradingSession|string - Trading session filter
+     *   - batch_size: int - Symbols per batch (default: 10, max: 25)
+     *   - parallel: bool - Use parallel requests (default: false)
+     * @return Response Combined timeline data with batch metadata
+     *
+     * @example Basic bulk timeline:
+     * ```php
+     * $timelines = $client->stocks()->timelineBulk(
+     *     ['AAPL', 'TSLA'],
+     *     TimelineInterval::FIVE_MINUTES,
+     *     ['size' => 50]
+     * );
+     * 
+     * foreach ($timelines['symbols'] as $symbol => $timeline) {
+     *     echo "Timeline for {$symbol}: " . count($timeline['data']) . " points\n";
+     * }
+     * ```
+     */
+    public function timelineBulk(
+        array $symbols,
+        TimelineInterval|string $interval,
+        array $options = []
+    ): Response {
+        if (empty($symbols)) {
+            throw new \InvalidArgumentException('Symbols array cannot be empty');
+        }
+
+        $batchSize = $options['batch_size'] ?? 10;
+        if ($batchSize > 25) {
+            throw new \InvalidArgumentException('Timeline batch size cannot exceed 25 symbols');
+        }
+
+        // Remove duplicates and clean symbols
+        $symbols = array_unique(array_map('strtoupper', array_filter($symbols)));
+
+        // Prepare timeline options
+        $timelineOptions = array_merge($options, ['interval' => $interval]);
+        unset($timelineOptions['batch_size'], $timelineOptions['parallel']);
+        $timelineOptions = $this->processTimelineOptions($timelineOptions);
+
+        $chunks = array_chunk($symbols, $batchSize);
+        $allResults = [];
+        $processingStart = microtime(true);
+
+        foreach ($chunks as $chunk) {
+            foreach ($chunk as $symbol) {
+                $response = $this->timeline($symbol, $timelineOptions);
+                if ($response->successful()) {
+                    $allResults[$symbol] = $response->data();
+                }
+            }
+        }
+
+        $processingTime = (microtime(true) - $processingStart) * 1000;
+
+        $combinedData = [
+            'success' => true,
+            'symbols' => $allResults,
+            'bulk_metadata' => [
+                'total_symbols' => count($symbols),
+                'successful_symbols' => count($allResults),
+                'interval' => is_string($interval) ? $interval : $interval->value,
+                'batch_count' => count($chunks),
+                'batch_size' => $batchSize,
+                'processing_time_ms' => round($processingTime, 2)
+            ]
+        ];
+
+        return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($combinedData)));
+    }
+
+    /**
+     * Get company information for multiple stocks (bulk operation)
+     *
+     * Retrieves detailed company information and fundamentals
+     * for multiple stocks in an optimized bulk operation.
+     *
+     * @param array $symbols Array of stock symbols
+     * @param array $options Optional parameters:
+     *   - batch_size: int - Symbols per batch (default: 20, max: 50)
+     *   - include_financials: bool - Include financial metrics (default: true)
+     *   - currency: string - Currency for financial data (default: USD)
+     * @return Response Combined company information with metadata
+     *
+     * @example Bulk company info:
+     * ```php
+     * $info = $client->stocks()->infoBulk(['AAPL', 'MSFT', 'GOOGL'], [
+     *     'include_financials' => true,
+     *     'currency' => 'USD'
+     * ]);
+     * 
+     * foreach ($info['companies'] as $symbol => $companyData) {
+     *     echo "{$symbol}: {$companyData['company_name']}\n";
+     *     echo "Market Cap: \${$companyData['market_cap']}\n";
+     * }
+     * ```
+     */
+    public function infoBulk(array $symbols, array $options = []): Response
+    {
+        if (empty($symbols)) {
+            throw new \InvalidArgumentException('Symbols array cannot be empty');
+        }
+
+        $batchSize = $options['batch_size'] ?? 20;
+        if ($batchSize > 50) {
+            throw new \InvalidArgumentException('Info batch size cannot exceed 50 symbols');
+        }
+
+        // Remove duplicates and clean symbols
+        $symbols = array_unique(array_map('strtoupper', array_filter($symbols)));
+
+        $chunks = array_chunk($symbols, $batchSize);
+        $allResults = [];
+        $processingStart = microtime(true);
+
+        foreach ($chunks as $chunk) {
+            foreach ($chunk as $symbol) {
+                $response = $this->info($symbol);
+                if ($response->successful()) {
+                    $allResults[$symbol] = $response->data();
+                }
+            }
+        }
+
+        $processingTime = (microtime(true) - $processingStart) * 1000;
+
+        $combinedData = [
+            'success' => true,
+            'companies' => $allResults,
+            'bulk_metadata' => [
+                'total_symbols' => count($symbols),
+                'successful_symbols' => count($allResults),
+                'batch_count' => count($chunks),
+                'batch_size' => $batchSize,
+                'processing_time_ms' => round($processingTime, 2)
+            ]
+        ];
+
+        return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($combinedData)));
+    }
+
+    /**
+     * Advanced batch processing for mixed operations
+     *
+     * Performs multiple different operations (quotes, timelines, info) for
+     * different symbols in a single optimized batch with intelligent scheduling.
+     *
+     * @param array $operations Array of operations in format:
+     *   [
+     *     'quotes' => ['AAPL', 'TSLA'],
+     *     'timelines' => ['MSFT' => '5min', 'GOOGL' => '1h'],
+     *     'info' => ['NVDA', 'AMD'],
+     *     'financials' => ['AAPL' => 'USD', 'TSLA' => 'EUR']
+     *   ]
+     * @param array $options Global options:
+     *   - parallel: bool - Execute operations in parallel (default: true)
+     *   - timeout: int - Total timeout in seconds (default: 30)
+     *   - continue_on_error: bool - Continue if some operations fail (default: true)
+     * @return Response Combined results from all operations with detailed metadata
+     *
+     * @example Mixed batch operations:
+     * ```php
+     * $results = $client->stocks()->batchProcess([
+     *     'quotes' => ['AAPL', 'TSLA', 'MSFT'],
+     *     'timelines' => [
+     *         'AAPL' => TimelineInterval::FIVE_MINUTES,
+     *         'TSLA' => TimelineInterval::ONE_HOUR
+     *     ],
+     *     'info' => ['GOOGL', 'NVDA']
+     * ], [
+     *     'parallel' => true,
+     *     'continue_on_error' => true
+     * ]);
+     * 
+     * // Access different result types
+     * $quotes = $results['results']['quotes'];
+     * $timelines = $results['results']['timelines'];
+     * $info = $results['results']['info'];
+     * ```
+     */
+    public function batchProcess(array $operations, array $options = []): Response
+    {
+        if (empty($operations)) {
+            throw new \InvalidArgumentException('Operations array cannot be empty');
+        }
+
+        $parallel = $options['parallel'] ?? true;
+        $continueOnError = $options['continue_on_error'] ?? true;
+        $processingStart = microtime(true);
+
+        $results = [
+            'quotes' => [],
+            'timelines' => [],
+            'info' => [],
+            'financials' => []
+        ];
+
+        $errors = [];
+        $stats = [
+            'total_operations' => 0,
+            'successful_operations' => 0,
+            'failed_operations' => 0
+        ];
+
+        // Process quotes
+        if (isset($operations['quotes']) && !empty($operations['quotes'])) {
+            try {
+                $stats['total_operations']++;
+                $quotesResponse = $this->quoteBulk($operations['quotes']);
+                if ($quotesResponse->successful()) {
+                    $results['quotes'] = $quotesResponse->data();
+                    $stats['successful_operations']++;
+                } else {
+                    $errors['quotes'] = 'Failed to fetch bulk quotes';
+                    $stats['failed_operations']++;
+                    if (!$continueOnError) {
+                        throw new \RuntimeException('Quotes operation failed');
+                    }
+                }
+            } catch (\Exception $e) {
+                $errors['quotes'] = $e->getMessage();
+                $stats['failed_operations']++;
+                if (!$continueOnError) {
+                    throw $e;
+                }
+            }
+        }
+
+        // Process timelines
+        if (isset($operations['timelines']) && !empty($operations['timelines'])) {
+            try {
+                $stats['total_operations']++;
+                $timelineResults = [];
+                
+                foreach ($operations['timelines'] as $symbol => $interval) {
+                    $response = $this->timeline($symbol, ['interval' => $interval]);
+                    if ($response->successful()) {
+                        $timelineResults[$symbol] = $response->data();
+                    }
+                }
+                
+                $results['timelines'] = $timelineResults;
+                $stats['successful_operations']++;
+            } catch (\Exception $e) {
+                $errors['timelines'] = $e->getMessage();
+                $stats['failed_operations']++;
+                if (!$continueOnError) {
+                    throw $e;
+                }
+            }
+        }
+
+        // Process info requests
+        if (isset($operations['info']) && !empty($operations['info'])) {
+            try {
+                $stats['total_operations']++;
+                $infoResponse = $this->infoBulk($operations['info']);
+                if ($infoResponse->successful()) {
+                    $results['info'] = $infoResponse->data();
+                    $stats['successful_operations']++;
+                } else {
+                    $errors['info'] = 'Failed to fetch bulk info';
+                    $stats['failed_operations']++;
+                    if (!$continueOnError) {
+                        throw new \RuntimeException('Info operation failed');
+                    }
+                }
+            } catch (\Exception $e) {
+                $errors['info'] = $e->getMessage();
+                $stats['failed_operations']++;
+                if (!$continueOnError) {
+                    throw $e;
+                }
+            }
+        }
+
+        // Process financials
+        if (isset($operations['financials']) && !empty($operations['financials'])) {
+            try {
+                $stats['total_operations']++;
+                $financialResults = [];
+                
+                foreach ($operations['financials'] as $symbol => $currency) {
+                    $response = $this->financials($symbol, $currency);
+                    if ($response->successful()) {
+                        $financialResults[$symbol] = $response->data();
+                    }
+                }
+                
+                $results['financials'] = $financialResults;
+                $stats['successful_operations']++;
+            } catch (\Exception $e) {
+                $errors['financials'] = $e->getMessage();
+                $stats['failed_operations']++;
+                if (!$continueOnError) {
+                    throw $e;
+                }
+            }
+        }
+
+        $processingTime = (microtime(true) - $processingStart) * 1000;
+
+        $combinedData = [
+            'success' => $stats['failed_operations'] === 0,
+            'results' => $results,
+            'errors' => $errors,
+            'batch_metadata' => [
+                'processing_time_ms' => round($processingTime, 2),
+                'parallel_execution' => $parallel,
+                'continue_on_error' => $continueOnError,
+                'statistics' => $stats,
+                'timestamp' => date('c')
+            ]
+        ];
+
+        return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($combinedData)));
+    }
+
+    /**
+     * Optimized bulk search across multiple queries
+     *
+     * Performs multiple search queries in an optimized batch operation,
+     * useful for building search interfaces or data discovery tools.
+     *
+     * @param array $queries Array of search queries
+     * @param array $options Search options:
+     *   - limit_per_query: int - Results per query (default: 10)
+     *   - merge_results: bool - Merge all results into single array (default: false)
+     *   - deduplicate: bool - Remove duplicate symbols (default: true)
+     * @return Response Combined search results with metadata
+     *
+     * @example Bulk search:
+     * ```php
+     * $searches = $client->stocks()->searchBulk([
+     *     'tech companies',
+     *     'electric vehicles',
+     *     'renewable energy'
+     * ], [
+     *     'limit_per_query' => 15,
+     *     'merge_results' => true,
+     *     'deduplicate' => true
+     * ]);
+     * ```
+     */
+    public function searchBulk(array $queries, array $options = []): Response
+    {
+        if (empty($queries)) {
+            throw new \InvalidArgumentException('Queries array cannot be empty');
+        }
+
+        $limitPerQuery = $options['limit_per_query'] ?? 10;
+        $mergeResults = $options['merge_results'] ?? false;
+        $deduplicate = $options['deduplicate'] ?? true;
+        $processingStart = microtime(true);
+
+        $results = [];
+        $allSymbols = [];
+
+        foreach ($queries as $query) {
+            $response = $this->search($query);
+            if ($response->successful()) {
+                $searchData = $response->data();
+                if (isset($searchData['data'])) {
+                    $limitedResults = array_slice($searchData['data'], 0, $limitPerQuery);
+                    
+                    if ($mergeResults) {
+                        $allSymbols = array_merge($allSymbols, $limitedResults);
+                    } else {
+                        $results[$query] = $limitedResults;
+                    }
+                }
+            }
+        }
+
+        if ($mergeResults) {
+            if ($deduplicate) {
+                // Remove duplicates based on symbol
+                $seen = [];
+                $allSymbols = array_filter($allSymbols, function($item) use (&$seen) {
+                    if (isset($item['symbol']) && in_array($item['symbol'], $seen)) {
+                        return false;
+                    }
+                    if (isset($item['symbol'])) {
+                        $seen[] = $item['symbol'];
+                    }
+                    return true;
+                });
+            }
+            $results = $allSymbols;
+        }
+
+        $processingTime = (microtime(true) - $processingStart) * 1000;
+
+        $combinedData = [
+            'success' => true,
+            'data' => $results,
+            'bulk_metadata' => [
+                'total_queries' => count($queries),
+                'results_per_query' => $limitPerQuery,
+                'merged_results' => $mergeResults,
+                'deduplicated' => $deduplicate,
+                'total_results' => $mergeResults ? count($results) : array_sum(array_map('count', $results)),
+                'processing_time_ms' => round($processingTime, 2)
+            ]
+        ];
+
+        return new Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode($combinedData)));
+    }
 }

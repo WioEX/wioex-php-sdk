@@ -22,6 +22,10 @@ class Config
     private ErrorReportingLevel $errorReportingLevel;
     private bool $includeRequestData;
     private bool $includeResponseData;
+    /** @var array{enabled: bool, requests: int, window: int, strategy: string, burst_allowance: int} */
+    private array $rateLimitConfig;
+    /** @var array{enabled: bool, attempts: int, backoff: string, base_delay: int, max_delay: int, jitter: bool, exponential_base: float} */
+    private array $enhancedRetryConfig;
 
     /**
      * @param array{
@@ -36,7 +40,9 @@ class Config
      *     include_stack_trace?: bool,
      *     error_reporting_level?: string|ErrorReportingLevel,
      *     include_request_data?: bool,
-     *     include_response_data?: bool
+     *     include_response_data?: bool,
+     *     rate_limit?: array,
+     *     enhanced_retry?: array
      * } $options
      */
     public function __construct(array $options = [])
@@ -49,12 +55,35 @@ class Config
         $this->timeout = $options['timeout'] ?? 30;
         $this->connectTimeout = $options['connect_timeout'] ?? 10;
 
+        // Legacy retry configuration (maintained for backward compatibility)
         $retry = $options['retry'] ?? [];
         $this->retryConfig = [
             'times' => (int)($retry['times'] ?? 3),
             'delay' => (int)($retry['delay'] ?? 100), // milliseconds
             'multiplier' => (int)($retry['multiplier'] ?? 2),
             'max_delay' => (int)($retry['max_delay'] ?? 5000) // max 5 seconds
+        ];
+        
+        // Enhanced rate limiting configuration
+        $rateLimit = $options['rate_limit'] ?? [];
+        $this->rateLimitConfig = [
+            'enabled' => (bool)($rateLimit['enabled'] ?? false),
+            'requests' => (int)($rateLimit['requests'] ?? 100), // requests per window
+            'window' => (int)($rateLimit['window'] ?? 60), // window in seconds
+            'strategy' => $rateLimit['strategy'] ?? 'sliding_window', // sliding_window, fixed_window, token_bucket
+            'burst_allowance' => (int)($rateLimit['burst_allowance'] ?? 10) // extra requests for burst
+        ];
+        
+        // Enhanced retry configuration with intelligent backoff
+        $enhancedRetry = $options['enhanced_retry'] ?? [];
+        $this->enhancedRetryConfig = [
+            'enabled' => (bool)($enhancedRetry['enabled'] ?? false),
+            'attempts' => (int)($enhancedRetry['attempts'] ?? 5),
+            'backoff' => $enhancedRetry['backoff'] ?? 'exponential', // exponential, linear, fixed
+            'base_delay' => (int)($enhancedRetry['base_delay'] ?? 100), // base delay in ms
+            'max_delay' => (int)($enhancedRetry['max_delay'] ?? 30000), // max delay in ms (30 seconds)
+            'jitter' => (bool)($enhancedRetry['jitter'] ?? true), // add randomization
+            'exponential_base' => (float)($enhancedRetry['exponential_base'] ?? 2.0) // exponential multiplier
         ];
 
         $this->headers = array_merge([
@@ -78,6 +107,8 @@ class Config
         $this->includeResponseData = $options['include_response_data'] ?? false;
 
         $this->validate();
+        $this->validateRateLimitConfig();
+        $this->validateEnhancedRetryConfig();
     }
 
     private function validate(): void
@@ -95,6 +126,58 @@ class Config
         }
 
         // ErrorReportingLevel ENUM validation is handled in fromString() method
+    }
+    
+    private function validateRateLimitConfig(): void
+    {
+        if ($this->rateLimitConfig['requests'] < 1) {
+            throw new InvalidArgumentException('Rate limit requests must be at least 1');
+        }
+        
+        if ($this->rateLimitConfig['window'] < 1) {
+            throw new InvalidArgumentException('Rate limit window must be at least 1 second');
+        }
+        
+        $validStrategies = ['sliding_window', 'fixed_window', 'token_bucket'];
+        if (!in_array($this->rateLimitConfig['strategy'], $validStrategies, true)) {
+            throw new InvalidArgumentException(
+                'Invalid rate limit strategy. Must be one of: ' . implode(', ', $validStrategies)
+            );
+        }
+        
+        if ($this->rateLimitConfig['burst_allowance'] < 0) {
+            throw new InvalidArgumentException('Rate limit burst allowance cannot be negative');
+        }
+    }
+    
+    private function validateEnhancedRetryConfig(): void
+    {
+        if ($this->enhancedRetryConfig['attempts'] < 1) {
+            throw new InvalidArgumentException('Enhanced retry attempts must be at least 1');
+        }
+        
+        if ($this->enhancedRetryConfig['attempts'] > 10) {
+            throw new InvalidArgumentException('Enhanced retry attempts cannot exceed 10');
+        }
+        
+        $validBackoffStrategies = ['exponential', 'linear', 'fixed'];
+        if (!in_array($this->enhancedRetryConfig['backoff'], $validBackoffStrategies, true)) {
+            throw new InvalidArgumentException(
+                'Invalid retry backoff strategy. Must be one of: ' . implode(', ', $validBackoffStrategies)
+            );
+        }
+        
+        if ($this->enhancedRetryConfig['base_delay'] < 1) {
+            throw new InvalidArgumentException('Enhanced retry base delay must be at least 1ms');
+        }
+        
+        if ($this->enhancedRetryConfig['max_delay'] < $this->enhancedRetryConfig['base_delay']) {
+            throw new InvalidArgumentException('Enhanced retry max delay must be greater than or equal to base delay');
+        }
+        
+        if ($this->enhancedRetryConfig['exponential_base'] <= 1.0) {
+            throw new InvalidArgumentException('Enhanced retry exponential base must be greater than 1.0');
+        }
     }
 
     public function getApiKey(): ?string
@@ -128,6 +211,42 @@ class Config
     public function getRetryConfig(): array
     {
         return $this->retryConfig;
+    }
+    
+    /**
+     * Get rate limiting configuration
+     * 
+     * @return array{enabled: bool, requests: int, window: int, strategy: string, burst_allowance: int}
+     */
+    public function getRateLimitConfig(): array
+    {
+        return $this->rateLimitConfig;
+    }
+    
+    /**
+     * Get enhanced retry configuration
+     * 
+     * @return array{enabled: bool, attempts: int, backoff: string, base_delay: int, max_delay: int, jitter: bool, exponential_base: float}
+     */
+    public function getEnhancedRetryConfig(): array
+    {
+        return $this->enhancedRetryConfig;
+    }
+    
+    /**
+     * Check if rate limiting is enabled
+     */
+    public function isRateLimitingEnabled(): bool
+    {
+        return $this->rateLimitConfig['enabled'];
+    }
+    
+    /**
+     * Check if enhanced retry is enabled
+     */
+    public function isEnhancedRetryEnabled(): bool
+    {
+        return $this->enhancedRetryConfig['enabled'];
     }
 
     public function getHeaders(): array
@@ -193,6 +312,8 @@ class Config
             'error_reporting_level' => $this->errorReportingLevel->value,
             'include_request_data' => $this->includeRequestData,
             'include_response_data' => $this->includeResponseData,
+            'rate_limit' => $this->rateLimitConfig,
+            'enhanced_retry' => $this->enhancedRetryConfig,
         ];
     }
 }

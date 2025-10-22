@@ -14,6 +14,7 @@ use Psr\Http\Message\ResponseInterface;
 use Wioex\SDK\Config;
 use Wioex\SDK\Enums\ErrorCategory;
 use Wioex\SDK\ErrorReporter;
+use Wioex\SDK\Http\RateLimitingMiddleware;
 use Wioex\SDK\Exceptions\AuthenticationException;
 use Wioex\SDK\Exceptions\RateLimitException;
 use Wioex\SDK\Exceptions\RequestException;
@@ -37,8 +38,17 @@ class Client
     {
         $stack = HandlerStack::create();
 
-        // Add retry middleware
-        $retryHandler = new RetryHandler($this->config->getRetryConfig());
+        // Add rate limiting middleware (if enabled)
+        if ($this->config->isRateLimitingEnabled()) {
+            $rateLimitingMiddleware = new RateLimitingMiddleware($this->config->getRateLimitConfig());
+            $stack->push($rateLimitingMiddleware, 'rate_limiting');
+        }
+
+        // Add retry middleware with enhanced configuration support
+        $enhancedRetryConfig = $this->config->isEnhancedRetryEnabled() 
+            ? $this->config->getEnhancedRetryConfig() 
+            : null;
+        $retryHandler = new RetryHandler($this->config->getRetryConfig(), $enhancedRetryConfig);
         /** @psalm-suppress MixedArgumentTypeCoercion */
         $stack->push(Middleware::retry(
             function (
