@@ -12,6 +12,7 @@ use GuzzleHttp\Middleware;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Wioex\SDK\Config;
+use Wioex\SDK\Enums\ErrorCategory;
 use Wioex\SDK\ErrorReporter;
 use Wioex\SDK\Exceptions\AuthenticationException;
 use Wioex\SDK\Exceptions\RateLimitException;
@@ -278,7 +279,7 @@ class Client
 
         $context = array_merge([
             'http_status_code' => $statusCode,
-            'error_category' => $this->categorizeError($statusCode),
+            'error_category' => $this->categorizeError($statusCode)->value,
             'method' => $method,
             'path' => $path,
             'category' => $this->extractCategory($path),
@@ -357,25 +358,9 @@ class Client
     /**
      * Categorize error by HTTP status code
      */
-    private function categorizeError(int $statusCode): string
+    private function categorizeError(int $statusCode): ErrorCategory
     {
-        if ($statusCode === 401 || $statusCode === 403) {
-            return 'authentication';
-        }
-
-        if ($statusCode === 429) {
-            return 'rate_limit';
-        }
-
-        if ($statusCode >= 400 && $statusCode < 500) {
-            return 'client_error';
-        }
-
-        if ($statusCode >= 500) {
-            return 'server_error';
-        }
-
-        return 'unknown';
+        return ErrorCategory::fromHttpStatusCode($statusCode);
     }
 
     public function getConfig(): Config

@@ -9,6 +9,8 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Wioex\SDK\WioexClient;
+use Wioex\SDK\Enums\TimelineInterval;
+use Wioex\SDK\Enums\SortOrder;
 
 $client = new WioexClient([
     'api_key' => 'your-api-key-here'
@@ -62,10 +64,13 @@ echo "4. HISTORICAL PRICE DATA\n";
 echo str_repeat('-', 50) . "\n";
 
 $timeline = $client->stocks()->timeline('AAPL', [
-    'interval' => '1m',
+    'interval' => TimelineInterval::ONE_MINUTE,  // Using ENUM for type safety
     'size' => 10,
-    'orderBy' => 'DESC'
+    'orderBy' => SortOrder::DESCENDING  // Using ENUM instead of 'DESC'
 ]);
+
+// Note: ENUMs provide better IDE support and prevent typos
+// Alternative: Use convenient method $client->stocks()->timelineMinute('AAPL', ['size' => 10])
 
 echo "AAPL - Last 10 trading days:\n";
 foreach ($timeline['data'] as $point) {

@@ -10,6 +10,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Wioex\SDK\WioexClient;
+use Wioex\SDK\Enums\ErrorReportingLevel;
 use Wioex\SDK\Exceptions\WioexException;
 
 echo "=== WioEX PHP SDK - Error Reporting Example ===\n\n";
@@ -35,7 +36,7 @@ echo str_repeat('-', 60) . "\n";
 $clientMinimal = new WioexClient([
     'api_key' => 'test-api-key',
     'error_reporting' => true,
-    'error_reporting_level' => 'minimal', // Minimal data
+    'error_reporting_level' => ErrorReportingLevel::MINIMAL, // Minimal data using ENUM
 ]);
 
 echo "Error reporting: Enabled\n";
@@ -57,7 +58,7 @@ echo str_repeat('-', 60) . "\n";
 $clientStandard = new WioexClient([
     'api_key' => 'test-api-key',
     'error_reporting' => true,
-    'error_reporting_level' => 'standard', // Default level
+    'error_reporting_level' => ErrorReportingLevel::STANDARD, // Default level using ENUM
 ]);
 
 echo "Error reporting: Enabled\n";
@@ -77,7 +78,7 @@ echo str_repeat('-', 60) . "\n";
 $clientDetailed = new WioexClient([
     'api_key' => 'test-api-key',
     'error_reporting' => true,
-    'error_reporting_level' => 'detailed', // Maximum detail
+    'error_reporting_level' => ErrorReportingLevel::DETAILED, // Maximum detail using ENUM
 ]);
 
 echo "Error reporting: Enabled\n";

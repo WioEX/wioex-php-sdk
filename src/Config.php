@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wioex\SDK;
 
 use InvalidArgumentException;
+use Wioex\SDK\Enums\ErrorReportingLevel;
 
 class Config
 {
@@ -18,7 +19,7 @@ class Config
     private bool $errorReporting;
     private string $errorReportingEndpoint;
     private bool $includeStackTrace;
-    private string $errorReportingLevel;
+    private ErrorReportingLevel $errorReportingLevel;
     private bool $includeRequestData;
     private bool $includeResponseData;
 
@@ -33,7 +34,7 @@ class Config
      *     error_reporting?: bool,
      *     error_reporting_endpoint?: string,
      *     include_stack_trace?: bool,
-     *     error_reporting_level?: string,
+     *     error_reporting_level?: string|ErrorReportingLevel,
      *     include_request_data?: bool,
      *     include_response_data?: bool
      * } $options
@@ -58,7 +59,7 @@ class Config
 
         $this->headers = array_merge([
             'Accept' => 'application/json',
-            'User-Agent' => 'WioEX-PHP-SDK/1.0',
+            'User-Agent' => 'WioEX-PHP-SDK/1.4.0',
         ], $options['headers'] ?? []);
 
         // Error reporting configuration
@@ -69,7 +70,10 @@ class Config
 
         // Error reporting levels: 'minimal', 'standard', 'detailed'
         // Default is 'detailed' for better debugging and customer support
-        $this->errorReportingLevel = $options['error_reporting_level'] ?? 'detailed';
+        $errorLevel = $options['error_reporting_level'] ?? ErrorReportingLevel::DETAILED;
+        $this->errorReportingLevel = $errorLevel instanceof ErrorReportingLevel
+            ? $errorLevel
+            : ErrorReportingLevel::fromString($errorLevel);
         $this->includeRequestData = $options['include_request_data'] ?? false;
         $this->includeResponseData = $options['include_response_data'] ?? false;
 
@@ -90,12 +94,7 @@ class Config
             throw new InvalidArgumentException('Invalid base URL');
         }
 
-        $validLevels = ['minimal', 'standard', 'detailed'];
-        if (!in_array($this->errorReportingLevel, $validLevels, true)) {
-            throw new InvalidArgumentException(
-                'Invalid error reporting level. Must be one of: ' . implode(', ', $validLevels)
-            );
-        }
+        // ErrorReportingLevel ENUM validation is handled in fromString() method
     }
 
     public function getApiKey(): ?string
@@ -151,7 +150,7 @@ class Config
         return $this->includeStackTrace;
     }
 
-    public function getErrorReportingLevel(): string
+    public function getErrorReportingLevel(): ErrorReportingLevel
     {
         return $this->errorReportingLevel;
     }
@@ -191,7 +190,7 @@ class Config
             'error_reporting' => $this->errorReporting,
             'error_reporting_endpoint' => $this->errorReportingEndpoint,
             'include_stack_trace' => $this->includeStackTrace,
-            'error_reporting_level' => $this->errorReportingLevel,
+            'error_reporting_level' => $this->errorReportingLevel->value,
             'include_request_data' => $this->includeRequestData,
             'include_response_data' => $this->includeResponseData,
         ];
