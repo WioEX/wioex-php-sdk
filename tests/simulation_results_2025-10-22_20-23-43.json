@@ -1,0 +1,113 @@
+{
+    "simulation_timestamp": "2025-10-22T20:23:43+00:00",
+    "type": "performance_simulation",
+    "api_endpoint_limits": {
+        "quotes": 30,
+        "timeline": 1,
+        "info": 1,
+        "financials": 1
+    },
+    "simulation_results": {
+        "quoteBulk": [
+            {
+                "symbols_count": 5,
+                "expected_chunks": 1,
+                "estimated_bulk_time": 1,
+                "estimated_individual_time": 1,
+                "credit_savings_percent": 80,
+                "performance_improvement_percent": 0
+            },
+            {
+                "symbols_count": 30,
+                "expected_chunks": 1,
+                "estimated_bulk_time": 1,
+                "estimated_individual_time": 6,
+                "credit_savings_percent": 96.7,
+                "performance_improvement_percent": 83.3
+            },
+            {
+                "symbols_count": 100,
+                "expected_chunks": 4,
+                "estimated_bulk_time": 4,
+                "estimated_individual_time": 20,
+                "credit_savings_percent": 96,
+                "performance_improvement_percent": 80
+            },
+            {
+                "symbols_count": 500,
+                "expected_chunks": 17,
+                "estimated_bulk_time": 17,
+                "estimated_individual_time": 100,
+                "credit_savings_percent": 96.6,
+                "performance_improvement_percent": 83
+            }
+        ],
+        "timelineBulk": {
+            "symbols_count": 10,
+            "estimated_time": 2,
+            "credits_used": 10,
+            "credit_savings_percent": 0
+        },
+        "mixedOperations": {
+            "quotes_symbols": 100,
+            "timeline_symbols": 20,
+            "total_time": 8,
+            "total_credits": 24,
+            "individual_equivalent": 120,
+            "overall_savings_percent": 80
+        },
+        "chunking": [
+            {
+                "symbols_count": 30,
+                "expected_chunks": 1,
+                "calculated_chunks": 1,
+                "match": false,
+                "savings_percent": 96.7
+            },
+            {
+                "symbols_count": 31,
+                "expected_chunks": 2,
+                "calculated_chunks": 2,
+                "match": false,
+                "savings_percent": 93.5
+            },
+            {
+                "symbols_count": 60,
+                "expected_chunks": 2,
+                "calculated_chunks": 2,
+                "match": false,
+                "savings_percent": 96.7
+            },
+            {
+                "symbols_count": 61,
+                "expected_chunks": 3,
+                "calculated_chunks": 3,
+                "match": false,
+                "savings_percent": 95.1
+            },
+            {
+                "symbols_count": 100,
+                "expected_chunks": 4,
+                "calculated_chunks": 4,
+                "match": false,
+                "savings_percent": 96
+            },
+            {
+                "symbols_count": 500,
+                "expected_chunks": 17,
+                "calculated_chunks": 17,
+                "match": false,
+                "savings_percent": 96.6
+            }
+        ]
+    },
+    "conclusions": {
+        "quotes_bulk_real_savings": true,
+        "timeline_bulk_no_savings": true,
+        "info_bulk_no_savings": true,
+        "financials_bulk_no_savings": true,
+        "credit_formula_quotes": "ceil(symbol_count \/ 30)",
+        "credit_formula_others": "symbol_count * 1",
+        "customer_expectation_management": "Critical - only quotes save credits"
+    }
+}

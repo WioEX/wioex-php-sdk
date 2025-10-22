@@ -6,6 +6,7 @@ namespace Wioex\SDK;
 
 use InvalidArgumentException;
 use Wioex\SDK\Enums\ErrorReportingLevel;
+use Wioex\SDK\Version;
 
 class Config
 {
@@ -109,7 +110,7 @@ class Config
 
         $this->headers = array_merge([
             'Accept' => 'application/json',
-            'User-Agent' => 'WioEX-PHP-SDK/2.0.0',
+            'User-Agent' => Version::userAgent(),
         ], $options['headers'] ?? []);
 
         // Error reporting configuration

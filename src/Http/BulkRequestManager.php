@@ -7,6 +7,7 @@ namespace Wioex\SDK\Http;
 use Wioex\SDK\Response;
 use Wioex\SDK\Exceptions\BulkOperationException;
 use Wioex\SDK\Exceptions\ValidationException;
+use Wioex\SDK\Monitoring\ProgressTracker;
 
 /**
  * Bulk Request Manager
@@ -20,6 +21,7 @@ class BulkRequestManager
     private int $maxSymbolsPerChunk;
     private float $chunkDelay;
     private bool $failOnPartialErrors;
+    private ?ProgressTracker $progressTracker = null;
 
     // Performance optimization constants - Updated for real API limits
     private const MAX_SYMBOLS_PER_CHUNK = 30; // Reduced to match API limit for quotes
@@ -48,11 +50,11 @@ class BulkRequestManager
     }
 
     /**
-     * Execute bulk request with intelligent chunking
+     * Execute bulk request with intelligent chunking and progress tracking
      *
      * @param string $endpoint Base API endpoint (will be mapped to real endpoints)
      * @param array<string> $symbols Array of stock symbols
-     * @param array<string, mixed> $options Request options
+     * @param array<string, mixed> $options Request options (can include 'progress_callback')
      * @return Response Merged response from all chunks
      * @throws BulkOperationException
      * @throws ValidationException
@@ -75,9 +77,22 @@ class BulkRequestManager
             throw new ValidationException('No valid symbols provided for bulk operation');
         }
 
+        // Initialize progress tracking if callback provided
+        $progressCallback = $options['progress_callback'] ?? null;
+        if ($progressCallback !== null) {
+            $this->progressTracker = new ProgressTracker(count($symbols), $progressCallback);
+        }
+
         // Single symbol optimization
         if (count($symbols) === 1) {
-            return $this->executeSingleRequest($realEndpoint, $symbols[0], $options, $endpointType);
+            $response = $this->executeSingleRequest($realEndpoint, $symbols[0], $options, $endpointType);
+            
+            // Report completion for single request
+            if ($this->progressTracker) {
+                $this->progressTracker->reportChunkProgress(0, 1, 0.1, true);
+            }
+            
+            return $response;
         }
 
         // Chunk symbols based on endpoint-specific limits
@@ -87,10 +102,20 @@ class BulkRequestManager
         $totalProcessed = 0;
 
         foreach ($chunks as $chunkIndex => $chunk) {
+            $chunkStartTime = microtime(true);
+            
             try {
                 $chunkResponse = $this->executeChunkRequest($realEndpoint, $chunk, $options, $chunkIndex, $endpointType);
+                $chunkEndTime = microtime(true);
+                $chunkDuration = $chunkEndTime - $chunkStartTime;
+                
                 $responses[] = $chunkResponse;
                 $totalProcessed += count($chunk);
+
+                // Report progress for successful chunk
+                if ($this->progressTracker) {
+                    $this->progressTracker->reportChunkProgress($chunkIndex, count($chunk), $chunkDuration, true);
+                }
 
                 // Add delay between chunks to avoid rate limiting
                 if ($chunkIndex < count($chunks) - 1 && $this->chunkDelay > 0) {
@@ -98,13 +123,22 @@ class BulkRequestManager
                 }
 
             } catch (\Exception $e) {
+                $chunkEndTime = microtime(true);
+                $chunkDuration = $chunkEndTime - $chunkStartTime;
+                
                 $error = [
                     'chunk' => $chunkIndex,
                     'symbols' => $chunk,
                     'error' => $e->getMessage(),
-                    'code' => $e->getCode()
+                    'code' => $e->getCode(),
+                    'duration' => $chunkDuration
                 ];
                 $errors[] = $error;
+
+                // Report progress for failed chunk
+                if ($this->progressTracker) {
+                    $this->progressTracker->reportChunkProgress($chunkIndex, count($chunk), $chunkDuration, false);
+                }
 
                 if ($this->failOnPartialErrors) {
                     throw new BulkOperationException(
@@ -125,8 +159,14 @@ class BulkRequestManager
             );
         }
 
-        // Merge responses
+        // Merge responses with progress information
         $mergedResponse = $this->mergeResponses($responses, $errors, $totalProcessed, count($symbols));
+        
+        // Add final progress information to response metadata
+        if ($this->progressTracker) {
+            $finalProgress = $this->progressTracker->getCompletionStatus();
+            $mergedResponse = $this->addProgressMetadata($mergedResponse, $finalProgress);
+        }
 
         return $mergedResponse;
     }
@@ -448,5 +488,36 @@ class BulkRequestManager
     {
         $this->maxSymbolsPerChunk = min($max, self::MAX_SYMBOLS_PER_CHUNK);
         return $this;
+    }
+
+    /**
+     * Get the current progress tracker
+     */
+    public function getProgressTracker(): ?ProgressTracker
+    {
+        return $this->progressTracker;
+    }
+
+    /**
+     * Add progress metadata to response
+     */
+    private function addProgressMetadata(Response $response, array $progressData): Response
+    {
+        $data = $response->data();
+        
+        // Add progress information to bulk_operation metadata
+        if (isset($data['bulk_operation'])) {
+            $data['bulk_operation']['progress'] = $progressData;
+        } else {
+            $data['bulk_operation'] = ['progress' => $progressData];
+        }
+
+        // Create new response with updated data
+        return new Response(
+            $response->status(),
+            $data,
+            $response->headers(),
+            $response->raw()
+        );
     }
 }
