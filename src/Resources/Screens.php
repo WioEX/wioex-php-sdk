@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wioex\SDK\Resources;
 
 use Wioex\SDK\Http\Response;
+use Wioex\SDK\Enums\IpoType;
 
 class Screens extends Resource
 {
@@ -71,11 +72,19 @@ class Screens extends Resource
 
     /**
      * Get IPO information
-     * @param string $list IPO type: recent, upcoming, or filings
+     * @param IpoType|string $list IPO type (default: recent)
+     * 
+     * @example Using ENUM (recommended):
+     * ```php
+     * $recent = $client->screens()->ipos(IpoType::RECENT);
+     * $upcoming = $client->screens()->ipos(IpoType::UPCOMING);
+     * $filings = $client->screens()->ipos(IpoType::FILINGS);
+     * ```
      */
-    public function ipos(string $list = 'recent'): Response
+    public function ipos(IpoType|string $list = 'recent'): Response
     {
-        return $this->get('/v2/stocks/screens/ipos', ['list' => $list]);
+        $listValue = $list instanceof IpoType ? $list->value : $list;
+        return $this->get('/v2/stocks/screens/ipos', ['list' => $listValue]);
     }
 
     /**

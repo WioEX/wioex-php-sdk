@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Wioex\SDK\Resources;
 
 use Wioex\SDK\Http\Response;
+use Wioex\SDK\Enums\UsagePeriod;
+use Wioex\SDK\Enums\AnalyticsPeriod;
 
 class Account extends Resource
 {
@@ -18,13 +20,20 @@ class Account extends Resource
 
     /**
      * Get API usage statistics for a time period
-     * @param int|null $days Time period: 7, 30, or 90 days
+     * @param UsagePeriod|int|null $days Time period (default: 30 days)
+     * 
+     * @example Using ENUM (recommended):
+     * ```php
+     * $usage = $client->account()->usage(UsagePeriod::THIRTY_DAYS);
+     * $weeklyUsage = $client->account()->usage(UsagePeriod::SEVEN_DAYS);
+     * ```
      */
-    public function usage(?int $days = null): Response
+    public function usage(UsagePeriod|int|null $days = null): Response
     {
         $params = [];
         if ($days !== null) {
-            $params['days'] = $days;
+            $daysValue = $days instanceof UsagePeriod ? $days->value : $days;
+            $params['days'] = $daysValue;
         }
 
         return $this->get('/v2/account/usage', $params);
@@ -32,11 +41,18 @@ class Account extends Resource
 
     /**
      * Get detailed analytics and insights about your API usage
-     * @param string $period Analysis period: week, month, quarter, or year
+     * @param AnalyticsPeriod|string $period Analysis period (default: month)
+     * 
+     * @example Using ENUM (recommended):
+     * ```php
+     * $analytics = $client->account()->analytics(AnalyticsPeriod::MONTH);
+     * $quarterly = $client->account()->analytics(AnalyticsPeriod::QUARTER);
+     * ```
      */
-    public function analytics(string $period = 'month'): Response
+    public function analytics(AnalyticsPeriod|string $period = 'month'): Response
     {
-        return $this->get('/v2/account/analytics', ['period' => $period]);
+        $periodValue = $period instanceof AnalyticsPeriod ? $period->value : $period;
+        return $this->get('/v2/account/analytics', ['period' => $periodValue]);
     }
 
     /**

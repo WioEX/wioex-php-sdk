@@ -5,6 +5,68 @@ All notable changes to the WioEX PHP SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-10-22
+
+### Added
+- **Enhanced Timeline Intervals** - Comprehensive support for 17 different interval types
+  - **Minute Intervals**: `1min`, `5min`, `15min`, `30min` (high frequency, optimized caching)
+  - **Hour Intervals**: `1hour`, `5hour` (medium frequency)  
+  - **Daily/Weekly/Monthly**: `1day`, `1week`, `1month` (low frequency)
+  - **Period-Based Intervals**: `1d`, `1w`, `1m`, `3m`, `6m`, `1y`, `5y`, `max` (optimized for specific timeframes)
+
+- **New Convenience Methods** - Simplified access to common timeline use cases
+  - `timelineFiveMinute()` - 5-minute detailed analysis for day trading
+  - `timelineHourly()` - Hourly data for swing trading
+  - `timelineWeekly()` - Weekly trends for medium-term analysis
+  - `timelineMonthly()` - Monthly overview for long-term investing
+  - `timelineOneYear()` - Optimized 1-year view with automatic weekly intervals
+  - `timelineMax()` - Maximum historical data with automatic monthly intervals
+
+- **Two-Branch JSON Response** - Professional API response structure
+  - **Metadata Branch**: API information, caching status, usage tracking, UTC timestamps
+  - **Data Branch**: Business data with symbol info, market status, timeline points
+  - Clean separation for better client integration and data processing
+
+- **Intelligent Caching** - Interval-based cache optimization
+  - **Real-time intervals** (1min): 60 seconds cache
+  - **Short-term intervals** (5min-30min): 5-30 minutes cache  
+  - **Medium-term intervals** (1hour-1day): 1 hour cache
+  - **Long-term intervals** (1week-1month): 2-4 hours cache
+  - **Historical intervals** (1y-max): 8-48 hours cache
+
+- **Period-Based Optimization** - Automatic interval selection for optimal data retrieval
+  - `1d` period uses 5-minute intervals for intraday detail
+  - `1y` period uses weekly intervals for efficiency
+  - `max` period uses monthly intervals for complete history
+  - Balances data detail with API performance
+
+- **Enhanced Documentation** - Comprehensive timeline guide with trading examples
+  - Updated README.md with 17 interval types and usage patterns
+  - New example files: `timeline-enhanced-example.php` and `timeline-convenience-methods.php`
+  - Trading strategy examples for different timeframes and methods
+
+### Enhanced
+- **Timeline Method** - Expanded `timeline()` documentation with all 17 intervals
+  - Detailed parameter descriptions for optimal usage
+  - Session filtering compatibility with minute-level intervals
+  - Period-based interval mapping for automatic optimization
+
+- **API Branding** - Professional WioEX response templating
+  - Clear WioEX branding in all timeline responses
+  - UTC timestamp standardization for global compatibility
+  - Cache transparency with status and TTL information
+
+### Technical
+- **Backend Integration** - Period-based interval optimization server-side
+- **Provider Abstraction** - Clean separation of data sources from SDK interface
+- **Cache Strategy** - Frequency-based TTL optimization for different use cases
+- **Response Standardization** - Consistent two-branch structure across all timeline endpoints
+
+### Performance
+- **Reduced API Calls** - Period-based optimization minimizes unnecessary requests
+- **Optimized Caching** - Intelligent TTL based on data frequency needs
+- **Efficient Data Retrieval** - Automatic interval selection for best performance/detail balance
+
 ## [1.3.1] - 2025-10-22
 
 ### Fixed

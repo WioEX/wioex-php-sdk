@@ -2,7 +2,7 @@
 
 Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client library for accessing stocks, trading signals, news, currency, and financial market data.
 
-**Current Version: 1.3.0** | **Released: October 22, 2025** | **PHP 8.1+**
+**Current Version: 1.4.0** | **Released: October 22, 2025** | **PHP 8.1+**
 
 [![PHP Version](https://img.shields.io/packagist/php-v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Latest Version](https://img.shields.io/packagist/v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
@@ -41,6 +41,9 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - ✅ **Type Safe** - Full IDE autocomplete support
 - ✅ **Zero Config** - Works out of the box with sensible defaults
 - ✅ **Public Endpoints** - Some endpoints work without API key for frontend usage
+- **Enhanced Timeline Intervals** - 17 different interval types with period-based optimization (v1.4.0)
+- **Two-Branch JSON Response** - Clean metadata/data separation for better client integration (v1.4.0) 
+- **Intelligent Caching** - Interval-based cache optimization from 1 minute to 48 hours (v1.4.0)
 - **Session Filtering** - Filter intraday data by trading sessions (v1.2.0)
 - **Advanced Timeline** - Date-based filtering and convenience methods (v1.2.0)
 - **WebSocket Streaming** - Real-time market data authentication and streaming (v1.3.0)
@@ -232,42 +235,105 @@ if (isset($info['signal'])) {
 
 **💡 Auto-included Signals:** Stock info responses automatically include active signals when available.
 
-#### Get Historical Data
+#### Get Historical Data ⭐ ENHANCED
+
+Enhanced timeline support with **17 different interval types** and intelligent caching:
 
 ```php
 // Basic usage (default: 1day interval, 78 data points)
 $timeline = $client->stocks()->timeline('AAPL');
 
-// With all options
-$timeline = $client->stocks()->timeline('AAPL', [
-    'interval' => '1min',        // Options: '1min' or '1day'
+// Enhanced interval support with period-based optimization
+$timeline = $client->stocks()->timeline('TSLA', [
+    'interval' => '5min',        // See supported intervals below
     'orderBy' => 'DESC',         // Sort order: 'ASC' or 'DESC' (default: ASC)
     'size' => 480,               // Number of data points: 1-5000 (default: 78)
-    'session' => 'regular',      // Trading session (1min only): 'all', 'regular', 'pre_market', 'after_hours', 'extended'
+    'session' => 'regular',      // Trading session (minute intervals): 'all', 'regular', 'pre_market', 'after_hours', 'extended'
     'started_date' => '2024-10-16', // Start date (YYYY-MM-DD format)
     'timestamp' => 1704067200    // Alternative: Unix timestamp start date
 ]);
-
-// Convenience methods for common use cases:
-
-// Get regular trading hours only (9:30 AM - 4:00 PM EST)
-$intraday = $client->stocks()->intradayTimeline('TSLA', ['size' => 100]);
-
-// Get extended hours data (pre-market + regular + after-hours)
-$extended = $client->stocks()->extendedHoursTimeline('TSLA', ['size' => 200]);
-
-// Get data from specific date onwards
-$fromDate = $client->stocks()->timelineFromDate('AAPL', '2024-10-16', [
-    'interval' => '1day',
-    'size' => 30
-]);
-
-// Session-specific data (1-minute intervals only)
-$preMarket = $client->stocks()->timelineBySession('TSLA', 'pre_market', ['size' => 50]);
-$afterHours = $client->stocks()->timelineBySession('TSLA', 'after_hours', ['size' => 50]);
 ```
 
-**Trading Sessions** (applies to 1-minute intervals only):
+**✨ New Supported Intervals:**
+
+**Minute Intervals:** (High frequency, short cache)
+- `1min`, `5min`, `15min`, `30min`
+
+**Hour Intervals:** 
+- `1hour`, `5hour`
+
+**Daily/Weekly/Monthly:**
+- `1day`, `1week`, `1month`
+
+**🚀 Period-Based Intervals:** (Optimized for specific timeframes)
+- `1d` - 1 day period with 5-minute intervals
+- `1w` - 1 week period with 30-minute intervals  
+- `1m` - 1 month period with 5-hour intervals
+- `3m` - 3 months period with daily intervals
+- `6m` - 6 months period with daily intervals
+- `1y` - 1 year period with weekly intervals
+- `5y` - 5 years period with monthly intervals
+- `max` - Maximum available data with monthly intervals
+
+**✨ New Convenience Methods:**
+
+```php
+// 5-minute detailed analysis
+$detailed = $client->stocks()->timelineFiveMinute('TSLA', ['size' => 100]);
+
+// Hourly data for swing trading
+$hourly = $client->stocks()->timelineHourly('AAPL', ['size' => 168]); // 1 week of hours
+
+// Weekly trends
+$weekly = $client->stocks()->timelineWeekly('MSFT', ['size' => 52]); // 1 year of weeks
+
+// Monthly overview  
+$monthly = $client->stocks()->timelineMonthly('GOOGL', ['size' => 60]); // 5 years of months
+
+// Optimized 1-year view
+$oneYear = $client->stocks()->timelineOneYear('NVDA'); // Automatic weekly intervals
+
+// Maximum historical data
+$maxData = $client->stocks()->timelineMax('AAPL'); // All available data with monthly intervals
+
+// Traditional methods still work:
+$intraday = $client->stocks()->intradayTimeline('TSLA', ['size' => 100]);
+$extended = $client->stocks()->extendedHoursTimeline('TSLA', ['size' => 200]);
+$fromDate = $client->stocks()->timelineFromDate('AAPL', '2024-10-16');
+$preMarket = $client->stocks()->timelineBySession('TSLA', 'pre_market', ['size' => 50]);
+```
+
+**🔄 New Two-Branch JSON Response:**
+
+```php
+$timeline = $client->stocks()->timeline('TSLA', ['interval' => '1day', 'size' => 5]);
+
+// Metadata branch - API information
+$metadata = $timeline['metadata'];
+echo $metadata['wioex']['brand']; // "WioEX Financial Data API"
+echo $metadata['response']['timestamp_utc']; // "2025-10-22T..."
+echo $metadata['cache']['status']; // "HIT" or "MISS"
+
+// Data branch - Business data
+$data = $timeline['data'];
+echo $data['symbol']; // "TSLA"
+echo $data['company_name']; // "Tesla, Inc."
+echo $data['market_status']; // "open", "closed", "pre_market", "after_hours"
+
+// Timeline data
+foreach ($data['timeline'] as $point) {
+    echo "{$point['datetime']}: Open \${$point['open']}, Close \${$point['close']}\n";
+}
+```
+
+**📊 Intelligent Caching:**
+- **1min intervals**: 60 seconds cache
+- **5min intervals**: 5 minutes cache  
+- **Hourly intervals**: 1 hour cache
+- **Daily intervals**: 1 hour cache
+- **Period-based intervals**: 5 minutes to 48 hours (optimized per period)
+
+**Trading Sessions** (applies to minute-level intervals):
 - `regular`: 9:30 AM - 4:00 PM EST (Standard market hours)
 - `pre_market`: 4:00 AM - 9:30 AM EST (Early trading)
 - `after_hours`: 4:00 PM - 8:00 PM EST (Extended trading)
