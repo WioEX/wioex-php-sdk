@@ -1,7 +1,7 @@
 <?php
 
 /**
- * WioEX PHP SDK - ENUM Usage Examples (v1.5.0)
+ * WioEX PHP SDK - ENUM Usage Examples (v1.4.0)
  *
  * This example demonstrates the new ENUM functionality for type-safe API usage.
  * ENUMs provide better IDE support, prevent typos, and make code more maintainable.
