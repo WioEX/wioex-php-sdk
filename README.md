@@ -7,23 +7,23 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 [![License](https://img.shields.io/packagist/l/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Tests](https://img.shields.io/badge/tests-135%2B%20passing-brightgreen.svg)](https://github.com/wioex/php-sdk)
 
-## 🚀 Enterprise Features (v2.0.0)
+## What's New in v2.1.0
 
-**Production-ready SDK with enterprise-grade features for high-volume trading applications.**
+**Production-ready SDK with advanced features for high-volume trading applications.**
 
-### ✨ New Enterprise Capabilities
-- **📊 Automatic Error Reporting & Telemetry**: Privacy-first monitoring with configurable data collection
-- **⚡ Bulk Operations**: 95% performance improvement - process 500+ stocks in 30 seconds vs 8-10 minutes
-- **🔒 Privacy Controls**: 4 configurable privacy levels (minimal → debug) with data sanitization
-- **🚀 High Performance**: Server-side processing eliminates CORS issues, 98% fewer API calls
-- **📈 Usage Analytics**: Automatic performance tracking and usage patterns
-- **🛡️ Enterprise Security**: Rate limiting, batch reporting, and comprehensive error handling
+### New Features
+- **Automatic Error Reporting & Telemetry**: Privacy-first monitoring with configurable data collection
+- **Bulk Operations**: 95% performance improvement - process 500+ stocks in 30 seconds vs 8-10 minutes
+- **Privacy Controls**: 4 configurable privacy levels (minimal → debug) with data sanitization
+- **High Performance**: Server-side processing eliminates CORS issues, 98% fewer API calls
+- **Usage Analytics**: Automatic performance tracking and usage patterns
+- **Advanced Security**: Rate limiting, batch reporting, and comprehensive error handling
 
-### 🎯 Perfect for Institutional Trading
+### Ideal for Professional Trading
 - Portfolio management for 1000+ stocks
 - Real-time market monitoring
 - High-frequency trading applications
-- Enterprise risk management systems
+- Risk management systems
 
 ## Requirements
 
