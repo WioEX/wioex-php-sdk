@@ -11,6 +11,8 @@ require __DIR__ . '/../vendor/autoload.php';
 use Wioex\SDK\WioexClient;
 use Wioex\SDK\Enums\TimelineInterval;
 use Wioex\SDK\Enums\SortOrder;
+use Wioex\SDK\Enums\ScreenType;
+use Wioex\SDK\Enums\MarketIndex;
 
 $client = new WioexClient([
     'api_key' => 'your-api-key-here'
@@ -107,26 +109,56 @@ foreach (array_slice($heatmap['data'], 0, 5) as $stock) {
 }
 echo "\n";
 
-// 7. Stock screening
-echo "7. STOCK SCREENING\n";
+// 7. Stock screening (Enhanced with new runtime features)
+echo "7. STOCK SCREENING (Enhanced)\n";
 echo str_repeat('-', 50) . "\n";
 
-echo "Most Active Stocks:\n";
+// Traditional method (backward compatible)
+echo "Most Active Stocks (Traditional):\n";
 $active = $client->screens()->active(5);
 foreach ($active['data'] as $stock) {
     echo sprintf("  %-6s Volume: %s\n", $stock['symbol'], number_format($stock['volume']));
 }
 
-echo "\nTop Gainers:\n";
-$gainers = $client->screens()->gainers();
-foreach (array_slice($gainers['data'], 0, 5) as $stock) {
+// Enhanced method with new parameters
+echo "\nMost Active S&P 500 (Enhanced):\n";
+$activeEnhanced = $client->screens()->active(
+    limit: 5,
+    sortOrder: SortOrder::DESCENDING,
+    market: MarketIndex::SP500
+);
+foreach ($activeEnhanced['data'] as $stock) {
+    echo sprintf("  %-6s Volume: %s\n", $stock['symbol'], number_format($stock['volume']));
+}
+
+// Unified screen method demonstration
+echo "\nTop Gainers (Unified Method):\n";
+$gainersUnified = $client->screens()->screen(ScreenType::GAINERS, ['limit' => 5]);
+foreach ($gainersUnified['data'] as $stock) {
     echo sprintf("  %-6s +%.2f%%\n", $stock['symbol'], $stock['change_percent']);
 }
 
-echo "\nTop Losers:\n";
-$losers = $client->screens()->losers();
-foreach (array_slice($losers['data'], 0, 5) as $stock) {
+echo "\nTop Losers (Enhanced):\n";
+$losers = $client->screens()->losers(
+    limit: 5,
+    sortOrder: SortOrder::DESCENDING
+);
+foreach ($losers['data'] as $stock) {
     echo sprintf("  %-6s %.2f%%\n", $stock['symbol'], $stock['change_percent']);
 }
 
+// Market sentiment analysis
+echo "\nMarket Sentiment Analysis:\n";
+$sentiment = $client->screens()->marketSentiment(MarketIndex::SP500, 30);
+echo sprintf("  Sentiment: %s\n", $sentiment['data']['sentiment']);
+echo sprintf("  Bullish: %.1f%% | Bearish: %.1f%%\n", 
+    $sentiment['data']['metrics']['bullish_ratio'],
+    $sentiment['data']['metrics']['bearish_ratio']
+);
+
+echo "\n\n💡 New Runtime Features Demonstrated:\n";
+echo "✅ Enhanced method parameters (limit, sortOrder, market)\n";
+echo "✅ Unified screen() method with ENUMs\n";
+echo "✅ Smart market sentiment analysis\n";
+echo "✅ Backward compatibility maintained\n";
 echo "\n=== Example completed ===\n";
