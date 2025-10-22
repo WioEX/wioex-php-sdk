@@ -2,7 +2,7 @@
 
 Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client library for accessing stocks, trading signals, news, currency, and financial market data.
 
-**Current Version: 1.2.0** | **Released: October 16, 2025** | **PHP 8.1+**
+**Current Version: 1.2.1** | **Released: October 22, 2025** | **PHP 8.1+**
 
 [![PHP Version](https://img.shields.io/packagist/php-v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Latest Version](https://img.shields.io/packagist/v/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)

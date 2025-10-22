@@ -5,6 +5,25 @@ All notable changes to the WioEX PHP SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-10-22
+
+### Fixed
+- **API Parameter Alignment** - Updated stocks endpoint to use correct parameter name
+  - `quote()` method now sends `stocks` parameter instead of `ticker` 
+  - Aligns with `/v2/stocks/get` endpoint expecting `stocks` parameter
+  - **Breaking Change**: Direct API calls should use `?stocks=` instead of `?ticker=`
+  - SDK method usage remains unchanged (backward compatible)
+
+### Enhanced  
+- **Error Handling** - Improved support for new centralized error format
+  - Handles nested error responses: `{"error": {"message": "...", "code": "..."}}`
+  - Maintains backward compatibility with legacy error format
+  - Better error message extraction for user-friendly error reporting
+
+### Technical
+- **Response Processing** - Enhanced error message parsing for both formats
+- **API Compatibility** - Ensures SDK works with latest API error responses
+
 ## [1.2.0] - 2025-10-16
 
 ### Added

@@ -17,12 +17,12 @@ class Stocks extends Resource
     }
 
     /**
-     * Get real-time stock data for one or multiple tickers
-     * @param string $ticker Single ticker or comma-separated list (e.g., "AAPL" or "AAPL,GOOGL,MSFT")
+     * Get real-time stock data for one or multiple stocks
+     * @param string $stocks Single stock symbol or comma-separated list (e.g., "AAPL" or "AAPL,GOOGL,MSFT")
      */
-    public function quote(string $ticker): Response
+    public function quote(string $stocks): Response
     {
-        return parent::get('/v2/stocks/get', ['ticker' => $ticker]);
+        return parent::get('/v2/stocks/get', ['stocks' => $stocks]);
     }
 
     /**
