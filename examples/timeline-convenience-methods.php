@@ -27,7 +27,8 @@ echo "Perfect for: Day trading, scalping, intraday analysis\n";
 
 $fiveMin = $client->stocks()->timelineFiveMinute($symbol, ['size' => 10]);
 echo "Last 10 five-minute intervals:\n";
-foreach (array_slice($fiveMin['data']['timeline'], -5) as $point) {
+$timelineData = $fiveMin->getCoreData();
+foreach (array_slice($timelineData['timeline'], -5) as $point) {
     $change = (($point['close'] - $point['open']) / $point['open']) * 100;
     echo sprintf(
         "  %s: \$%-7s (%+.2f%%)\n",
@@ -45,7 +46,8 @@ echo "Perfect for: Swing trading, trend analysis, position sizing\n";
 
 $hourly = $client->stocks()->timelineHourly($symbol, ['size' => 24]); // Last 24 hours
 echo "Last 5 hourly intervals:\n";
-foreach (array_slice($hourly['data']['timeline'], -5) as $point) {
+$hourlyData = $hourly->getCoreData();
+foreach (array_slice($hourlyData['timeline'], -5) as $point) {
     $change = (($point['close'] - $point['open']) / $point['open']) * 100;
     echo sprintf(
         "  %s: \$%-7s (%+.2f%%)\n",
@@ -63,7 +65,8 @@ echo "Perfect for: Medium-term trends, quarterly analysis, earnings cycles\n";
 
 $weekly = $client->stocks()->timelineWeekly($symbol, ['size' => 12]); // Last 12 weeks
 echo "Last 5 weekly intervals:\n";
-foreach (array_slice($weekly['data']['timeline'], -5) as $point) {
+$weeklyData = $weekly->getCoreData();
+foreach (array_slice($weeklyData['timeline'], -5) as $point) {
     $change = (($point['close'] - $point['open']) / $point['open']) * 100;
     echo sprintf(
         "  Week of %s: \$%-7s (%+.2f%%)\n",

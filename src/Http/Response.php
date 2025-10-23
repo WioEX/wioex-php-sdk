@@ -17,7 +17,9 @@ use Wioex\SDK\Validation\ValidationReport;
 class Response implements ArrayAccess
 {
     private ResponseInterface $response;
+    /** @var array<string, mixed>|null */
     private ?array $decodedData = null;
+    /** @var array<string, mixed>|null */
     private ?array $transformedData = null;
     private ?TransformerPipeline $pipeline = null;
     private ?SchemaValidator $validator = null;
@@ -28,6 +30,9 @@ class Response implements ArrayAccess
         $this->response = $response;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function data(): array
     {
         if ($this->decodedData === null) {
@@ -50,6 +55,9 @@ class Response implements ArrayAccess
         return $this->response->getStatusCode();
     }
 
+    /**
+     * @return array<string, array<int, string>>
+     */
     public function headers(): array
     {
         return $this->response->getHeaders();
@@ -123,6 +131,10 @@ class Response implements ArrayAccess
         return $this->json();
     }
 
+    /**
+     * @param TransformerPipeline|null $pipeline
+     * @return array<string, mixed>
+     */
     public function transform(TransformerPipeline $pipeline = null): array
     {
         if ($pipeline !== null) {
@@ -152,6 +164,10 @@ class Response implements ArrayAccess
         return $this;
     }
 
+    /**
+     * @param array<int, TransformerInterface> $transformers
+     * @return self
+     */
     public function withTransformers(array $transformers): self
     {
         if ($this->pipeline === null) {
@@ -205,18 +221,30 @@ class Response implements ArrayAccess
         return new ResponseCollection($this->hasTransformations() ? $this->transform() : $this->data());
     }
 
+    /**
+     * @param callable $callback
+     * @return array<string, mixed>
+     */
     public function filter(callable $callback): array
     {
         $data = $this->hasTransformations() ? $this->transform() : $this->data();
         return array_filter($data, $callback, ARRAY_FILTER_USE_BOTH);
     }
 
+    /**
+     * @param callable $callback
+     * @return array<int, mixed>
+     */
     public function map(callable $callback): array
     {
         $data = $this->hasTransformations() ? $this->transform() : $this->data();
         return array_map($callback, $data);
     }
 
+    /**
+     * @param string $key
+     * @return array<int, mixed>
+     */
     public function pluck(string $key): array
     {
         $data = $this->hasTransformations() ? $this->transform() : $this->data();
@@ -231,12 +259,20 @@ class Response implements ArrayAccess
         return $result;
     }
 
+    /**
+     * @param array<int, string> $keys
+     * @return array<string, mixed>
+     */
     public function only(array $keys): array
     {
         $data = $this->hasTransformations() ? $this->transform() : $this->data();
         return array_intersect_key($data, array_flip($keys));
     }
 
+    /**
+     * @param array<int, string> $keys
+     * @return array<string, mixed>
+     */
     public function except(array $keys): array
     {
         $data = $this->hasTransformations() ? $this->transform() : $this->data();
@@ -319,6 +355,9 @@ class Response implements ArrayAccess
         return $this->validationReport;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getValidationErrors(): array
     {
         return $this->validationReport?->getErrors() ?? [];
@@ -333,6 +372,11 @@ class Response implements ArrayAccess
     public function validateStockQuote(): ValidationReport
     {
         return $this->validate(SchemaValidator::stockQuoteSchema());
+    }
+
+    public function validateEnhancedStockQuote(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::enhancedStockQuoteSchema());
     }
 
     public function validateNews(): ValidationReport
@@ -350,9 +394,19 @@ class Response implements ArrayAccess
         return $this->validate(SchemaValidator::timelineSchema());
     }
 
+    public function validateCurrency(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::currencySchema());
+    }
+
     public function validateErrorResponse(): ValidationReport
     {
         return $this->validate(SchemaValidator::errorResponseSchema());
+    }
+
+    public function validateUnifiedResponse(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::unifiedResponseSchema());
     }
 
     public function hasValidator(): bool
@@ -372,24 +426,685 @@ class Response implements ArrayAccess
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getMetadata(): array
     {
-        $metadata = [
-            'status_code' => $this->status(),
-            'headers' => $this->headers(),
-            'has_transformations' => $this->hasTransformations(),
-            'transformer_count' => $this->pipeline ? count($this->pipeline->getTransformers()) : 0,
-            'data_count' => $this->count(),
-            'response_size' => strlen($this->json()),
-            'has_validator' => $this->hasValidator(),
-            'has_validation_report' => $this->validationReport !== null,
-            'is_valid' => $this->isValid(),
-        ];
+        return $this->data()['metadata'] ?? [];
+    }
 
-        if ($this->validationReport !== null) {
-            $metadata['validation'] = $this->validationReport->getSummary();
+    /**
+     * Get WioEX metadata from unified response format
+     * 
+     * @return array<string, mixed>|null
+     */
+    public function getWioexMetadata(): ?array
+    {
+        return $this->data()['metadata']['wioex'] ?? null;
+    }
+
+    /**
+     * Get response metadata from unified format
+     */
+    public function getResponseMetadata(): ?array
+    {
+        return $this->data()['metadata']['response'] ?? null;
+    }
+
+    /**
+     * Get data quality metadata from unified format
+     * 
+     * @return array<string, mixed>|null
+     */
+    public function getDataQuality(): ?array
+    {
+        return $this->data()['metadata']['data_quality'] ?? null;
+    }
+
+    /**
+     * Get performance metadata from unified format
+     */
+    public function getPerformance(): ?array
+    {
+        return $this->data()['metadata']['performance'] ?? null;
+    }
+
+    /**
+     * Get credits metadata from unified format
+     */
+    public function getCredits(): ?array
+    {
+        return $this->data()['metadata']['credits'] ?? null;
+    }
+
+    /**
+     * Get cache metadata from unified format
+     */
+    public function getCache(): ?array
+    {
+        return $this->data()['metadata']['cache'] ?? null;
+    }
+
+    /**
+     * Get request ID from unified format
+     */
+    public function getRequestId(): ?string
+    {
+        return $this->data()['metadata']['response']['request_id'] ?? null;
+    }
+
+    /**
+     * Get response time in milliseconds from unified format
+     */
+    public function getResponseTime(): ?float
+    {
+        return $this->data()['metadata']['response']['response_time_ms'] ?? null;
+    }
+
+
+    /**
+     * Get request metadata from unified format
+     * 
+     * @return array<string, mixed>|null
+     */
+    public function getRequestMetadata(): ?array
+    {
+        return $this->data()['metadata']['request'] ?? null;
+    }
+
+    /**
+     * Check if response was from detailed mode
+     */
+    public function isDetailedMode(): bool
+    {
+        return $this->data()['metadata']['request']['detailed'] ?? false;
+    }
+
+    /**
+     * Get symbols from request metadata
+     * 
+     * @return array<int, string>
+     */
+    public function getRequestedSymbols(): array
+    {
+        return $this->data()['metadata']['request']['symbols'] ?? [];
+    }
+
+    /**
+     * Get symbol count from request
+     */
+    public function getSymbolCount(): int
+    {
+        return $this->data()['metadata']['request']['count'] ?? 0;
+    }
+
+    /**
+     * Get data level (basic, detailed, etc.)
+     */
+    public function getDataLevel(): ?string
+    {
+        return $this->data()['data']['data_level'] ?? null;
+    }
+
+    /**
+     * Get provider used for this response
+     */
+    public function getProviderUsed(): ?string
+    {
+        return $this->data()['data']['provider_used'] ?? 
+               $this->data()['metadata']['data_quality']['provider_used'] ?? null;
+    }
+
+    /**
+     * Get total symbols requested vs returned
+     * 
+     * @return array<string, mixed>
+     */
+    public function getSymbolStats(): array
+    {
+        $data = $this->getCoreData();
+        return [
+            'requested' => $data['total_symbols_requested'] ?? 0,
+            'returned' => $data['total_symbols_returned'] ?? 0,
+            'success_rate' => $this->calculateSuccessRate()
+        ];
+    }
+
+    /**
+     * Calculate success rate for symbol requests
+     */
+    private function calculateSuccessRate(): float
+    {
+        $stats = $this->getSymbolStats();
+        if ($stats['requested'] === 0) {
+            return 0.0;
+        }
+        return round(($stats['returned'] / $stats['requested']) * 100, 2);
+    }
+
+    /**
+     * Check if all requested symbols were returned
+     */
+    public function isCompleteResponse(): bool
+    {
+        $stats = $this->getSymbolStats();
+        return $stats['requested'] === $stats['returned'];
+    }
+
+    /**
+     * Get market timezone from response
+     */
+    public function getMarketTimezone(): ?string
+    {
+        return $this->getCoreData()['market_timezone'] ?? 
+               $this->data()['metadata']['data_quality']['market_timezone'] ?? null;
+    }
+
+    /**
+     * Get last market close time
+     */
+    public function getLastMarketClose(): ?string
+    {
+        return $this->data()['metadata']['data_quality']['last_market_close_utc'] ?? null;
+    }
+
+    /**
+     * Get next market open time
+     */
+    public function getNextMarketOpen(): ?string
+    {
+        return $this->data()['metadata']['data_quality']['next_market_open_utc'] ?? null;
+    }
+
+    /**
+     * Check if response has enhanced data (pre/post market, etc.)
+     */
+    public function hasEnhancedData(): bool
+    {
+        $instruments = $this->getInstruments();
+        if (empty($instruments)) {
+            return false;
+        }
+        
+        $firstInstrument = $instruments[0];
+        return isset($firstInstrument['pre_market']) || 
+               isset($firstInstrument['post_market']) ||
+               isset($firstInstrument['company_info']);
+    }
+
+    /**
+     * Get instruments with only basic price data
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBasicPriceData(): array
+    {
+        $instruments = $this->getInstruments();
+        $basicData = [];
+        
+        foreach ($instruments as $instrument) {
+            $basicData[] = [
+                'symbol' => $instrument['symbol'],
+                'name' => $instrument['name'] ?? '',
+                'price' => $instrument['price']['current'] ?? 0,
+                'change' => $instrument['change']['amount'] ?? 0,
+                'change_percent' => $instrument['change']['percent'] ?? 0,
+                'volume' => $instrument['volume']['current'] ?? 0
+            ];
+        }
+        
+        return $basicData;
+    }
+
+    /**
+     * Get instruments with enhanced pre/post market data
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getExtendedHoursData(): array
+    {
+        $instruments = $this->getInstruments();
+        $extendedData = [];
+        
+        foreach ($instruments as $instrument) {
+            if (isset($instrument['pre_market']) || isset($instrument['post_market'])) {
+                $extendedData[] = [
+                    'symbol' => $instrument['symbol'],
+                    'regular_price' => $instrument['price']['current'] ?? 0,
+                    'pre_market' => $instrument['pre_market'] ?? null,
+                    'post_market' => $instrument['post_market'] ?? null,
+                    'market_status' => $instrument['market_status']['session'] ?? 'unknown'
+                ];
+            }
+        }
+        
+        return $extendedData;
+    }
+
+    /**
+     * Get data provider information from unified format
+     */
+    public function getDataProvider(): ?string
+    {
+        return $this->data()['metadata']['data_quality']['provider_used'] ?? 
+               $this->data()['data']['data_provider'] ?? null;
+    }
+
+    /**
+     * Get core data from unified response format
+     * 
+     * @return array<string, mixed>
+     */
+    public function getCoreData(): array
+    {
+        $data = $this->data();
+        
+        // Check for unified format (has 'metadata' and 'data' keys)
+        if (isset($data['metadata']) && isset($data['data'])) {
+            return $data['data'];
+        }
+        
+        // Legacy format - return the whole response
+        return $data;
+    }
+
+    /**
+     * Get instruments from unified stocks response format
+     * Also supports legacy 'tickers' format for backward compatibility
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getInstruments(): array
+    {
+        $data = $this->data();
+        
+        // Check for unified format first
+        if (isset($data['data']['instruments'])) {
+            return $data['data']['instruments'];
+        }
+        
+        // Check for legacy format (tickers array)
+        if (isset($data['tickers'])) {
+            return $this->adaptLegacyTickersToInstruments($data['tickers']);
+        }
+        
+        // Return empty array if neither format is found
+        return [];
+    }
+
+    /**
+     * Check if request was detailed mode
+     */
+    public function isDetailedMode(): bool
+    {
+        return $this->data()['metadata']['request']['detailed'] ?? false;
+    }
+
+    /**
+     * Get currency exchange rates from unified currency response format
+     * 
+     * @return array<string, mixed>
+     */
+    public function getCurrencyRates(): array
+    {
+        return $this->data()['data']['exchange_rates'] ?? [];
+    }
+
+    /**
+     * Get single currency conversion from unified currency response format
+     */
+    public function getCurrencyConversion(): ?array
+    {
+        return $this->data()['data']['conversion'] ?? null;
+    }
+
+    /**
+     * Get currency chart data from unified currency response format
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getCurrencyChartData(): array
+    {
+        return $this->data()['data']['chart_data'] ?? [];
+    }
+
+    /**
+     * Get news articles from unified news response format
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getNewsArticles(): array
+    {
+        return $this->data()['data']['articles'] ?? 
+               $this->data()['data']['news'] ?? [];
+    }
+
+    /**
+     * Get company analysis from unified analysis response format
+     */
+    public function getCompanyAnalysis(): ?array
+    {
+        return $this->data()['data']['analysis'] ?? 
+               $this->data()['data']['company_analysis'] ?? null;
+    }
+
+    /**
+     * Get timeline/chart data from unified timeline response format
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getTimelineData(): array
+    {
+        return $this->data()['data']['timeline'] ?? 
+               $this->data()['data']['chart'] ?? 
+               $this->data()['data']['historical_data'] ?? [];
+    }
+
+    /**
+     * Get chart points for visualization from timeline data
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getChartPoints(): array
+    {
+        $timeline = $this->getTimelineData();
+        
+        if (empty($timeline)) {
+            return [];
         }
 
-        return $metadata;
+        // Normalize chart points to consistent format
+        $points = [];
+        foreach ($timeline as $point) {
+            $points[] = [
+                'timestamp' => $point['timestamp'] ?? $point['time'] ?? null,
+                'datetime' => $point['datetime'] ?? $point['date'] ?? null,
+                'open' => $point['open'] ?? null,
+                'high' => $point['high'] ?? null,
+                'low' => $point['low'] ?? null,
+                'close' => $point['close'] ?? $point['price'] ?? null,
+                'volume' => $point['volume'] ?? null
+            ];
+        }
+
+        return $points;
+    }
+
+    /**
+     * Get exchange rate for specific currency pair
+     */
+    public function getExchangeRate(string $baseCurrency, string $targetCurrency): ?float
+    {
+        $rates = $this->getCurrencyRates();
+        
+        // Check if rates structure has nested rates
+        if (isset($rates['rates'])) {
+            $rates = $rates['rates'];
+        }
+
+        // Look for direct rate
+        $pair = strtoupper($baseCurrency) . '/' . strtoupper($targetCurrency);
+        if (isset($rates[$pair])) {
+            return (float) $rates[$pair];
+        }
+
+        // Look for target currency in rates (assuming base is standard)
+        $target = strtoupper($targetCurrency);
+        if (isset($rates[$target])) {
+            return (float) $rates[$target];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get total number of news articles
+     */
+    public function getNewsCount(): int
+    {
+        return count($this->getNewsArticles());
+    }
+
+    /**
+     * Get latest news article
+     */
+    public function getLatestNews(): ?array
+    {
+        $articles = $this->getNewsArticles();
+        return !empty($articles) ? $articles[0] : null;
+    }
+
+    /**
+     * Get timeline data count
+     */
+    public function getTimelinePointsCount(): int
+    {
+        return count($this->getTimelineData());
+    }
+
+    /**
+     * Get latest price from timeline data
+     */
+    public function getLatestPrice(): ?float
+    {
+        $timeline = $this->getTimelineData();
+        
+        if (empty($timeline)) {
+            return null;
+        }
+
+        $latest = $timeline[0];
+        return (float) ($latest['close'] ?? $latest['price'] ?? null);
+    }
+
+    /**
+     * Check if response contains currency data
+     */
+    public function isCurrencyResponse(): bool
+    {
+        $data = $this->getCoreData();
+        return isset($data['exchange_rates']) || 
+               isset($data['conversion']) || 
+               isset($data['chart_data']);
+    }
+
+    /**
+     * Check if response contains news data
+     */
+    public function isNewsResponse(): bool
+    {
+        $data = $this->getCoreData();
+        return isset($data['articles']) || 
+               isset($data['news']) || 
+               isset($data['analysis']) || 
+               isset($data['company_analysis']);
+    }
+
+    /**
+     * Check if response contains timeline data
+     */
+    public function isTimelineResponse(): bool
+    {
+        $data = $this->getCoreData();
+        return isset($data['timeline']) || 
+               isset($data['chart']) || 
+               isset($data['historical_data']);
+    }
+
+    /**
+     * Get response summary for debugging (enhanced)
+     * 
+     * @return array<string, mixed>
+     */
+    public function getSummary(): array
+    {
+        $summary = [
+            'status_code' => $this->status(),
+            'successful' => $this->successful(),
+            'request_id' => $this->getRequestId(),
+            'response_time_ms' => $this->getResponseTime(),
+            'data_provider' => $this->getDataProvider(),
+            'credits_consumed' => $this->getCredits()['consumed'] ?? null,
+        ];
+
+        // Add service-specific counts
+        if ($this->isTimelineResponse()) {
+            $summary['timeline_points'] = $this->getTimelinePointsCount();
+            $summary['latest_price'] = $this->getLatestPrice();
+        }
+
+        if ($this->isNewsResponse()) {
+            $summary['news_count'] = $this->getNewsCount();
+        }
+
+        if ($this->isCurrencyResponse()) {
+            $rates = $this->getCurrencyRates();
+            $summary['currency_pairs'] = is_array($rates) ? count($rates) : 0;
+        }
+
+        // Legacy support for stocks
+        $instruments = $this->getInstruments();
+        if (!empty($instruments)) {
+            $summary['instruments_count'] = count($instruments);
+            $summary['detailed_mode'] = $this->isDetailedMode();
+        }
+
+        return $summary;
+    }
+
+    // Backward Compatibility Methods
+    
+    /**
+     * Check if response is in unified format
+     */
+    public function isUnifiedFormat(): bool
+    {
+        $data = $this->data();
+        return isset($data['metadata']) && isset($data['data']);
+    }
+
+    /**
+     * Check if response is in legacy format
+     */
+    public function isLegacyFormat(): bool
+    {
+        return !$this->isUnifiedFormat();
+    }
+
+    /**
+     * Adapt legacy tickers array to unified instruments format
+     * 
+     * @param array<int, array<string, mixed>> $tickers
+     * @return array<int, array<string, mixed>>
+     */
+    private function adaptLegacyTickersToInstruments(array $tickers): array
+    {
+        $instruments = [];
+        
+        foreach ($tickers as $ticker) {
+            $instruments[] = [
+                'symbol' => $ticker['ticker'] ?? $ticker['symbol'] ?? '',
+                'name' => $ticker['name'] ?? $ticker['companyName'] ?? '',
+                'type' => 'stock',
+                'currency' => $ticker['currency'] ?? 'USD',
+                'exchange' => $ticker['exchange'] ?? 'NASDAQ',
+                'timezone' => 'America/New_York',
+                'price' => [
+                    'current' => $ticker['price'] ?? $ticker['market']['price'] ?? 0,
+                    'open' => $ticker['open'] ?? $ticker['market']['open'] ?? 0,
+                    'high' => $ticker['high'] ?? $ticker['market']['high'] ?? 0,
+                    'low' => $ticker['low'] ?? $ticker['market']['low'] ?? 0,
+                    'previous_close' => $ticker['previousClose'] ?? $ticker['market']['previousClose'] ?? 0
+                ],
+                'change' => [
+                    'amount' => $ticker['change'] ?? $ticker['market']['change'] ?? 0,
+                    'percent' => $ticker['changePercent'] ?? $ticker['market']['changePercent'] ?? 0
+                ],
+                'volume' => [
+                    'current' => $ticker['volume'] ?? $ticker['market']['volume'] ?? 0
+                ],
+                'market_status' => [
+                    'is_open' => $ticker['isMarketOpen'] ?? true,
+                    'session' => 'regular',
+                    'real_time' => true
+                ],
+                'timestamp' => date('c'), // Current timestamp as fallback
+                'data_delay' => 'legacy_format'
+            ];
+        }
+        
+        return $instruments;
+    }
+
+    /**
+     * Get legacy service name for backward compatibility
+     */
+    public function getLegacyService(): ?string
+    {
+        $data = $this->data();
+        
+        // Check unified format first
+        if (isset($data['metadata']['wioex']['service'])) {
+            return $data['metadata']['wioex']['service'];
+        }
+        
+        // Legacy format
+        return $data['wioex']['service'] ?? null;
+    }
+
+    /**
+     * Get legacy timezone for backward compatibility
+     */
+    public function getLegacyTimezone(): ?string
+    {
+        $data = $this->data();
+        
+        // Check unified format first
+        if (isset($data['metadata']['data_quality']['market_timezone'])) {
+            return $data['metadata']['data_quality']['market_timezone'];
+        }
+        
+        // Legacy format
+        return $data['wioex']['timezone'] ?? $data['timezone'] ?? null;
+    }
+
+    /**
+     * Log deprecation warning for legacy format usage
+     */
+    private function logLegacyFormatWarning(string $method): void
+    {
+        if ($this->isLegacyFormat()) {
+            error_log(sprintf(
+                'WioEX SDK: Legacy format detected in %s. Please migrate to unified ResponseTemplate format.',
+                $method
+            ));
+        }
+    }
+
+    /**
+     * Wrapper for legacy format compatibility
+     * 
+     * @return array<string, mixed>
+     */
+    public function getLegacyCompatibleData(): array
+    {
+        $this->logLegacyFormatWarning(__METHOD__);
+        
+        if ($this->isUnifiedFormat()) {
+            // Convert unified format to legacy-like structure for compatibility
+            $coreData = $this->getCoreData();
+            $metadata = $this->data()['metadata'] ?? [];
+            
+            return [
+                'wioex' => $metadata['wioex'] ?? [],
+                'data' => $coreData,
+                'instruments' => $this->getInstruments(),
+                'timezone' => $this->getMarketTimezone(),
+                'service' => $metadata['wioex']['api_version'] ?? 'unknown'
+            ];
+        }
+        
+        return $this->data();
     }
 }
