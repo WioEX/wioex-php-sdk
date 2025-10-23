@@ -734,14 +734,6 @@ class Response implements ArrayAccess
     }
 
     /**
-     * Check if request was detailed mode
-     */
-    public function isDetailedMode(): bool
-    {
-        return $this->data()['metadata']['request']['detailed'] ?? false;
-    }
-
-    /**
      * Get currency exchange rates from unified currency response format
      * 
      * @return array<string, mixed>
