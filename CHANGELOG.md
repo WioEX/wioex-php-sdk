@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Major Enhancement Release - Unified ResponseTemplate & Type Safety
 
-Version 2.3.0 introduces unified ResponseTemplate support across all WioEX API endpoints, enhanced stock data with Yahoo Finance integration, and complete PHPStan compliance for professional-grade type safety.
+Version 2.3.0 introduces unified ResponseTemplate support across all WioEX API endpoints, enhanced stock data with institutional-grade data integration, and complete PHPStan compliance for professional-grade type safety.
 
 ### ✨ New Features
 
@@ -20,7 +20,7 @@ Version 2.3.0 introduces unified ResponseTemplate support across all WioEX API e
 - **NEW**: Professional response validation and error handling
 
 #### Enhanced Stock Data Integration
-- **NEW**: Yahoo Finance integration with detailed market data
+- **NEW**: Institutional-grade data integration with detailed market data
 - **NEW**: `quoteDetailed()` method for enhanced stock quotes
 - **NEW**: Pre/post market trading data with price and change information
 - **NEW**: 52-week high/low ranges for comprehensive analysis
