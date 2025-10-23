@@ -210,7 +210,7 @@ abstract class AbstractMiddleware implements MiddlewareInterface
     /**
      * Extract value from nested array using dot notation
      */
-    protected function getConfigValue(string $key, mixed $default = null): mixed
+    protected function getConfigValue(string $key, $default = null)
     {
         $keys = explode('.', $key);
         $value = $this->config;

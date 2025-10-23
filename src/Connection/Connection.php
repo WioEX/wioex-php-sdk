@@ -243,7 +243,7 @@ class Connection
         return $this;
     }
 
-    public function getMetadataValue(string $key, mixed $default = null): mixed
+    public function getMetadataValue(string $key, $default = null)
     {
         return $this->metadata[$key] ?? $default;
     }
