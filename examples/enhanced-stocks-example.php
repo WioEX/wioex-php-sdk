@@ -4,7 +4,7 @@
  * WioEX PHP SDK - Enhanced Stocks Example
  *
  * This example demonstrates the new unified ResponseTemplate format 
- * and enhanced Yahoo Finance integration with detailed market data.
+ * and enhanced institutional-grade data integration with detailed market data.
  */
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -17,7 +17,7 @@ $client = new WioexClient([
 
 echo "=== WioEX PHP SDK - Enhanced Stocks with Unified Format ===\n\n";
 
-// 1. Basic Stock Quote (TipRanks data)
+// 1. Basic Stock Quote (Standard Mode)
 echo "1. BASIC STOCK QUOTE (Standard Mode)\n";
 echo str_repeat('-', 60) . "\n";
 
