@@ -11,13 +11,20 @@ use Wioex\SDK\Logging\Logger;
 
 class SchemaValidator
 {
+    /** @var array<int, ValidationRule> */
     private array $rules = [];
+    /** @var array<string, array<int, ValidationRule>> */
     private array $schemas = [];
     private bool $stopOnFirstError = false;
     private bool $enabled = true;
     private ?Logger $logger = null;
+    /** @var array<string, mixed> */
     private array $config;
 
+    /**
+     * @param array<string, mixed> $config
+     * @param Logger|null $logger
+     */
     public function __construct(array $config = [], Logger $logger = null)
     {
         $this->config = array_merge($this->getDefaultConfig(), $config);
@@ -26,11 +33,20 @@ class SchemaValidator
         $this->logger = $logger;
     }
 
+    /**
+     * @param array<string, mixed> $config
+     * @return self
+     */
     public static function create(array $config = []): self
     {
         return new self($config);
     }
 
+    /**
+     * @param Environment $environment
+     * @param array<string, mixed> $config
+     * @return self
+     */
     public static function forEnvironment(Environment $environment, array $config = []): self
     {
         $enabled = $environment->shouldEnableValidation();
@@ -50,6 +66,10 @@ class SchemaValidator
         return $this;
     }
 
+    /**
+     * @param array<int, ValidationRule> $rules
+     * @return self
+     */
     public function addRules(array $rules): self
     {
         foreach ($rules as $rule) {
@@ -75,6 +95,13 @@ class SchemaValidator
         return $this->addRule(ValidationRule::range($field, $min, $max, $required, $message));
     }
 
+    /**
+     * @param string $field
+     * @param array<int, mixed> $allowedValues
+     * @param bool $required
+     * @param string $message
+     * @return self
+     */
     public function enum(string $field, array $allowedValues, bool $required = false, string $message = ''): self
     {
         return $this->addRule(ValidationRule::enum($field, $allowedValues, $required, $message));
@@ -105,6 +132,13 @@ class SchemaValidator
         return $this->addRule(ValidationRule::numeric($field, $required, $message));
     }
 
+    /**
+     * @param string $field
+     * @param array<string, string> $structure
+     * @param bool $required
+     * @param string $message
+     * @return self
+     */
     public function arrayStructure(string $field, array $structure, bool $required = false, string $message = ''): self
     {
         return $this->addRule(ValidationRule::arrayStructure($field, $structure, $required, $message));
@@ -115,12 +149,22 @@ class SchemaValidator
         return $this->addRule(ValidationRule::custom($field, $validator, $required, $message));
     }
 
+    /**
+     * @param string $name
+     * @param array<int, ValidationRule> $rules
+     * @return self
+     */
     public function defineSchema(string $name, array $rules): self
     {
         $this->schemas[$name] = $rules;
         return $this;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param string $schemaName
+     * @return ValidationReport
+     */
     public function validate(array $data, string $schemaName = ''): ValidationReport
     {
         if (!$this->enabled) {
@@ -175,6 +219,11 @@ class SchemaValidator
         return $rule->validate([$field => $value]);
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $datasets
+     * @param string $schemaName
+     * @return array<int, ValidationReport>
+     */
     public function validateMultiple(array $datasets, string $schemaName = ''): array
     {
         $reports = [];
@@ -186,11 +235,17 @@ class SchemaValidator
         return $reports;
     }
 
+    /**
+     * @return array<int, ValidationRule>
+     */
     public function getRules(): array
     {
         return $this->rules;
     }
 
+    /**
+     * @return array<string, array<int, ValidationRule>>
+     */
     public function getSchemas(): array
     {
         return $this->schemas;
@@ -231,6 +286,9 @@ class SchemaValidator
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getStatistics(): array
     {
         $rulesByType = [];
@@ -249,62 +307,104 @@ class SchemaValidator
         ];
     }
 
-    // Predefined schema builders for common WioEX API responses
-    public static function stockQuoteSchema(): self
+    // Predefined schema builders for WioEX API Unified ResponseTemplate format
+    public static function unifiedResponseSchema(): self
     {
         return self::create()
-            ->required('symbol')
-            ->type('symbol', 'string', true)
-            ->required('price')
-            ->type('price', 'numeric', true)
-            ->range('price', 0, PHP_FLOAT_MAX, true)
-            ->type('change', 'numeric')
-            ->type('change_percent', 'numeric')
-            ->type('volume', 'integer')
-            ->range('volume', 0, PHP_INT_MAX)
-            ->type('market_cap', 'numeric')
-            ->type('timestamp', 'string')
-            ->date('timestamp', 'Y-m-d H:i:s');
+            ->required('metadata')
+            ->type('metadata', 'array', true)
+            ->required('data')
+            ->type('data', 'array', true)
+            ->arrayStructure('metadata', [
+                'wioex' => 'array',
+                'response' => 'array', 
+                'request' => 'array',
+                'credits' => 'array',
+                'data_quality' => 'array',
+                'cache' => 'array',
+                'performance' => 'array',
+                'security' => 'array'
+            ]);
+    }
+
+    public static function stockQuoteSchema(): self
+    {
+        return self::unifiedResponseSchema()
+            ->arrayStructure('data', [
+                'total_symbols_requested' => 'integer',
+                'total_symbols_returned' => 'integer', 
+                'market_timezone' => 'string',
+                'data_provider' => 'string',
+                'instruments' => 'array'
+            ])
+            ->arrayStructure('data.instruments.*', [
+                'symbol' => 'string',
+                'name' => 'string',
+                'type' => 'string',
+                'currency' => 'string',
+                'exchange' => 'string',
+                'timezone' => 'string',
+                'price' => 'array',
+                'change' => 'array',
+                'volume' => 'array',
+                'market_status' => 'array',
+                'timestamp' => 'string'
+            ]);
     }
 
     public static function newsSchema(): self
     {
-        return self::create()
-            ->required('title')
-            ->type('title', 'string', true)
-            ->required('url')
-            ->url('url', true)
-            ->type('source', 'string')
-            ->type('published_at', 'string')
-            ->date('published_at', 'Y-m-d H:i:s')
-            ->type('summary', 'string')
-            ->arrayStructure('tags', ['string']);
+        return self::unifiedResponseSchema()
+            ->arrayStructure('data', [
+                'total_articles' => 'integer',
+                'source' => 'string',
+                'market_timezone' => 'string',
+                'articles' => 'array'
+            ])
+            ->arrayStructure('data.articles.*', [
+                'title' => 'string',
+                'url' => 'string',
+                'source' => 'string',
+                'published_at' => 'string',
+                'summary' => 'string',
+                'sentiment' => 'string',
+                'tags' => 'array'
+            ]);
     }
 
     public static function marketStatusSchema(): self
     {
-        return self::create()
-            ->required('is_open')
-            ->type('is_open', 'boolean', true)
-            ->type('market', 'string', true)
-            ->enum('market', ['NYSE', 'NASDAQ', 'AMEX', 'OTC'], true)
-            ->type('next_open', 'string')
-            ->date('next_open', 'Y-m-d H:i:s')
-            ->type('next_close', 'string')
-            ->date('next_close', 'Y-m-d H:i:s');
+        return self::unifiedResponseSchema()
+            ->arrayStructure('data', [
+                'market_status' => 'string',
+                'is_open' => 'boolean',
+                'market_timezone' => 'string',
+                'current_time' => 'string',
+                'next_open' => 'string',
+                'next_close' => 'string',
+                'session_type' => 'string',
+                'trading_days' => 'array'
+            ]);
     }
 
     public static function timelineSchema(): self
     {
-        return self::create()
-            ->required('symbol')
-            ->type('symbol', 'string', true)
-            ->required('data')
-            ->type('data', 'array', true)
+        return self::unifiedResponseSchema()
             ->arrayStructure('data', [
-                'timestamp' => 'string',
+                'symbol' => 'string',
+                'company_name' => 'string',
+                'currency' => 'string',
+                'exchange' => 'string',
+                'exchange_timezone' => 'string',
+                'market_status' => 'string',
+                'data_source' => 'string',
+                'provider_used' => 'string',
+                'timeline' => 'array'
+            ])
+            ->arrayStructure('data.timeline.*', [
+                'datetime' => 'string',
                 'open' => 'numeric',
-                'high' => 'numeric',
+                'high' => 'numeric', 
                 'low' => 'numeric',
                 'close' => 'numeric',
                 'volume' => 'integer'
@@ -317,9 +417,67 @@ class SchemaValidator
             ->required('error')
             ->type('error', 'array', true)
             ->arrayStructure('error', [
-                'message' => 'string',
                 'code' => 'string',
-                'type' => 'string'
+                'title' => 'string',
+                'message' => 'string',
+                'error_code' => 'integer',
+                'category' => 'string',
+                'suggestions' => 'array',
+                'timestamp' => 'string',
+                'request_id' => 'string',
+                'support_reference' => 'string',
+                'context' => 'array'
+            ]);
+    }
+
+    public static function enhancedStockQuoteSchema(): self
+    {
+        return self::unifiedResponseSchema()
+            ->arrayStructure('data', [
+                'total_symbols_requested' => 'integer',
+                'total_symbols_returned' => 'integer',
+                'market_timezone' => 'string',
+                'data_provider' => 'string',
+                'data_level' => 'string',
+                'instruments' => 'array'
+            ])
+            ->arrayStructure('data.instruments.*', [
+                'symbol' => 'string',
+                'name' => 'string',
+                'type' => 'string',
+                'currency' => 'string',
+                'exchange' => 'string',
+                'timezone' => 'string',
+                'price' => 'array',
+                'change' => 'array',
+                'volume' => 'array',
+                'market_cap' => 'array',
+                'pre_market' => 'array',
+                'post_market' => 'array',
+                'overnight_market' => 'array',
+                'market_status' => 'array',
+                'company_info' => 'array',
+                'timestamp' => 'string',
+                'data_delay' => 'string',
+                'data_source' => 'string'
+            ]);
+    }
+
+    public static function currencySchema(): self
+    {
+        return self::unifiedResponseSchema()
+            ->arrayStructure('data', [
+                'base_currency' => 'string',
+                'update_time' => 'string',
+                'market_timezone' => 'string',
+                'total_rates' => 'integer',
+                'rates' => 'array'
+            ])
+            ->arrayStructure('data.rates.*', [
+                'currency' => 'string',
+                'rate' => 'numeric',
+                'change' => 'numeric',
+                'change_percent' => 'numeric'
             ]);
     }
 

@@ -24,12 +24,106 @@ class Stocks extends Resource
     }
 
     /**
-     * Get real-time stock data for one or multiple stocks
+     * Get real-time stock data for one or multiple stocks using unified ResponseTemplate format
+     * 
      * @param string $stocks Single stock symbol or comma-separated list (e.g., "AAPL" or "AAPL,GOOGL,MSFT")
+     * @param array $options Additional options:
+     *   - detailed: bool - Get enhanced data with pre/post market, 52-week ranges, logos, etc.
+     * 
+     * @return Response Unified response with metadata and data sections
+     * 
+     * Response structure:
+     * ```json
+     * {
+     *   "metadata": {
+     *     "wioex": {"api_version": "2.0", "brand": "WioEX Financial Data API"},
+     *     "response": {"timestamp_utc": "...", "request_id": "..."},
+     *     "data_quality": {"data_freshness": "real_time", "provider_used": "..."},
+     *     "performance": {"response_time_ms": 150}
+     *   },
+     *   "data": {
+     *     "instruments": [{"symbol": "AAPL", "price": {...}, "change": {...}}]
+     *   }
+     * }
+     * ```
+     * 
+     * @example
+     * ```php
+     * // Basic quote
+     * $response = $client->stocks()->quote('AAPL');
+     * $instruments = $response->getInstruments();
+     * $stock = $instruments[0];
+     * echo "Price: $" . $stock['price']['current'];
+     * 
+     * // Enhanced quote with detailed data
+     * $detailed = $client->stocks()->quote('AAPL', ['detailed' => true]);
+     * $stock = $detailed->getInstruments()[0];
+     * echo "52W High: $" . $stock['price']['fifty_two_week_high'];
+     * echo "Pre-market: $" . $stock['pre_market']['price'];
+     * ```
      */
-    public function quote(string $stocks): Response
+    public function quote(string $stocks, array $options = []): Response
     {
-        return parent::get('/v2/stocks/get', ['stocks' => $stocks]);
+        $params = ['stocks' => $stocks];
+        
+        if (isset($options['detailed']) && $options['detailed']) {
+            $params['detailed'] = 'true';
+        }
+        
+        return parent::get('/v2/stocks/get', $params);
+    }
+
+    /**
+     * Get detailed real-time stock data with enhanced Yahoo Finance integration
+     * 
+     * Returns comprehensive market data including pre/post market trading, 52-week ranges, 
+     * market capitalization, company logos, and institutional-grade metadata using the 
+     * unified ResponseTemplate format.
+     * 
+     * @param string $stocks Single stock symbol or comma-separated list
+     * @return Response Enhanced stock data with unified metadata structure
+     * 
+     * Enhanced data includes:
+     * - Pre-market and post-market trading data
+     * - 52-week high/low ranges
+     * - Market capitalization information
+     * - Company logos and enhanced info
+     * - Overnight market data
+     * - Professional performance metrics
+     * - Data quality and provider information
+     * 
+     * @example
+     * ```php
+     * // Get detailed SOUN data with all enhanced features
+     * $detailed = $client->stocks()->quoteDetailed('SOUN');
+     * 
+     * // Access unified metadata
+     * $metadata = $detailed->getWioexMetadata();
+     * $performance = $detailed->getPerformance();
+     * $dataQuality = $detailed->getDataQuality();
+     * 
+     * // Access enhanced instrument data
+     * $instruments = $detailed->getInstruments();
+     * $stock = $instruments[0];
+     * 
+     * echo "Symbol: " . $stock['symbol'] . "\n";
+     * echo "Current: $" . $stock['price']['current'] . "\n";
+     * echo "52W High: $" . $stock['price']['fifty_two_week_high'] . "\n";
+     * echo "Pre-market: $" . $stock['pre_market']['price'] . "\n";
+     * echo "Market Cap: $" . number_format($stock['market_cap']['value']/1e9, 2) . "B\n";
+     * echo "Logo: " . $stock['company_info']['logo_url'] . "\n";
+     * echo "Response time: " . $performance['total_time_ms'] . "ms\n";
+     * 
+     * // Validate response format
+     * $validation = $detailed->validateEnhancedStockQuote();
+     * if ($validation->isValid()) {
+     *     echo "✅ Enhanced data validation passed\n";
+     * }
+     * ```
+     */
+    public function quoteDetailed(string $stocks): Response
+    {
+        return $this->quote($stocks, ['detailed' => true]);
     }
 
     /**
@@ -336,7 +430,7 @@ class Stocks extends Resource
      * @example
      * ```php
      * // Basic usage - 500 stocks in ~30 seconds vs 8-10 minutes individual calls
-     * $portfolioSymbols = ['AAPL', 'TSLA', 'NVDA', /* ...497 more symbols */];
+     * $portfolioSymbols = ['AAPL', 'TSLA', 'NVDA']; // ...497 more symbols
      * $quotes = $client->stocks()->quoteBulk($portfolioSymbols);
      * 
      * foreach ($quotes['tickers'] as $stock) {
@@ -380,7 +474,7 @@ class Stocks extends Resource
      * @example
      * ```php
      * // Get 30 days of 5-minute data for 100 stocks
-     * $symbols = ['AAPL', 'TSLA', 'GOOGL', /* ...97 more */];
+     * $symbols = ['AAPL', 'TSLA', 'GOOGL']; // ...97 more symbols
      * $timelines = $client->stocks()->timelineBulk($symbols, TimelineInterval::FIVE_MINUTES, [
      *     'size' => 30,
      *     'orderBy' => SortOrder::DESCENDING

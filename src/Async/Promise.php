@@ -166,14 +166,14 @@ class Promise
         $this->onRejected = [];
     }
 
-    public static function resolve(mixed $value): self
+    public static function resolved(mixed $value): self
     {
         $promise = new self();
         $promise->resolve($value);
         return $promise;
     }
 
-    public static function reject(mixed $reason): self
+    public static function rejected(mixed $reason): self
     {
         $promise = new self();
         $promise->reject($reason);
@@ -193,7 +193,7 @@ class Promise
 
         foreach ($promises as $index => $p) {
             if (!$p instanceof Promise) {
-                $p = Promise::resolve($p);
+                $p = Promise::resolved($p);
             }
 
             $p->then(
@@ -228,7 +228,7 @@ class Promise
 
         foreach ($promises as $index => $p) {
             if (!$p instanceof Promise) {
-                $p = Promise::resolve($p);
+                $p = Promise::resolved($p);
             }
 
             $p->then(
@@ -262,7 +262,7 @@ class Promise
 
         foreach ($promises as $p) {
             if (!$p instanceof Promise) {
-                $p = Promise::resolve($p);
+                $p = Promise::resolved($p);
             }
 
             $p->then(
@@ -287,7 +287,7 @@ class Promise
 
         foreach ($promises as $index => $p) {
             if (!$p instanceof Promise) {
-                $p = Promise::resolve($p);
+                $p = Promise::resolved($p);
             }
 
             $p->then(

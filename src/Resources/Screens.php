@@ -481,7 +481,7 @@ class Screens extends Resource
      * @param int $sampleSize Sample size for analysis (default: 50)
      */
     public function marketSentiment(
-        MarketIndex|string $index = MarketIndex::SP500,
+        MarketIndex|string $index = MarketIndex::SP_500,
         int $sampleSize = 50
     ): Response {
         $marketIndex = $index instanceof MarketIndex ? $index : MarketIndex::fromString($index);

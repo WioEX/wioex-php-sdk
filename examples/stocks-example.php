@@ -37,12 +37,12 @@ echo str_repeat('-', 50) . "\n";
 
 $stocks = $client->stocks()->quote('AAPL,GOOGL,MSFT,TSLA');
 echo "Current prices:\n";
-foreach ($stocks['tickers'] as $stock) {
+foreach ($stocks->getInstruments() as $stock) {
     echo sprintf(
         "  %-6s $%-8s %+.2f%%\n",
-        $stock['ticker'],
-        number_format($stock['market']['price'], 2),
-        $stock['market']['change']['percent']
+        $stock['symbol'],
+        number_format($stock['price']['current'], 2),
+        $stock['change']['percent']
     );
 }
 echo "\n";
@@ -52,13 +52,14 @@ echo "3. DETAILED STOCK INFO\n";
 echo str_repeat('-', 50) . "\n";
 
 $info = $client->stocks()->info('AAPL');
+$infoData = $info->getCoreData();
 echo "Apple Inc. (AAPL):\n";
-echo "  Company: {$info['company_name']}\n";
-echo "  Sector: {$info['sector']}\n";
-echo "  Market Cap: $" . number_format($info['market_cap']) . "\n";
-echo "  P/E Ratio: {$info['pe_ratio']}\n";
-echo "  52W High: $" . number_format($info['week_52_high'], 2) . "\n";
-echo "  52W Low: $" . number_format($info['week_52_low'], 2) . "\n";
+echo "  Company: {$infoData['company_name']}\n";
+echo "  Sector: {$infoData['sector']}\n";
+echo "  Market Cap: $" . number_format($infoData['market_cap']) . "\n";
+echo "  P/E Ratio: {$infoData['pe_ratio']}\n";
+echo "  52W High: $" . number_format($infoData['week_52_high'], 2) . "\n";
+echo "  52W Low: $" . number_format($infoData['week_52_low'], 2) . "\n";
 echo "\n";
 
 // 4. Get historical data
@@ -74,11 +75,12 @@ $timeline = $client->stocks()->timeline('AAPL', [
 // Note: ENUMs provide better IDE support and prevent typos
 // Alternative: Use convenient method $client->stocks()->timelineMinute('AAPL', ['size' => 10])
 
-echo "AAPL - Last 10 trading days:\n";
-foreach ($timeline['data'] as $point) {
+echo "AAPL - Last 10 data points:\n";
+$timelineData = $timeline->getCoreData();
+foreach ($timelineData['timeline'] as $point) {
     echo sprintf(
         "  %s: $%-8s (Vol: %s)\n",
-        $point['date'],
+        $point['datetime'],
         number_format($point['close'], 2),
         number_format($point['volume'])
     );
@@ -90,11 +92,12 @@ echo "5. FINANCIAL DATA\n";
 echo str_repeat('-', 50) . "\n";
 
 $financials = $client->stocks()->financials('AAPL', 'USD');
+$financialData = $financials->getCoreData();
 echo "AAPL Financial Metrics:\n";
-echo "  Revenue: $" . number_format($financials['revenue']) . "\n";
-echo "  Net Income: $" . number_format($financials['net_income']) . "\n";
-echo "  EPS: $" . $financials['eps'] . "\n";
-echo "  Debt to Equity: " . $financials['debt_to_equity'] . "\n";
+echo "  Revenue: $" . number_format($financialData['revenue']) . "\n";
+echo "  Net Income: $" . number_format($financialData['net_income']) . "\n";
+echo "  EPS: $" . $financialData['eps'] . "\n";
+echo "  Debt to Equity: " . $financialData['debt_to_equity'] . "\n";
 echo "\n";
 
 // 6. Get market heatmap
@@ -102,8 +105,9 @@ echo "6. MARKET HEATMAP\n";
 echo str_repeat('-', 50) . "\n";
 
 $heatmap = $client->stocks()->heatmap('nasdaq100');
+$heatmapData = $heatmap->getCoreData();
 echo "NASDAQ 100 Top Movers:\n";
-foreach (array_slice($heatmap['data'], 0, 5) as $stock) {
+foreach (array_slice($heatmapData['data'], 0, 5) as $stock) {
     $indicator = $stock['change_percent'] > 0 ? '📈' : '📉';
     echo sprintf("  %s %-6s %+.2f%%\n", $indicator, $stock['symbol'], $stock['change_percent']);
 }
@@ -113,10 +117,11 @@ echo "\n";
 echo "7. STOCK SCREENING (Enhanced)\n";
 echo str_repeat('-', 50) . "\n";
 
-// Traditional method (backward compatible)
-echo "Most Active Stocks (Traditional):\n";
+// Traditional method
+echo "Most Active Stocks:\n";
 $active = $client->screens()->active(5);
-foreach ($active['data'] as $stock) {
+$activeData = $active->getCoreData();
+foreach ($activeData['data'] as $stock) {
     echo sprintf("  %-6s Volume: %s\n", $stock['symbol'], number_format($stock['volume']));
 }
 
@@ -127,14 +132,16 @@ $activeEnhanced = $client->screens()->active(
     sortOrder: SortOrder::DESCENDING,
     market: MarketIndex::SP500
 );
-foreach ($activeEnhanced['data'] as $stock) {
+$activeEnhancedData = $activeEnhanced->getCoreData();
+foreach ($activeEnhancedData['data'] as $stock) {
     echo sprintf("  %-6s Volume: %s\n", $stock['symbol'], number_format($stock['volume']));
 }
 
 // Unified screen method demonstration
 echo "\nTop Gainers (Unified Method):\n";
 $gainersUnified = $client->screens()->screen(ScreenType::GAINERS, ['limit' => 5]);
-foreach ($gainersUnified['data'] as $stock) {
+$gainersData = $gainersUnified->getCoreData();
+foreach ($gainersData['data'] as $stock) {
     echo sprintf("  %-6s +%.2f%%\n", $stock['symbol'], $stock['change_percent']);
 }
 
@@ -143,23 +150,25 @@ $losers = $client->screens()->losers(
     limit: 5,
     sortOrder: SortOrder::DESCENDING
 );
-foreach ($losers['data'] as $stock) {
+$losersData = $losers->getCoreData();
+foreach ($losersData['data'] as $stock) {
     echo sprintf("  %-6s %.2f%%\n", $stock['symbol'], $stock['change_percent']);
 }
 
 // Market sentiment analysis
 echo "\nMarket Sentiment Analysis:\n";
 $sentiment = $client->screens()->marketSentiment(MarketIndex::SP500, 30);
-echo sprintf("  Sentiment: %s\n", $sentiment['data']['sentiment']);
+$sentimentData = $sentiment->getCoreData();
+echo sprintf("  Sentiment: %s\n", $sentimentData['data']['sentiment']);
 echo sprintf(
     "  Bullish: %.1f%% | Bearish: %.1f%%\n",
-    $sentiment['data']['metrics']['bullish_ratio'],
-    $sentiment['data']['metrics']['bearish_ratio']
+    $sentimentData['data']['metrics']['bullish_ratio'],
+    $sentimentData['data']['metrics']['bearish_ratio']
 );
 
-echo "\n\n💡 New Runtime Features Demonstrated:\n";
+echo "\n\n💡 Runtime Features Demonstrated:\n";
 echo "✅ Enhanced method parameters (limit, sortOrder, market)\n";
 echo "✅ Unified screen() method with ENUMs\n";
 echo "✅ Smart market sentiment analysis\n";
-echo "✅ Backward compatibility maintained\n";
+echo "✅ Unified response format with getCoreData()\n";
 echo "\n=== Example completed ===\n";

@@ -7,18 +7,19 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 [![License](https://img.shields.io/packagist/l/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Tests](https://img.shields.io/badge/tests-135%2B%20passing-brightgreen.svg)](https://github.com/wioex/php-sdk)
 
-## What's New in v2.1.0
+## What's New in v2.3.0
 
-**Production-ready SDK with advanced features for high-volume trading applications.**
+**Enterprise-grade SDK with unified API integration and enhanced type safety.**
 
-### New Features
-- **Automatic Error Reporting & Telemetry**: Privacy-first monitoring with configurable data collection
-- **Bulk Quote Operations**: Up to 95% performance improvement for stock quotes (30 symbols per request)
-- **Bulk Timeline/Info/Financials**: Automated individual processing with error handling and progress tracking
-- **Privacy Controls**: 4 configurable privacy levels (minimal → debug) with data sanitization
-- **High Performance**: Server-side processing eliminates CORS issues
-- **Usage Analytics**: Automatic performance tracking and usage patterns
-- **Advanced Security**: Rate limiting, batch reporting, and comprehensive error handling
+### Major Updates
+- **Unified ResponseTemplate Support**: Standardized response format across all WioEX API endpoints
+- **Enhanced Stock Data**: Yahoo Finance integration with pre/post market data, 52-week ranges, market cap, and company logos
+- **Advanced Type Safety**: Complete PHPStan compliance with comprehensive array type specifications
+- **Enhanced Metadata Access**: 20+ new helper methods for accessing response metadata and performance metrics
+- **Detailed Mode Support**: Enhanced stocks endpoint with extended market data and institutional-grade accuracy
+- **Backward Compatibility**: Full support for legacy response formats with automatic adaptation
+- **Validation Schemas**: New validation schemas for stocks, news, currency, and market status responses
+- **Professional Error Handling**: Enhanced validation reporting and error management
 
 ### Ideal for Professional Trading
 - Portfolio management for 1000+ stocks
@@ -63,18 +64,24 @@ $client = new WioexClient([
 ]);
 
 try {
- // 1. Get multiple stock quotes with full response handling
+ // 1. Enhanced stock quotes with unified ResponseTemplate format
  $response = $client->stocks()->quote('AAPL,GOOGL,MSFT');
  
  if ($response->successful()) {
- echo "Portfolio Update:\n";
- foreach ($response['tickers'] as $stock) {
+ // Access unified metadata
+ $metadata = $response->getWioexMetadata();
+ $performance = $response->getPerformance();
+ 
+ echo "Portfolio Update (Response Time: {$performance['total_time_ms']}ms):\n";
+ 
+ // Use new unified instruments format
+ foreach ($response->getInstruments() as $stock) {
  printf(
  "%-6s $%-8.2f %+.2f%% (Vol: %s)\n",
- $stock['ticker'],
- $stock['market']['price'],
- $stock['market']['change']['percent'],
- number_format($stock['market']['volume'])
+ $stock['symbol'],
+ $stock['price']['current'],
+ $stock['change']['percent'],
+ number_format($stock['volume']['current'])
  );
  
  // Check for trading signals (auto-included)
@@ -251,48 +258,198 @@ foreach ($bulkQuotes['data'] as $symbol => $quote) {
 
 echo "Market Sentiment: {$gainers} gainers, {$losers} losers\n";
 echo "Processing time: {$bulkQuotes['metadata']['processing_time']}ms\n";
+
+// 7. Enhanced Stocks with Detailed Mode
+$detailedResponse = $client->stocks()->quoteDetailed('SOUN');
+$instruments = $detailedResponse->getInstruments();
+$dataQuality = $detailedResponse->getDataQuality();
+
+if (!empty($instruments)) {
+    $stock = $instruments[0];
+    echo "\nEnhanced Stock Data (Provider: {$dataQuality['data_accuracy']}):\n";
+    echo "Symbol: {$stock['symbol']} ({$stock['name']})\n";
+    echo "Current Price: $" . number_format($stock['price']['current'], 2) . "\n";
+    echo "52W Range: $" . number_format($stock['price']['fifty_two_week_low'], 2) . 
+         " - $" . number_format($stock['price']['fifty_two_week_high'], 2) . "\n";
+    
+    if (isset($stock['market_cap']['value'])) {
+        $marketCapB = $stock['market_cap']['value'] / 1000000000;
+        echo "Market Cap: $" . number_format($marketCapB, 2) . "B\n";
+    }
+    
+    // Pre/Post market data
+    if (isset($stock['pre_market']) && $stock['pre_market']['price'] > 0) {
+        echo "Pre-Market: $" . number_format($stock['pre_market']['price'], 2) . 
+             " (" . sprintf("%+.2f%%", $stock['pre_market']['change_percent']) . ")\n";
+    }
+}
+
+// 8. Response Validation
+$validation = $detailedResponse->validateEnhancedStockQuote();
+if ($validation->isValid()) {
+    echo "✅ Enhanced stock quote validation: PASSED\n";
+} else {
+    echo "❌ Validation errors found\n";
+    foreach ($validation->getErrors() as $error) {
+        echo "  - {$error['message']}\n";
+    }
+}
 ```
 
-**Response Structure Examples:**
+**Enhanced Response Structure (Unified ResponseTemplate):**
 
 ```json
-// stocks()->search() response:
+// Enhanced stocks()->quoteDetailed() response:
 {
- "data": [
- {
- "symbol": "AAPL",
- "name": "Apple Inc.",
- "exchange": "NASDAQ",
- "type": "stock",
- "currency": "USD"
- }
- ],
- "metadata": {
- "total": 50,
- "query": "technology",
- "processing_time": 23
- }
+  "metadata": {
+    "wioex": {
+      "api_version": "2.0",
+      "brand": "WioEX Financial Data API",
+      "website": "https://wioex.com"
+    },
+    "response": {
+      "timestamp_utc": "2025-10-23T14:30:00Z",
+      "request_id": "wioex_20251023_143000_abc123",
+      "response_time_ms": 245.67
+    },
+    "credits": {
+      "consumed": 1.0,
+      "remaining_balance": 4999.0
+    },
+    "data_quality": {
+      "data_freshness": "real_time",
+      "data_accuracy": "institutional_grade"
+    },
+    "performance": {
+      "total_time_ms": 245.67,
+      "server_region": "us-east-1"
+    }
+  },
+  "data": {
+    "total_symbols_requested": 1,
+    "total_symbols_returned": 1,
+    "market_timezone": "America/New_York",
+    "data_provider": "enhanced_institutional_grade",
+    "data_level": "detailed",
+    "instruments": [
+      {
+        "symbol": "SOUN",
+        "name": "SoundHound AI, Inc.",
+        "type": "stock",
+        "currency": "USD",
+        "exchange": "NASDAQ",
+        "price": {
+          "current": 5.47,
+          "open": 5.35,
+          "previous_close": 5.42,
+          "day_high": 5.62,
+          "day_low": 5.31,
+          "fifty_two_week_high": 10.25,
+          "fifty_two_week_low": 1.12
+        },
+        "change": {
+          "amount": 0.05,
+          "percent": 0.92
+        },
+        "volume": {
+          "current": 2547890,
+          "average": 3200000
+        },
+        "market_cap": {
+          "value": 890000000
+        },
+        "pre_market": {
+          "price": 5.52,
+          "change": 0.10,
+          "change_percent": 1.84
+        },
+        "company_info": {
+          "logo_url": "https://logo.clearbit.com/soundhound.com"
+        },
+        "market_status": {
+          "is_open": true,
+          "session": "regular",
+          "real_time": true
+        }
+      }
+    ]
+  }
+}
+```
+
+### New Metadata Access Methods
+
+The SDK now provides 20+ helper methods to easily access response metadata and performance metrics:
+
+```php
+// Response metadata access
+$response = $client->stocks()->quoteDetailed('AAPL');
+
+// WioEX branding and API info
+$wioexInfo = $response->getWioexMetadata();
+echo "API Version: {$wioexInfo['api_version']}\n";
+echo "Brand: {$wioexInfo['brand']}\n";
+
+// Performance metrics
+$performance = $response->getPerformance();
+echo "Response Time: {$performance['total_time_ms']}ms\n";
+echo "Server Region: {$performance['server_region']}\n";
+
+// Credit usage
+$credits = $response->getCredits();
+echo "Credits Consumed: {$credits['consumed']}\n";
+echo "Remaining Balance: {$credits['remaining_balance']}\n";
+
+// Data quality indicators
+$dataQuality = $response->getDataQuality();
+echo "Data Freshness: {$dataQuality['data_freshness']}\n";
+echo "Data Accuracy: {$dataQuality['data_accuracy']}\n";
+
+// Request information
+$requestId = $response->getRequestId();
+$responseTime = $response->getResponseTime();
+echo "Request ID: {$requestId}\n";
+echo "Total Time: {$responseTime}ms\n";
+
+// Enhanced data checks
+if ($response->hasEnhancedData()) {
+    echo "✅ Enhanced pre/post market data available\n";
+    $extendedHours = $response->getExtendedHoursData();
+    foreach ($extendedHours as $stock) {
+        echo "Pre-market: \${$stock['pre_market']['price']}\n";
+    }
 }
 
-// stocks()->timeline() response:
-{
- "data": [
- {
- "date": "2025-10-22",
- "open": 174.20,
- "high": 176.85,
- "low": 173.95,
- "close": 175.43,
- "volume": 62547890,
- "adjusted_close": 175.43
- }
- ],
- "metadata": {
- "symbol": "AAPL",
- "interval": "1day",
- "count": 30
- }
+// Validation
+$validation = $response->validateEnhancedStockQuote();
+if ($validation->isValid()) {
+    echo "✅ Response validation passed\n";
+} else {
+    echo "❌ Validation errors:\n";
+    foreach ($validation->getErrors() as $error) {
+        echo "  - {$error['message']}\n";
+    }
 }
+```
+
+### Backward Compatibility
+
+The SDK automatically handles both new unified ResponseTemplate format and legacy formats:
+
+```php
+// Works with both unified and legacy formats
+$response = $client->stocks()->quote('AAPL');
+$instruments = $response->getInstruments(); // Automatically adapts legacy 'tickers' to 'instruments'
+
+// Check format type
+if ($response->isUnifiedFormat()) {
+    echo "Using new unified ResponseTemplate format\n";
+} else {
+    echo "Using legacy format (automatically adapted)\n";
+}
+
+// Get legacy-compatible data if needed
+$legacyData = $response->getLegacyCompatibleData();
 ```
 
 ### Market Screens
