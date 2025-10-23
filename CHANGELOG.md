@@ -5,6 +5,124 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-10-23
+
+### 🚀 Major Enhancement Release - Unified ResponseTemplate & Type Safety
+
+Version 2.3.0 introduces unified ResponseTemplate support across all WioEX API endpoints, enhanced stock data with Yahoo Finance integration, and complete PHPStan compliance for professional-grade type safety.
+
+### ✨ New Features
+
+#### Unified ResponseTemplate Support
+- **NEW**: Standardized response format across all WioEX API endpoints
+- **NEW**: Enhanced metadata structure with WioEX branding, performance metrics, and data quality indicators
+- **NEW**: Unified `metadata` and `data` top-level structure for consistency
+- **NEW**: Professional response validation and error handling
+
+#### Enhanced Stock Data Integration
+- **NEW**: Yahoo Finance integration with detailed market data
+- **NEW**: `quoteDetailed()` method for enhanced stock quotes
+- **NEW**: Pre/post market trading data with price and change information
+- **NEW**: 52-week high/low ranges for comprehensive analysis
+- **NEW**: Market capitalization data
+- **NEW**: Company logos and enhanced company information
+- **NEW**: Extended hours trading data (overnight markets)
+- **NEW**: Institutional-grade data accuracy indicators
+
+#### Advanced Type Safety
+- **NEW**: Complete PHPStan compliance with comprehensive array type specifications
+- **NEW**: Precise type hints for all method parameters and return values
+- **NEW**: Enhanced IDE support with detailed autocompletion
+- **NEW**: Type-safe array structures: `array<string, mixed>`, `array<int, string>`, etc.
+- **NEW**: Professional PHPDoc comments throughout codebase
+
+#### Enhanced Response Access Methods
+- **NEW**: 20+ metadata helper methods for improved data access
+- **NEW**: `getWioexMetadata()` - Access WioEX branding and API information
+- **NEW**: `getPerformance()` - Response time and server performance metrics
+- **NEW**: `getCredits()` - Credit consumption and balance tracking
+- **NEW**: `getDataQuality()` - Data freshness and accuracy indicators
+- **NEW**: `getRequestId()` and `getResponseTime()` - Request tracking
+- **NEW**: `hasEnhancedData()` - Check for extended market data availability
+- **NEW**: `getExtendedHoursData()` - Access pre/post market information
+- **NEW**: `getBasicPriceData()` - Simplified price data extraction
+
+#### Validation & Quality Assurance
+- **NEW**: Enhanced validation schemas for all response types
+- **NEW**: `validateEnhancedStockQuote()` - Detailed stock data validation
+- **NEW**: `validateUnifiedResponse()` - Unified format validation
+- **NEW**: Professional validation reporting with detailed error messages
+- **NEW**: Schema validation for stocks, news, currency, and market status
+
+#### Backward Compatibility
+- **NEW**: Automatic legacy format detection and adaptation
+- **NEW**: `isUnifiedFormat()` and `isLegacyFormat()` - Format detection methods
+- **NEW**: `adaptLegacyTickersToInstruments()` - Automatic `tickers` → `instruments` conversion
+- **NEW**: `getLegacyCompatibleData()` - Legacy format compatibility layer
+- **NEW**: Seamless migration path from v2.x to unified format
+
+### 🔧 Improvements
+
+#### Code Quality
+- **IMPROVED**: Removed unused properties and deprecated patterns
+- **IMPROVED**: Enhanced method signatures with precise type declarations
+- **IMPROVED**: Comprehensive error handling and validation reporting
+- **IMPROVED**: Better debugging capabilities with detailed metadata
+- **IMPROVED**: Reduced runtime type errors through static analysis
+
+#### Developer Experience
+- **IMPROVED**: Enhanced IDE support with precise type hints
+- **IMPROVED**: Better autocompletion and code intelligence
+- **IMPROVED**: Comprehensive documentation with real-world examples
+- **IMPROVED**: Professional error messages and validation feedback
+
+#### Performance
+- **IMPROVED**: Optimized metadata access with helper methods
+- **IMPROVED**: Efficient response processing and validation
+- **IMPROVED**: Enhanced caching strategies with unified format
+
+### 📖 Documentation
+
+#### New Examples
+- **NEW**: `examples/enhanced-stocks-example.php` - Comprehensive enhanced stocks demonstration
+- **NEW**: Unified ResponseTemplate usage examples
+- **NEW**: Metadata access and validation examples
+- **NEW**: Pre/post market data access patterns
+- **NEW**: Backward compatibility usage examples
+
+#### Updated Documentation
+- **UPDATED**: README.md with v2.3.0 features and examples
+- **UPDATED**: Response structure documentation with unified format
+- **UPDATED**: API method documentation with type specifications
+- **UPDATED**: Migration guide for unified format adoption
+
+### 🔄 Migration Notes
+
+#### Upgrading to v2.3.0
+- **Automatic**: Legacy response formats are automatically adapted
+- **Optional**: Migrate to new unified format for enhanced features
+- **Recommended**: Use new metadata helper methods for better data access
+- **Compatible**: All existing code continues to work without changes
+
+#### New Recommended Patterns
+```php
+// Unified format access (recommended)
+$response = $client->stocks()->quoteDetailed('AAPL');
+$instruments = $response->getInstruments();
+$metadata = $response->getWioexMetadata();
+$performance = $response->getPerformance();
+
+// Enhanced validation
+$validation = $response->validateEnhancedStockQuote();
+if ($validation->isValid()) {
+    echo "✅ Response validation passed\n";
+}
+```
+
+### 🛡️ Breaking Changes
+- **NONE**: Full backward compatibility maintained
+- **Recommendation**: Migrate to unified ResponseTemplate format for new features
+
 ## [2.0.0] - 2025-10-22
 
 ### 🚀 Major Stability Release - Production Ready
