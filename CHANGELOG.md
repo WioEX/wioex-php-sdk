@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.3] - 2025-10-23
+
+### 🔧 Critical Bug Fixes & PHP 8.4 Compatibility
+
+#### Customer-Reported Issues Resolved
+- **FIXED**: Method redeclaration conflict `isDetailedMode()` in Response.php (resolved in v2.3.2)
+- **FIXED**: PHP 8.4 deprecated `mixed $parameter = null` patterns
+- **FIXED**: Nullable parameter deprecation warnings in PHP 8.4
+- **ENHANCED**: Full PHP 8.4 compatibility across all SDK components
+
+#### Files Updated
+- `src/Exceptions/InvalidArgumentException.php` - Removed deprecated mixed parameter defaults
+- `src/Middleware/AbstractMiddleware.php` - Fixed getConfigValue() parameter type
+- `src/Connection/Connection.php` - Updated getMetadataValue() signature
+
+This release addresses critical customer feedback and ensures seamless operation with the latest PHP versions.
+
+## [2.3.2] - 2025-10-23
+
+### 🐛 Bug Fixes
+- **FIXED**: Duplicate `isDetailedMode()` method in Response.php
+- **FIXED**: PSR-4 compliance - renamed `Built-in` folder to `BuiltIn`
+
+## [2.3.1] - 2025-10-23
+
+### 🔒 Security Update
+- **FIXED**: Source masking compliance in documentation and examples
+
 ## [2.3.0] - 2025-10-23
 
 ### 🚀 Major Enhancement Release - Unified ResponseTemplate & Type Safety
