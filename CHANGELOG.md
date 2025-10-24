@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2025-10-24
+
+### 🔧 Critical Bug Fix Release
+
+This patch release resolves a critical issue preventing customers from finding stocks like AAPL through the WioEX API. The root cause was missing class dependencies that prevented the TipRanks provider from being instantiated.
+
+#### 🐛 Bug Fixes
+- **FIXED**: AAPL stock lookup issue - customers can now successfully find AAPL and all other stocks
+- **FIXED**: Autoload configuration now properly loads environment variables from `.env` file  
+- **FIXED**: Missing `app\Functions` class dependency - autoload now includes `src/` directory
+- **FIXED**: TipRanks provider instantiation failures that caused stock lookup failures
+- **FIXED**: Environment variable loading issue that caused `Undefined array key "PATH_APP"` errors
+
+#### 🚀 Improvements
+- **IMPROVED**: Enhanced autoload.php with automatic environment variable loading
+- **IMPROVED**: Better error handling for missing class dependencies
+- **IMPROVED**: More robust provider instantiation process
+
+#### 📊 Customer Impact
+- ✅ Resolves customer complaints about AAPL stocks not being found
+- ✅ Fixes all stock lookups that were failing due to provider issues
+- ✅ Maintains all ticker analysis features from 2.4.0
+- ✅ No breaking changes - fully backward compatible
+
+This release ensures that the WioEX stock data API works reliably for all customers requesting popular stocks like AAPL, MSFT, GOOGL, etc.
+
 ## [2.4.0] - 2025-10-24
 
 ### 🚀 Major Feature Release - Comprehensive Ticker Analysis

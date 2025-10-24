@@ -15,29 +15,28 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.4.0 - Comprehensive Ticker Analysis:
-     * - NEW: Complete ticker analysis system with institutional-grade data
-     * - NEW: 15+ professional helper methods for structured analysis access
-     * - NEW: Analyst ratings, earnings insights, insider activity, news sentiment
-     * - NEW: Options analysis, price movement, financial metrics, market overview
-     * - NEW: Professional validation schemas and error handling
-     * - NEW: Investment research platform capabilities
-     * - Enhanced documentation and comprehensive examples
+     * Version 2.4.1 - Critical Bug Fix Release:
+     * - FIXED: AAPL stock lookup issue - customers can now find AAPL and all stocks
+     * - FIXED: Autoload configuration to properly load environment variables
+     * - FIXED: Missing Functions class dependency from src/app directory
+     * - FIXED: TipRanks provider instantiation failures
+     * - IMPROVED: Error handling and dependency loading
+     * - All ticker analysis features from 2.4.0 maintained
      */
-    public const CURRENT = '2.4.0';
+    public const CURRENT = '2.4.1';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
     public const MINOR = 4;
-    public const PATCH = 0;
+    public const PATCH = 1;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-10-24';
-    public const CODENAME = 'Investment Research Platform';
+    public const CODENAME = 'Stock Lookup Fix';
 
     /**
      * Get current version string
