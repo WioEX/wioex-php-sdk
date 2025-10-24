@@ -15,27 +15,28 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.2.0 - New Features:
-     * - Bulk Operations Optimizer (smart strategy analysis)
-     * - Progress Tracking & ETA Calculation
-     * - Enhanced Performance Testing
-     * - Validated Credit Consumption Documentation
-     * - Mixed Operations Strategy Recommendations
+     * Version 2.3.2 - Critical Fixes:
+     * - Resolved API authentication failures across v2 endpoints
+     * - Fixed route definition mismatch in StocksGetController
+     * - Fixed duplicate isDetailedMode() method declarations
+     * - PSR-4 compliance improvements (Built-in → BuiltIn)
+     * - PHP 8.4 compatibility fixes
+     * - Enhanced error handling and diagnostics
      */
-    public const CURRENT = '2.2.0';
+    public const CURRENT = '2.3.2';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 2;
-    public const PATCH = 0;
+    public const MINOR = 3;
+    public const PATCH = 2;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-10-22';
-    public const CODENAME = 'Smart Optimizer';
+    public const RELEASE_DATE = '2025-10-23';
+    public const CODENAME = 'Stability Release';
 
     /**
      * Get current version string
@@ -71,11 +72,13 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
-                'bulk_operations_optimizer',
-                'progress_tracking',
-                'eta_calculation',
-                'performance_testing',
-                'smart_strategy_analysis'
+                'unified_response_template',
+                'multi_provider_architecture',
+                'source_masking_compliance',
+                'enhanced_stock_data',
+                'backward_compatibility',
+                'php_8_4_support',
+                'psr_4_compliance'
             ]
         ];
     }
