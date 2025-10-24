@@ -15,28 +15,29 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.3.2 - Critical Fixes:
-     * - Resolved API authentication failures across v2 endpoints
-     * - Fixed route definition mismatch in StocksGetController
-     * - Fixed duplicate isDetailedMode() method declarations
-     * - PSR-4 compliance improvements (Built-in → BuiltIn)
-     * - PHP 8.4 compatibility fixes
-     * - Enhanced error handling and diagnostics
+     * Version 2.4.0 - Comprehensive Ticker Analysis:
+     * - NEW: Complete ticker analysis system with institutional-grade data
+     * - NEW: 15+ professional helper methods for structured analysis access
+     * - NEW: Analyst ratings, earnings insights, insider activity, news sentiment
+     * - NEW: Options analysis, price movement, financial metrics, market overview
+     * - NEW: Professional validation schemas and error handling
+     * - NEW: Investment research platform capabilities
+     * - Enhanced documentation and comprehensive examples
      */
-    public const CURRENT = '2.3.2';
+    public const CURRENT = '2.4.0';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 3;
-    public const PATCH = 2;
+    public const MINOR = 4;
+    public const PATCH = 0;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-10-23';
-    public const CODENAME = 'Stability Release';
+    public const RELEASE_DATE = '2025-10-24';
+    public const CODENAME = 'Investment Research Platform';
 
     /**
      * Get current version string
@@ -72,6 +73,16 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
+                'comprehensive_ticker_analysis',
+                'analyst_ratings_integration',
+                'earnings_insights_analysis',
+                'insider_activity_tracking',
+                'news_sentiment_analysis',
+                'options_analysis_system',
+                'price_movement_analytics',
+                'financial_metrics_evaluation',
+                'investment_research_platform',
+                'professional_validation_schemas',
                 'unified_response_template',
                 'multi_provider_architecture',
                 'source_masking_compliance',

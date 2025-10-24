@@ -5,6 +5,94 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-10-24
+
+### 🚀 Major Feature Release - Comprehensive Ticker Analysis
+
+This release introduces professional-grade ticker analysis capabilities, transforming the WioEX PHP SDK into a complete investment research platform. The new ticker analysis feature provides institutional-quality financial data combining multiple analysis perspectives into unified, actionable insights.
+
+### ✨ New Features
+
+#### 🔍 Comprehensive Ticker Analysis System
+- **NEW**: `tickerAnalysis()` method - Complete stock analysis with 5 credit cost for premium institutional data
+- **NEW**: `analysisDetailed()` convenience method - Enhanced analysis with validation and error handling
+- **NEW**: Institutional-grade data integration combining analyst ratings, earnings insights, insider activity, news sentiment, options analysis, and technical indicators
+
+#### 📊 15+ Professional Helper Methods
+- **NEW**: `getTickerAnalysis()` - Access complete analysis data structure
+- **NEW**: `getAnalystRatings()` - Analyst price targets and recommendations
+- **NEW**: `getEarningsInsights()` - Quarterly earnings analysis and guidance
+- **NEW**: `getInsiderActivity()` - Executive transaction tracking and sentiment
+- **NEW**: `getNewsAnalysis()` - Market sentiment and news theme analysis
+- **NEW**: `getOptionsAnalysis()` - Put/call ratios and options sentiment
+- **NEW**: `getPriceMovement()` - Technical analysis and sector comparison
+- **NEW**: `getFinancialMetrics()` - Valuation ratios and growth indicators
+- **NEW**: `getAnalysisOverview()` - Comprehensive market summary
+- **NEW**: `getAnalystPriceTargets()` - Structured price target extraction
+- **NEW**: `getEarningsPerformance()` - Earnings highlights and outlook
+- **NEW**: `getMarketSentiment()` - Overall sentiment analysis
+- **NEW**: `hasTickerAnalysis()` - Analysis data availability check
+- **NEW**: `getAnalysisSymbol()` - Analyzed stock symbol
+- **NEW**: `getAnalysisTimestamp()` - Analysis generation time
+
+#### 🛡️ Professional Validation & Quality Assurance
+- **NEW**: `validateTickerAnalysisResponse()` - Comprehensive response validation
+- **NEW**: `tickerAnalysisSchema()` - Complete validation schema for all analysis sections
+- **NEW**: Type-safe analysis data structures with PHPStan compliance
+- **NEW**: Professional error handling for failed analysis requests
+
+#### 📚 Documentation & Examples
+- **NEW**: `ticker-analysis-example.php` - Comprehensive 300+ line example file
+- **NEW**: Portfolio analysis examples with multiple stock processing
+- **NEW**: Error handling and validation demonstrations
+- **NEW**: Professional README section with complete feature overview
+- **NEW**: Detailed PHPDoc documentation for all methods
+
+### 🔧 Technical Improvements
+
+#### Investment Research Platform
+- **ENHANCED**: Complete investment research workflow support
+- **ENHANCED**: Professional-grade data validation and error reporting
+- **ENHANCED**: Structured access to complex financial analysis data
+- **ENHANCED**: Cost tracking and performance monitoring for analysis requests
+
+#### Developer Experience
+- **IMPROVED**: IntelliSense support with comprehensive type hints
+- **IMPROVED**: Professional error messages and debugging information
+- **IMPROVED**: Consistent API patterns across all analysis methods
+- **IMPROVED**: Comprehensive validation reporting for data quality assurance
+
+### 💼 Use Cases Enabled
+
+#### Investment Research
+- Comprehensive due diligence and stock evaluation
+- Portfolio analysis and optimization strategies
+- Market sentiment tracking and analysis
+- Risk assessment and beta analysis
+
+#### Professional Trading
+- Options trading strategy development
+- Earnings analysis and forecasting
+- Insider activity monitoring
+- Technical and fundamental analysis integration
+
+#### Financial Applications
+- Investment research platforms
+- Portfolio management tools
+- Market sentiment dashboards
+- Automated trading signal generation
+
+### 🎯 Perfect For
+- **Hedge Funds**: Professional-grade analysis for investment decisions
+- **Financial Advisors**: Client portfolio research and recommendations
+- **Individual Investors**: Comprehensive stock evaluation and research
+- **Fintech Applications**: Institutional-quality data integration
+- **Trading Platforms**: Advanced analysis and sentiment tracking
+
+**Cost**: 5 credits per analysis (premium institutional-grade endpoint)
+**Data Quality**: Real-time institutional-grade financial analysis
+**Performance**: Optimized for professional trading applications
+
 ## [2.3.3] - 2025-10-23
 
 ### 🔧 Critical Bug Fixes & PHP 8.4 Compatibility

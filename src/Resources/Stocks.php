@@ -373,6 +373,157 @@ class Stocks extends Resource
     }
 
     /**
+     * Get comprehensive ticker analysis including analyst ratings, earnings insights, and market sentiment
+     * 
+     * Provides institutional-grade analysis combining multiple data sources into a unified report.
+     * Perfect for investment research, portfolio analysis, and comprehensive stock evaluation.
+     * 
+     * **Cost**: 5 credits per analysis (premium endpoint)
+     * **Data Sources**: Institutional-grade financial data providers
+     * **Update Frequency**: Real-time analysis with market hours refresh
+     * 
+     * @param string $symbol Stock ticker symbol (e.g., "AAPL", "TSLA", "GOOGL")
+     * @param array<string, mixed> $options Additional analysis options (reserved for future use)
+     * 
+     * @return Response Comprehensive analysis with unified ResponseTemplate format
+     * 
+     * Analysis includes:
+     * - **Analyst Ratings**: Price targets, recommendations, and analyst consensus
+     * - **Earnings Insights**: Quarterly results, guidance, and earnings call highlights
+     * - **Insider Activity**: Executive transactions, insider sentiment, and key takeaways
+     * - **News Analysis**: Market sentiment, news themes, and key events
+     * - **Options Analysis**: Put/call ratios, options sentiment, and market implications
+     * - **Price Movement**: Technical analysis, sector comparison, and movement explanations
+     * - **Financial Metrics**: Valuation ratios, growth metrics, and financial health indicators
+     * - **Market Overview**: Comprehensive summary with key observations and insights
+     * 
+     * @example
+     * ```php
+     * // Get comprehensive analysis for Apple Inc.
+     * $analysis = $client->stocks()->tickerAnalysis('AAPL');
+     * 
+     * if ($analysis->successful()) {
+     *     // Access structured analysis data
+     *     $analystRatings = $analysis->getAnalystRatings();
+     *     $earnings = $analysis->getEarningsInsights();
+     *     $insider = $analysis->getInsiderActivity();
+     *     $news = $analysis->getNewsAnalysis();
+     *     $options = $analysis->getOptionsAnalysis();
+     *     
+     *     // Get analyst consensus
+     *     echo "Analyst Consensus:\n";
+     *     echo "Summary: " . $analystRatings['summary']['tldr'] . "\n";
+     *     echo "Price Target: " . $analystRatings['summary']['price_target'] . "\n";
+     *     echo "Viewpoint: " . $analystRatings['summary']['viewpoint'] . "\n\n";
+     *     
+     *     // Get earnings highlights
+     *     echo "Earnings Insights:\n";
+     *     echo "Summary: " . $earnings['analysis']['tldr'] . "\n";
+     *     echo "Outlook: " . $earnings['analysis']['key_insights']['Outlook'] . "\n\n";
+     *     
+     *     // Get insider activity
+     *     echo "Insider Activity:\n";
+     *     echo "Highlights: " . $insider['highlights'] . "\n";
+     *     echo "Key Takeaways: " . $insider['key_takeaways'] . "\n\n";
+     *     
+     *     // Get news sentiment
+     *     echo "News Analysis:\n";
+     *     echo "Summary: " . $news['summary'] . "\n";
+     *     foreach ($news['themes'] as $theme) {
+     *         echo "Theme: {$theme['theme_name']} - {$theme['theme_description']}\n";
+     *     }
+     *     
+     *     // Get options sentiment
+     *     echo "\nOptions Analysis:\n";
+     *     echo "Put/Call Ratio: " . $options['put_call_ratio']['pcr_volume'] . "\n";
+     *     echo "Takeaways: " . $options['key_takeaways']['tldr'] . "\n";
+     *     
+     *     // Access metadata
+     *     $credits = $analysis->getCredits();
+     *     $performance = $analysis->getPerformance();
+     *     echo "\nCost: {$credits['consumed']} credits\n";
+     *     echo "Response time: {$performance['total_time_ms']}ms\n";
+     * }
+     * ```
+     * 
+     * @example Portfolio Analysis:
+     * ```php
+     * // Analyze multiple stocks for portfolio research
+     * $symbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA'];
+     * $analyses = [];
+     * 
+     * foreach ($symbols as $symbol) {
+     *     $analysis = $client->stocks()->tickerAnalysis($symbol);
+     *     if ($analysis->successful()) {
+     *         $analyses[$symbol] = [
+     *             'analyst_consensus' => $analysis->getAnalystRatings()['summary']['viewpoint'],
+     *             'earnings_outlook' => $analysis->getEarningsInsights()['analysis']['key_insights']['Outlook'],
+     *             'news_sentiment' => $analysis->getNewsAnalysis()['summary'],
+     *             'options_sentiment' => $analysis->getOptionsAnalysis()['key_takeaways']['tldr']
+     *         ];
+     *     }
+     * }
+     * 
+     * // Generate portfolio report
+     * echo "Portfolio Analysis Report:\n";
+     * foreach ($analyses as $symbol => $data) {
+     *     echo "\n{$symbol}:\n";
+     *     echo "  Analyst View: {$data['analyst_consensus']}\n";
+     *     echo "  Earnings: {$data['earnings_outlook']}\n";
+     *     echo "  Sentiment: {$data['news_sentiment']}\n";
+     * }
+     * ```
+     * 
+     * @throws AuthenticationException When API key is invalid
+     * @throws ValidationException When symbol is invalid or not found in database
+     * @throws RateLimitException When rate limits are exceeded
+     * @throws RequestException When API request fails
+     * @throws WioexException For other API-related errors
+     * 
+     * @see https://docs.wioex.com/api/stocks/ticker-analysis Documentation
+     */
+    public function tickerAnalysis(string $symbol, array $options = []): Response
+    {
+        return parent::get('/v2/stocks/ticker-analysis', array_merge(
+            ['symbol' => $symbol],
+            $options
+        ));
+    }
+
+    /**
+     * Get comprehensive ticker analysis with enhanced formatting (alias method)
+     * 
+     * Convenience method that provides the same functionality as tickerAnalysis()
+     * with additional validation and enhanced error messaging.
+     * 
+     * @param string $symbol Stock ticker symbol
+     * @param array<string, mixed> $options Additional analysis options
+     * @return Response Comprehensive ticker analysis
+     * 
+     * @example
+     * ```php
+     * // Get detailed analysis with enhanced validation
+     * $analysis = $client->stocks()->analysisDetailed('SOUN');
+     * 
+     * // Validate response structure
+     * $validation = $analysis->validateTickerAnalysisResponse();
+     * if ($validation->isValid()) {
+     *     echo "✅ Analysis data validation passed\n";
+     *     
+     *     // Access all analysis sections
+     *     $overview = $analysis->getTickerAnalysis()['overview'];
+     *     echo "Analysis Summary: " . $overview['summary'] . "\n";
+     * } else {
+     *     echo "❌ Validation failed: " . $validation->getErrorSummary() . "\n";
+     * }
+     * ```
+     */
+    public function analysisDetailed(string $symbol, array $options = []): Response
+    {
+        return $this->tickerAnalysis($symbol, $options);
+    }
+
+    /**
      * Process timeline options to convert ENUMs to strings
      *
      * @param array $options Raw options array

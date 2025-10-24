@@ -1062,6 +1062,232 @@ class Response implements ArrayAccess
     }
 
     /**
+     * Get comprehensive ticker analysis data from response
+     * 
+     * @return array<string, mixed>|null Complete ticker analysis data structure
+     */
+    public function getTickerAnalysis(): ?array
+    {
+        $data = $this->getCoreData();
+        return $data['analysis'][0] ?? null;
+    }
+
+    /**
+     * Get analyst ratings and price targets from ticker analysis
+     * 
+     * @return array<string, mixed>|null Analyst ratings, price targets, and consensus data
+     */
+    public function getAnalystRatings(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['analyst_ratings'] ?? null;
+    }
+
+    /**
+     * Get earnings insights and call analysis from ticker analysis
+     * 
+     * @return array<string, mixed>|null Earnings analysis, quarterly results, and call highlights
+     */
+    public function getEarningsInsights(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['earnings_insights'] ?? null;
+    }
+
+    /**
+     * Get insider activity and transaction data from ticker analysis
+     * 
+     * @return array<string, mixed>|null Insider transactions, executive activity, and sentiment
+     */
+    public function getInsiderActivity(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['insider_activity'] ?? null;
+    }
+
+    /**
+     * Get news analysis and market sentiment from ticker analysis
+     * 
+     * @return array<string, mixed>|null News sentiment, themes, and key events
+     */
+    public function getNewsAnalysis(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['news_analysis'] ?? null;
+    }
+
+    /**
+     * Get options analysis and put/call ratios from ticker analysis
+     * 
+     * @return array<string, mixed>|null Options data, put/call ratios, and market implications
+     */
+    public function getOptionsAnalysis(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['options_analysis'] ?? null;
+    }
+
+    /**
+     * Get price movement analysis and technical insights from ticker analysis
+     * 
+     * @return array<string, mixed>|null Price movement explanations and technical analysis
+     */
+    public function getPriceMovement(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['price_movement'] ?? null;
+    }
+
+    /**
+     * Get financial metrics and valuation ratios from ticker analysis
+     * 
+     * @return array<string, mixed>|null Financial ratios, valuation metrics, and growth indicators
+     */
+    public function getFinancialMetrics(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['financial_metrics'] ?? null;
+    }
+
+    /**
+     * Get comprehensive overview and summary from ticker analysis
+     * 
+     * @return array<string, mixed>|null Market overview, key observations, and analysis summary
+     */
+    public function getAnalysisOverview(): ?array
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['overview'] ?? null;
+    }
+
+    /**
+     * Check if response contains ticker analysis data
+     * 
+     * @return bool True if ticker analysis data is present
+     */
+    public function hasTickerAnalysis(): bool
+    {
+        return $this->getTickerAnalysis() !== null;
+    }
+
+    /**
+     * Get ticker analysis symbol
+     * 
+     * @return string|null The analyzed stock symbol
+     */
+    public function getAnalysisSymbol(): ?string
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['symbol'] ?? null;
+    }
+
+    /**
+     * Get ticker analysis timestamp
+     * 
+     * @return string|null Analysis generation timestamp
+     */
+    public function getAnalysisTimestamp(): ?string
+    {
+        $analysis = $this->getTickerAnalysis();
+        return $analysis['timestamp'] ?? null;
+    }
+
+    /**
+     * Validate ticker analysis response structure
+     * 
+     * @return ValidationReport Validation results for ticker analysis data
+     */
+    public function validateTickerAnalysisResponse(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::tickerAnalysisSchema());
+    }
+
+    /**
+     * Get analyst price target summary
+     * 
+     * Convenience method to quickly access analyst price targets and recommendations
+     * 
+     * @return array<string, mixed>|null Price target summary with high/low/average targets
+     */
+    public function getAnalystPriceTargets(): ?array
+    {
+        $ratings = $this->getAnalystRatings();
+        if (!$ratings || !isset($ratings['summary'])) {
+            return null;
+        }
+
+        $summary = $ratings['summary'];
+        return [
+            'current_price' => $this->extractPriceFromText($summary['price_target'] ?? ''),
+            'summary' => $summary['price_target'] ?? null,
+            'viewpoint' => $summary['viewpoint'] ?? null,
+            'tldr' => $summary['tldr'] ?? null
+        ];
+    }
+
+    /**
+     * Get earnings performance summary
+     * 
+     * Convenience method to quickly access earnings highlights and outlook
+     * 
+     * @return array<string, mixed>|null Earnings summary with key insights
+     */
+    public function getEarningsPerformance(): ?array
+    {
+        $earnings = $this->getEarningsInsights();
+        if (!$earnings || !isset($earnings['analysis'])) {
+            return null;
+        }
+
+        $analysis = $earnings['analysis'];
+        return [
+            'tldr' => $analysis['tldr'] ?? null,
+            'outlook' => $analysis['key_insights']['Outlook'] ?? null,
+            'highlights' => $analysis['key_insights']['Performance Highlights'] ?? null,
+            'fiscal_period' => $earnings['fiscal_period'] ?? null
+        ];
+    }
+
+    /**
+     * Get market sentiment summary
+     * 
+     * Convenience method to access overall market sentiment and news themes
+     * 
+     * @return array<string, mixed>|null Market sentiment analysis
+     */
+    public function getMarketSentiment(): ?array
+    {
+        $news = $this->getNewsAnalysis();
+        $options = $this->getOptionsAnalysis();
+        
+        if (!$news && !$options) {
+            return null;
+        }
+
+        return [
+            'news_summary' => $news['summary'] ?? null,
+            'news_themes' => $news['themes'] ?? [],
+            'options_sentiment' => $options['key_takeaways']['tldr'] ?? null,
+            'put_call_ratio' => $options['put_call_ratio']['pcr_volume'] ?? null
+        ];
+    }
+
+    /**
+     * Extract price from text (utility method for analyst targets)
+     * 
+     * @param string $text Text containing price information
+     * @return float|null Extracted price value
+     */
+    private function extractPriceFromText(string $text): ?float
+    {
+        // Look for price patterns like $26, $16.50, etc.
+        if (preg_match('/\$(\d+(?:\.\d{2})?)/', $text, $matches)) {
+            return (float) $matches[1];
+        }
+        return null;
+    }
+
+    /**
      * Log deprecation warning for legacy format usage
      */
     private function logLegacyFormatWarning(string $method): void

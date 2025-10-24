@@ -7,18 +7,25 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 [![License](https://img.shields.io/packagist/l/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Tests](https://img.shields.io/badge/tests-135%2B%20passing-brightgreen.svg)](https://github.com/wioex/php-sdk)
 
-## What's New in v2.3.0
+## What's New in v2.4.0
 
-**Enterprise-grade SDK with unified API integration and enhanced type safety.**
+**Comprehensive Ticker Analysis & Investment Research Platform.**
 
-### Major Updates
+### 🚀 Major New Feature: Ticker Analysis
+- **Comprehensive Analysis**: Complete stock analysis combining analyst ratings, earnings insights, insider activity, news sentiment, and options analysis
+- **Investment Research Grade**: Institutional-quality data for professional portfolio management
+- **15+ Helper Methods**: Structured access to all analysis sections with type-safe methods
+- **Validation & Quality**: Professional validation schemas and error handling
+- **Portfolio Support**: Analyze multiple stocks efficiently for portfolio research
+
+### Continued Excellence from v2.3.0
 - **Unified ResponseTemplate Support**: Standardized response format across all WioEX API endpoints
-- **Enhanced Stock Data**: Yahoo Finance integration with pre/post market data, 52-week ranges, market cap, and company logos
+- **Enhanced Stock Data**: Institutional-grade integration with pre/post market data, 52-week ranges, market cap, and company logos
 - **Advanced Type Safety**: Complete PHPStan compliance with comprehensive array type specifications
 - **Enhanced Metadata Access**: 20+ new helper methods for accessing response metadata and performance metrics
 - **Detailed Mode Support**: Enhanced stocks endpoint with extended market data and institutional-grade accuracy
 - **Backward Compatibility**: Full support for legacy response formats with automatic adaptation
-- **Validation Schemas**: New validation schemas for stocks, news, currency, and market status responses
+- **Validation Schemas**: Comprehensive validation schemas for all endpoint types
 - **Professional Error Handling**: Enhanced validation reporting and error management
 
 ### Ideal for Professional Trading
@@ -2979,10 +2986,85 @@ $client->account()->balance(); // Works
 - Environment-based configuration
 - Enhanced error reporting
 
+## 🚀 Ticker Analysis (NEW in v2.4.0)
+
+**Comprehensive investment research with institutional-grade analysis.**
+
+```php
+// Get comprehensive ticker analysis (5 credits)
+$analysis = $client->stocks()->tickerAnalysis('AAPL');
+
+if ($analysis->successful()) {
+    // Analyst Ratings & Price Targets
+    $analystRatings = $analysis->getAnalystRatings();
+    echo "Analyst Consensus: " . $analystRatings['summary']['viewpoint'] . "\n";
+    echo "Price Target: " . $analystRatings['summary']['price_target'] . "\n";
+    
+    // Earnings Insights & Performance
+    $earnings = $analysis->getEarningsPerformance();
+    echo "Earnings Outlook: " . $earnings['outlook'] . "\n";
+    echo "Current Quarter: " . $earnings['fiscal_period'] . "\n";
+    
+    // Market Sentiment Analysis
+    $sentiment = $analysis->getMarketSentiment();
+    echo "News Sentiment: " . substr($sentiment['news_summary'], 0, 100) . "...\n";
+    echo "Options P/C Ratio: " . $sentiment['put_call_ratio'] . "\n";
+    
+    // Insider Activity Tracking
+    $insider = $analysis->getInsiderActivity();
+    echo "Insider Activity: " . $insider['highlights'] . "\n";
+    
+    // Financial & Technical Metrics
+    $priceMovement = $analysis->getPriceMovement();
+    echo "Beta: " . $priceMovement['beta'] . "\n";
+    echo "Sector: " . $priceMovement['sector'] . "\n";
+    echo "Stock Performance: " . $priceMovement['stock_percentage_change'] . "%\n";
+    
+    // Professional Validation
+    $validation = $analysis->validateTickerAnalysisResponse();
+    echo $validation->isValid() ? "✅ Analysis validation passed\n" : "❌ Validation failed\n";
+    
+    // Cost & Performance Tracking
+    echo "Credits Used: " . $analysis->getCredits()['consumed'] . "\n";
+    echo "Response Time: " . $analysis->getPerformance()['total_time_ms'] . "ms\n";
+}
+
+// Portfolio Analysis Example
+$symbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA'];
+foreach ($symbols as $symbol) {
+    $analysis = $client->stocks()->tickerAnalysis($symbol);
+    if ($analysis->successful()) {
+        $ratings = $analysis->getAnalystRatings();
+        $earnings = $analysis->getEarningsPerformance();
+        
+        echo "{$symbol}: " . ($ratings['summary']['viewpoint'] ?? 'No rating') . 
+             " | Outlook: " . ($earnings['outlook'] ?? 'No data') . "\n";
+    }
+}
+```
+
+**Ticker Analysis Features:**
+- 📈 **Analyst Ratings**: Price targets, recommendations, consensus
+- 💼 **Earnings Insights**: Quarterly results, guidance, call highlights
+- 👥 **Insider Activity**: Executive transactions, sentiment analysis
+- 📰 **News Analysis**: Market sentiment, themes, key events
+- 📊 **Options Analysis**: Put/call ratios, market implications
+- 📈 **Price Movement**: Technical analysis, sector comparison
+- 💰 **Financial Metrics**: Valuation ratios, growth indicators
+- 🔍 **Market Overview**: Comprehensive summary and insights
+
+**Perfect for:**
+- Investment research and due diligence
+- Portfolio analysis and optimization
+- Market sentiment tracking
+- Risk assessment and beta analysis
+- Options trading strategy development
+
 ## Examples
 
 See the `/examples` directory:
 
+- `ticker-analysis-example.php` - **NEW**: Comprehensive ticker analysis
 - `stocks-example.php` - Stock data operations
 - `streaming-example.php` - WebSocket streaming setup
 - `market-status-example.php` - Market hours and status

@@ -481,6 +481,29 @@ class SchemaValidator
             ]);
     }
 
+    /**
+     * Create validation schema for ticker analysis responses
+     * 
+     * Basic validation for ticker analysis data structure.
+     * 
+     * @return self Configured validator for ticker analysis responses
+     */
+    public static function tickerAnalysisSchema(): self
+    {
+        $validator = new self();
+        
+        // Basic response structure validation
+        $validator
+            ->required('status')
+            ->type('status', 'string', true)
+            ->required('success')
+            ->type('success', 'boolean', true)
+            ->required('data')
+            ->type('data', 'array', true);
+            
+        return $validator;
+    }
+
     private function getRulesToValidate(string $schemaName): array
     {
         if ($schemaName !== '' && isset($this->schemas[$schemaName])) {
