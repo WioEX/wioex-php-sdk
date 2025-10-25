@@ -7,6 +7,7 @@ namespace Wioex\SDK;
 use Wioex\SDK\Http\Client;
 use Wioex\SDK\Resources\Account;
 use Wioex\SDK\Resources\Currency;
+use Wioex\SDK\Resources\Logos;
 use Wioex\SDK\Resources\Markets;
 use Wioex\SDK\Resources\News;
 use Wioex\SDK\Resources\Screens;
@@ -31,6 +32,7 @@ class WioexClient
     private ?Currency $currency = null;
     private ?Account $account = null;
     private ?Streaming $streaming = null;
+    private ?Logos $logos = null;
 
     /**
      * Create a new WioEX API client instance
@@ -356,6 +358,27 @@ class WioexClient
     }
 
     /**
+     * Access logo-related endpoints
+     *
+     * @return Logos
+     *
+     * @example
+     * ```php
+     * $logoUrl = $client->logos()->getUrl('AAPL');
+     * $logoExists = $client->logos()->exists('AAPL');
+     * $logoUrls = $client->logos()->getBatch(['AAPL', 'GOOGL', 'MSFT']);
+     * ```
+     */
+    public function logos(): Logos
+    {
+        if ($this->logos === null) {
+            $this->logos = new Logos($this->httpClient);
+        }
+
+        return $this->logos;
+    }
+
+    /**
      * Get the configuration instance
      *
      * @return Config
@@ -378,6 +401,7 @@ class WioexClient
         $this->currency = null;
         $this->account = null;
         $this->streaming = null;
+        $this->logos = null;
     }
 
     /**
