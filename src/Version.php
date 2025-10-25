@@ -15,28 +15,30 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.4.1 - Critical Bug Fix Release:
-     * - FIXED: AAPL stock lookup issue - customers can now find AAPL and all stocks
-     * - FIXED: Autoload configuration to properly load environment variables
-     * - FIXED: Missing Functions class dependency from src/app directory
-     * - FIXED: TipRanks provider instantiation failures
-     * - IMPROVED: Error handling and dependency loading
-     * - All ticker analysis features from 2.4.0 maintained
+     * Version 2.5.0 - Logo Feature Release:
+     * - NEW: Stock logo access functionality
+     * - NEW: Logos resource with comprehensive methods
+     * - NEW: Direct logo URL generation
+     * - NEW: Batch logo operations
+     * - NEW: Logo existence validation
+     * - NEW: Download and save logo functionality
+     * - NEW: Logo metadata and information access
+     * - Access to 6,840+ stock logos stored locally
      */
-    public const CURRENT = '2.4.1';
+    public const CURRENT = '2.5.0';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 4;
-    public const PATCH = 1;
+    public const MINOR = 5;
+    public const PATCH = 0;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-10-24';
-    public const CODENAME = 'Stock Lookup Fix';
+    public const RELEASE_DATE = '2025-10-25';
+    public const CODENAME = 'Logo Feature Release';
 
     /**
      * Get current version string
@@ -72,6 +74,11 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
+                'stock_logo_access',
+                'logo_batch_operations',
+                'logo_metadata_info',
+                'logo_existence_validation',
+                'logo_download_save',
                 'comprehensive_ticker_analysis',
                 'analyst_ratings_integration',
                 'earnings_insights_analysis',
