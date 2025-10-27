@@ -108,7 +108,8 @@ class Streaming extends Resource
      * Get the WebSocket URL for streaming connections
      *
      * Returns the current WebSocket endpoint URL for establishing
-     * real-time streaming connections. Optionally filters by data types.
+     * real-time streaming connections. WioEX automatically handles
+     * multi-source failover transparently in the background.
      *
      * @param array $options Optional configuration:
      *   - data_types: array - Filter by data types (e.g., ['stocks', 'crypto'])

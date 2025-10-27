@@ -1287,6 +1287,119 @@ class Response implements ArrayAccess
         return null;
     }
 
+    // ================================
+    // SEARCH RESPONSE METHODS
+    // ================================
+
+    /**
+     * Get search query from unified search response
+     */
+    public function getSearchQuery(): ?string
+    {
+        return $this->getCoreData()['query'] ?? null;
+    }
+
+    /**
+     * Get total search results count
+     */
+    public function getSearchResultsCount(): int
+    {
+        return $this->getCoreData()['total_results'] ?? 0;
+    }
+
+    /**
+     * Get search results (instruments)
+     * 
+     * @return array<int, array<string, mixed>>
+     */
+    public function getSearchResults(): array
+    {
+        return $this->getCoreData()['instruments'] ?? [];
+    }
+
+    /**
+     * Get search provider used
+     */
+    public function getSearchProvider(): ?string
+    {
+        return $this->getCoreData()['search_provider'] ?? null;
+    }
+
+    /**
+     * Get country filter used in search
+     */
+    public function getSearchCountry(): ?string
+    {
+        return $this->getCoreData()['country'] ?? null;
+    }
+
+    /**
+     * Check if search returned any results
+     */
+    public function hasSearchResults(): bool
+    {
+        return $this->getSearchResultsCount() > 0;
+    }
+
+    /**
+     * Get first search result (most relevant)
+     * 
+     * @return array<string, mixed>|null
+     */
+    public function getFirstSearchResult(): ?array
+    {
+        $results = $this->getSearchResults();
+        return $results[0] ?? null;
+    }
+
+    /**
+     * Check if this is a search response
+     */
+    public function isSearchResponse(): bool
+    {
+        $data = $this->getCoreData();
+        return isset($data['query']) && isset($data['instruments']) && isset($data['total_results']);
+    }
+
+    /**
+     * Validate search response structure
+     */
+    public function validateSearchResponse(): ValidationReport
+    {
+        return $this->validate(SchemaValidator::searchResponseSchema());
+    }
+
+    /**
+     * Extract symbols from search results
+     * 
+     * @return array<int, string>
+     */
+    public function getSearchSymbols(): array
+    {
+        $symbols = [];
+        foreach ($this->getSearchResults() as $result) {
+            if (isset($result['symbol'])) {
+                $symbols[] = $result['symbol'];
+            }
+        }
+        return $symbols;
+    }
+
+    /**
+     * Find search result by symbol
+     * 
+     * @return array<string, mixed>|null
+     */
+    public function findResultBySymbol(string $symbol): ?array
+    {
+        foreach ($this->getSearchResults() as $result) {
+            if (isset($result['symbol']) && $result['symbol'] === strtoupper($symbol)) {
+                return $result;
+            }
+        }
+        return null;
+    }
+
     /**
      * Log deprecation warning for legacy format usage
      */
