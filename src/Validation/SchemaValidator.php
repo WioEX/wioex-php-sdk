@@ -504,6 +504,52 @@ class SchemaValidator
         return $validator;
     }
 
+    /**
+     * Create validation schema for search responses with unified ResponseTemplate format
+     * 
+     * Validates search responses including query, results count, instruments array,
+     * and unified metadata structure for consistency with other WioEX endpoints.
+     * 
+     * @return self Configured validator for search responses
+     */
+    public static function searchResponseSchema(): self
+    {
+        $validator = new self();
+        
+        // Basic unified response structure validation
+        $validator
+            ->required('status')
+            ->type('status', 'string', true)
+            ->required('metadata')
+            ->type('metadata', 'array', true)
+            ->required('data')
+            ->type('data', 'array', true);
+            
+        // Search-specific data validation
+        $validator
+            ->required('data.query')
+            ->type('data.query', 'string', true)
+            ->required('data.total_results')
+            ->type('data.total_results', 'integer', true)
+            ->required('data.instruments')
+            ->type('data.instruments', 'array', true)
+            ->optional('data.country')
+            ->type('data.country', 'string', false)
+            ->optional('data.search_provider')
+            ->type('data.search_provider', 'string', false);
+            
+        // Metadata validation
+        $validator
+            ->required('metadata.wioex')
+            ->type('metadata.wioex', 'array', true)
+            ->required('metadata.response')
+            ->type('metadata.response', 'array', true)
+            ->optional('metadata.performance')
+            ->type('metadata.performance', 'array', false);
+            
+        return $validator;
+    }
+
     private function getRulesToValidate(string $schemaName): array
     {
         if ($schemaName !== '' && isset($this->schemas[$schemaName])) {

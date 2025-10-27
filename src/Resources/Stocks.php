@@ -17,6 +17,94 @@ class Stocks extends Resource
 {
     /**
      * Search stocks by symbol or company name
+     * 
+     * Returns standardized WioEX API response with unified metadata structure.
+     * 
+     * @param string $query Search term (company name or symbol, max 50 characters)
+     * @return Response Standardized search results with metadata
+     * 
+     * Response structure:
+     * ```json
+     * {
+     *   "metadata": {
+     *     "wioex": {"api_version": "2.0", "brand": "WioEX Financial Data API"},
+     *     "response": {"timestamp_utc": "...", "request_id": "..."},
+     *     "performance": {"total_time_ms": 3.36}
+     *   },
+     *   "status": "success",
+     *   "data": {
+     *     "query": "AAPL",
+     *     "total_results": 1,
+     *     "instruments": [
+     *       {"symbol": "AAPL", "name": "Apple Inc", "exc_name": "NASDAQ", "country": "USA"}
+     *     ],
+     *     "search_provider": "sarexDb"
+     *   }
+     * }
+     * ```
+     * 
+     * @example Basic Usage:
+     * ```php
+     * // Search for Apple stocks (case-insensitive)
+     * $results = $client->stocks()->search('apple');
+     * 
+     * if ($results->successful()) {
+     *     // Using convenient helper methods (recommended)
+     *     echo "Found {$results->getSearchResultsCount()} results for: {$results->getSearchQuery()}\n";
+     *     echo "Provider: {$results->getSearchProvider()}\n\n";
+     *     
+     *     foreach ($results->getSearchResults() as $stock) {
+     *         echo "- {$stock['symbol']}: {$stock['name']} ({$stock['exc_name']})\n";
+     *     }
+     *     
+     *     // Access metadata
+     *     $performance = $results->getPerformance();
+     *     echo "Search completed in {$performance['total_time_ms']}ms\n";
+     * }
+     * ```
+     * 
+     * @example Advanced Usage:
+     * ```php
+     * // Case-insensitive search with result processing
+     * $results = $client->stocks()->search('PALa');  // Finds Palantir
+     * 
+     * if ($results->hasSearchResults()) {
+     *     // Get most relevant result
+     *     $topResult = $results->getFirstSearchResult();
+     *     echo "Top result: {$topResult['symbol']} - {$topResult['name']}\n";
+     *     
+     *     // Find specific symbol
+     *     $palantir = $results->findResultBySymbol('PLTR');
+     *     if ($palantir) {
+     *         echo "Found Palantir: {$palantir['name']} ({$palantir['exc_name']})\n";
+     *     }
+     *     
+     *     // Get all symbols for further processing
+     *     $symbols = $results->getSearchSymbols();
+     *     echo "Symbols found: " . implode(', ', $symbols) . "\n";
+     *     
+     *     // Validate response structure
+     *     if ($results->isSearchResponse()) {
+     *         echo "✅ Valid search response format\n";
+     *     }
+     * }
+     * ```
+     * 
+     * @example Raw Data Access (legacy compatibility):
+     * ```php
+     * $results = $client->stocks()->search('tesla');
+     * 
+     * if ($results->successful()) {
+     *     // Direct data access (still supported)
+     *     $searchData = $results->data()['data'];
+     *     echo "Query: {$searchData['query']}\n";
+     *     echo "Results: {$searchData['total_results']}\n";
+     *     
+     *     foreach ($searchData['instruments'] as $stock) {
+     *         echo "- {$stock['symbol']}: {$stock['name']}\n";
+     *     }
+     * }
+     * ```
      */
     public function search(string $query): Response
     {
