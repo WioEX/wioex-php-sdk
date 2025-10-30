@@ -55,7 +55,7 @@ class Signals extends Resource
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processSignalOptions($options);
 
-        return parent::get('/stocks/signals/active', $processedOptions);
+        return parent::get('/api/stocks/signals/active', $processedOptions);
     }
 
     /**
@@ -104,7 +104,7 @@ class Signals extends Resource
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processSignalOptions($options);
 
-        return parent::get('/stocks/signals/history', $processedOptions);
+        return parent::get('/api/stocks/signals/history', $processedOptions);
     }
 
     /**

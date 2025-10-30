@@ -32,7 +32,7 @@ class Currency extends Resource
         $targetValue = $target instanceof CurrencyCode ? $target->value : $target;
         $intervalValue = $interval instanceof CurrencyInterval ? $interval->value : $interval;
 
-        return $this->get('/currency/graph', [
+        return $this->get('/api/currency/graph', [
             'base' => $baseValue,
             'target' => $targetValue,
             'interval' => $intervalValue
@@ -44,7 +44,7 @@ class Currency extends Resource
      */
     public function baseUsd(): Response
     {
-        return $this->get('/currency/base_usd');
+        return $this->get('/api/currency/base_usd');
     }
 
     /**

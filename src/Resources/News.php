@@ -13,7 +13,7 @@ class News extends Resource
      */
     public function latest(string $ticker): Response
     {
-        return $this->get('/news', ['ticker' => $ticker]);
+        return $this->get('/api/news', ['ticker' => $ticker]);
     }
 
     /**
@@ -21,6 +21,6 @@ class News extends Resource
      */
     public function companyAnalysis(string $ticker): Response
     {
-        return $this->get('/companyAnalysis', ['ticker' => $ticker]);
+        return $this->get('/api/companyAnalysis', ['ticker' => $ticker]);
     }
 }
