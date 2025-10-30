@@ -31,14 +31,45 @@ class Streaming extends Resource
      */
     public function getToken(): Response
     {
-        $response = parent::post('/v1/stream/token');
-
-        // Cache token data for helper methods
-        if ($response->successful()) {
-            $this->cachedTokenData = $response->data();
+        // CRITICAL: Stream token endpoint requires API key in POST body, not query
+        // We need to make a custom request that doesn't add api_key to query params
+        
+        // Make direct HTTP POST request with API key in body
+        $guzzleClient = new \GuzzleHttp\Client([
+            'base_uri' => $this->client->getConfig()->getBaseUrl(),
+            'timeout' => 30
+        ]);
+        
+        try {
+            $response = $guzzleClient->post('/stream/token', [
+                'json' => [
+                    'api_key' => $this->client->getConfig()->getApiKey()
+                ],
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'User-Agent' => \Wioex\SDK\Version::userAgent()
+                ]
+            ]);
+            
+            $wioexResponse = new Response($response);
+            
+            // Cache token data for helper methods
+            if ($wioexResponse->successful()) {
+                $this->cachedTokenData = $wioexResponse->data();
+            }
+            
+            return $wioexResponse;
+            
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            // Convert to WioEX response format
+            $response = $e->getResponse();
+            if ($response) {
+                return new Response($response);
+            }
+            
+            // Create error response
+            throw new \Wioex\SDK\Exceptions\RequestException('Stream token request failed: ' . $e->getMessage());
         }
-
-        return $response;
     }
 
     /**
@@ -64,7 +95,7 @@ class Streaming extends Resource
         // Clear cached data before refreshing
         $this->cachedTokenData = null;
 
-        $response = parent::post('/v1/stream/token/refresh');
+        $response = parent::post('/stream/token/refresh');
 
         // Cache new token data
         if ($response->successful()) {
@@ -101,7 +132,7 @@ class Streaming extends Resource
      */
     public function validateToken(string $token): Response
     {
-        return parent::post('/v1/stream/token/validate', ['token' => $token]);
+        return parent::post('/stream/token/validate', ['token' => $token]);
     }
 
     /**
@@ -134,7 +165,7 @@ class Streaming extends Resource
      */
     public function getWebSocketUrl(array $options = []): Response
     {
-        return parent::get('/v1/stream/websocket-url', $options);
+        return parent::get('/stream/websocket-url', $options);
     }
 
     /**
@@ -164,7 +195,7 @@ class Streaming extends Resource
      */
     public function getConnectionStatus(array $options = []): Response
     {
-        return parent::get('/v1/stream/status', $options);
+        return parent::get('/stream/status', $options);
     }
 
     /**
@@ -207,7 +238,7 @@ class Streaming extends Resource
             }
         }
 
-        return parent::post('/v1/stream/token/expiry', $params);
+        return parent::post('/stream/token/expiry', $params);
     }
 
     /**
@@ -245,7 +276,7 @@ class Streaming extends Resource
             throw new \InvalidArgumentException('No token provided and no cached token available');
         }
 
-        return parent::post('/v1/stream/token/revoke', $params);
+        return parent::post('/stream/token/revoke', $params);
     }
 
     /**
@@ -274,7 +305,7 @@ class Streaming extends Resource
      */
     public function getAvailableChannels(array $options = []): Response
     {
-        return parent::get('/v1/stream/channels', $options);
+        return parent::get('/stream/channels', $options);
     }
 
     /**
@@ -305,7 +336,7 @@ class Streaming extends Resource
      */
     public function ping(array $options = []): Response
     {
-        return parent::post('/v1/stream/ping', $options);
+        return parent::post('/stream/ping', $options);
     }
 
     /**
@@ -339,7 +370,7 @@ class Streaming extends Resource
      */
     public function getUsageStats(array $options = []): Response
     {
-        return parent::get('/v1/stream/usage', $options);
+        return parent::get('/stream/usage', $options);
     }
 
     /**

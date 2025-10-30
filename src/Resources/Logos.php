@@ -27,7 +27,7 @@ class Logos extends Resource
         $this->validateSymbol($symbol);
         $symbol = strtoupper(trim($symbol));
         
-        return $this->client->getConfig()->getBaseUrl() . "/v2/logos/{$symbol}";
+        return $this->client->getConfig()->getBaseUrl() . "/logos/{$symbol}";
     }
 
     /**
@@ -61,7 +61,7 @@ class Logos extends Resource
         }
 
         $symbolsString = implode(',', array_map('strtoupper', array_map('trim', $symbols)));
-        $response = $this->get('/v2/logos/batch', ['symbols' => $symbolsString]);
+        $response = $this->get('/logos/batch', ['symbols' => $symbolsString]);
         
         $data = $response->getData();
         $logoUrls = [];
@@ -96,7 +96,7 @@ class Logos extends Resource
         
         try {
             // Make direct HTTP request to logo endpoint
-            $logoUrl = "/v2/logos/{$symbol}";
+            $logoUrl = "/logos/{$symbol}";
             $response = $this->client->getRawResponse('GET', $logoUrl);
             
             if ($response->getStatusCode() !== 200) {
@@ -130,7 +130,7 @@ class Logos extends Resource
         $this->validateSymbol($symbol);
         $symbol = strtoupper(trim($symbol));
         
-        return $this->get("/v2/logos/{$symbol}/info");
+        return $this->get("/logos/{$symbol}/info");
     }
 
     /**
@@ -174,7 +174,7 @@ class Logos extends Resource
      */
     public function getAvailable(): Response
     {
-        return $this->get('/v2/logos/available');
+        return $this->get('/logos/available');
     }
 
     /**
@@ -214,7 +214,7 @@ class Logos extends Resource
         }
 
         $symbolsString = implode(',', array_map('strtoupper', array_map('trim', $symbols)));
-        return $this->get('/v2/logos/batch', ['symbols' => $symbolsString]);
+        return $this->get('/logos/batch', ['symbols' => $symbolsString]);
     }
 
     /**

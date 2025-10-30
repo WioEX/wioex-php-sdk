@@ -98,7 +98,7 @@ echo "🌐 Direct Frontend Access (JavaScript):\n";
 echo str_repeat('─', 54) . "\n";
 echo <<<'JS'
 // No API key needed for public access
-fetch('https://api.wioex.com/v2/market/status')
+fetch('https://api.wioex.com/market/status')
   .then(response => response.json())
   .then(data => {
     const nyse = data.markets.nyse;

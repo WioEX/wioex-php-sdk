@@ -108,7 +108,7 @@ class Stocks extends Resource
      */
     public function search(string $query): Response
     {
-        return parent::get('/v2/stocks/search', ['q' => $query]);
+        return parent::get('/stocks/search', ['q' => $query]);
     }
 
     /**
@@ -158,7 +158,7 @@ class Stocks extends Resource
             $params['detailed'] = 'true';
         }
         
-        return parent::get('/v2/stocks/get', $params);
+        return parent::get('/stocks/get', $params);
     }
 
     /**
@@ -219,7 +219,7 @@ class Stocks extends Resource
      */
     public function info(string $ticker): Response
     {
-        return parent::get('/v2/stocks/info', ['ticker' => $ticker]);
+        return parent::get('/stocks/info', ['ticker' => $ticker]);
     }
 
     /**
@@ -263,7 +263,7 @@ class Stocks extends Resource
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processTimelineOptions($options);
 
-        return parent::get('/v2/stocks/chart/timeline', array_merge(
+        return parent::get('/stocks/chart/timeline', array_merge(
             ['ticker' => $ticker],
             $processedOptions
         ));
@@ -408,7 +408,7 @@ class Stocks extends Resource
      */
     public function list(array $options = []): Response
     {
-        return parent::get('/v2/stocks/get_list', $options);
+        return parent::get('/stocks/get_list', $options);
     }
 
     /**
@@ -422,7 +422,7 @@ class Stocks extends Resource
             $params['currency'] = $currency;
         }
 
-        return parent::get('/v2/stocks/financials', $params);
+        return parent::get('/stocks/financials', $params);
     }
 
     /**
@@ -437,7 +437,7 @@ class Stocks extends Resource
     public function heatmap(MarketIndex|string $market): Response
     {
         $marketValue = $market instanceof MarketIndex ? $market->value : $market;
-        return parent::get('/v2/stocks/heatmap', ['market' => $marketValue]);
+        return parent::get('/stocks/heatmap', ['market' => $marketValue]);
     }
 
     /**
@@ -445,7 +445,7 @@ class Stocks extends Resource
      */
     public function minimalChart(string $ticker): Response
     {
-        return parent::get('/v2/stocks/chart/minimal', ['ticker' => $ticker]);
+        return parent::get('/stocks/chart/minimal', ['ticker' => $ticker]);
     }
 
     /**
@@ -457,7 +457,7 @@ class Stocks extends Resource
      */
     public function priceChanges(string $symbol): Response
     {
-        return parent::get("/v2/stocks/price-changes/{$symbol}");
+        return parent::get("/stocks/price-changes/{$symbol}");
     }
 
     /**
@@ -572,7 +572,7 @@ class Stocks extends Resource
      */
     public function tickerAnalysis(string $symbol, array $options = []): Response
     {
-        return parent::get('/v2/stocks/ticker-analysis', array_merge(
+        return parent::get('/stocks/ticker-analysis', array_merge(
             ['symbol' => $symbol],
             $options
         ));
@@ -688,7 +688,7 @@ class Stocks extends Resource
      */
     public function quoteBulk(array $symbols, array $options = []): Response
     {
-        return $this->executeBulkOperation('/v2/stocks/bulk/quote', $symbols, $options);
+        return $this->executeBulkOperation('/stocks/bulk/quote', $symbols, $options);
     }
 
     /**
@@ -740,7 +740,7 @@ class Stocks extends Resource
             $requestOptions['chunk_delay'] = 0.2; // Slower for timeline data
         }
 
-        return $this->executeBulkOperation('/v2/stocks/bulk/timeline', $symbols, $requestOptions);
+        return $this->executeBulkOperation('/stocks/bulk/timeline', $symbols, $requestOptions);
     }
 
     /**
@@ -766,7 +766,7 @@ class Stocks extends Resource
      */
     public function infoBulk(array $symbols, array $options = []): Response
     {
-        return $this->executeBulkOperation('/v2/stocks/bulk/info', $symbols, $options);
+        return $this->executeBulkOperation('/stocks/bulk/info', $symbols, $options);
     }
 
     /**
@@ -794,7 +794,7 @@ class Stocks extends Resource
     public function financialsBulk(array $symbols, string $currency = 'USD', array $options = []): Response
     {
         $requestOptions = array_merge($options, ['currency' => $currency]);
-        return $this->executeBulkOperation('/v2/stocks/bulk/financials', $symbols, $requestOptions);
+        return $this->executeBulkOperation('/stocks/bulk/financials', $symbols, $requestOptions);
     }
 
     /**
@@ -851,10 +851,10 @@ class Stocks extends Resource
             'max_symbols_per_request' => 1000,
             'max_symbols_per_chunk' => 30, // Updated to match API quote limit
             'api_endpoint_limits' => [
-                'quote' => 30,      // /v2/stocks/get max limit
-                'timeline' => 1,    // /v2/stocks/chart/timeline single symbol only
-                'info' => 1,        // /v2/stocks/info single symbol only
-                'financials' => 1   // /v2/stocks/financials single symbol only
+                'quote' => 30,      // /stocks/get max limit
+                'timeline' => 1,    // /stocks/chart/timeline single symbol only
+                'info' => 1,        // /stocks/info single symbol only
+                'financials' => 1   // /stocks/financials single symbol only
             ],
             'default_chunk_sizes' => [
                 'quote' => 30,      // Updated to API limit

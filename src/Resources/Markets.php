@@ -65,7 +65,7 @@ class Markets extends Resource
      * @example
      * ```javascript
      * // Direct API call from frontend (no SDK needed)
-     * fetch('https://api.wioex.com/v2/market/status')
+     * fetch('https://api.wioex.com/market/status')
      *   .then(response => response.json())
      *   .then(data => {
      *     console.log('NYSE is', data.markets.nyse.is_open ? 'open' : 'closed');
@@ -74,6 +74,6 @@ class Markets extends Resource
      */
     public function status(): Response
     {
-        return parent::get('/v2/market/status');
+        return parent::get('/market/status');
     }
 }
