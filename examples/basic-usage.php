@@ -76,7 +76,8 @@ echo "5. Checking account balance...\n";
 $balance = $client->account()->balance();
 
 if ($balance->successful()) {
-    echo "Credits remaining: " . $balance['credits'] . "\n";
+    $data = $balance->data();
+    echo "Credits remaining: " . $data['data']['credit'] . "\n";
 }
 
 echo "\n";
