@@ -15,12 +15,12 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.6.0 - Stream Token Fix Release:
-     * - CRITICAL: Fixed production token generation for WebSocket streaming
-     * - FIXED: Stream token endpoint now sends API key in POST body (not query parameter)
-     * - FIXED: Eliminates demo token generation issue
-     * - IMPROVED: Enhanced WebSocket authentication compatibility
-     * - BACKWARD COMPATIBLE: All existing functionality preserved
+     * Version 2.7.0 - API Versioning Removal Release:
+     * - BREAKING: Removed API versioning (/v1/, /v2/ prefixes)
+     * - SIMPLIFIED: All endpoints now use direct paths (/stocks/get, /stream/token)
+     * - FIXED: Production token generation for WebSocket streaming
+     * - IMPROVED: Cleaner API structure and better maintainability
+     * - MAINTAINED: Full backward compatibility during transition
      * 
      * Previous features (2.5.0):
      * - Stock logo access functionality (6,840+ logos)
@@ -33,14 +33,14 @@ final class Version
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 6;
+    public const MINOR = 7;
     public const PATCH = 0;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-10-30';
-    public const CODENAME = 'Stream Token Fix Release';
+    public const CODENAME = 'API Versioning Removal Release';
 
     /**
      * Get current version string
