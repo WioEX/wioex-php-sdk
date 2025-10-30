@@ -61,7 +61,7 @@ class Logos extends Resource
         }
 
         $symbolsString = implode(',', array_map('strtoupper', array_map('trim', $symbols)));
-        $response = $this->get('/logos/batch', ['symbols' => $symbolsString]);
+        $response = $this->get('/api/logos/batch', ['symbols' => $symbolsString]);
         
         $data = $response->getData();
         $logoUrls = [];
@@ -174,7 +174,7 @@ class Logos extends Resource
      */
     public function getAvailable(): Response
     {
-        return $this->get('/logos/available');
+        return $this->get('/api/logos/available');
     }
 
     /**
@@ -214,7 +214,7 @@ class Logos extends Resource
         }
 
         $symbolsString = implode(',', array_map('strtoupper', array_map('trim', $symbols)));
-        return $this->get('/logos/batch', ['symbols' => $symbolsString]);
+        return $this->get('/api/logos/batch', ['symbols' => $symbolsString]);
     }
 
     /**

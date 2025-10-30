@@ -130,7 +130,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/active', $params);
+        return $this->get('/api/stocks/screens/active', $params);
     }
 
     /**
@@ -165,7 +165,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/gainers', $params);
+        return $this->get('/api/stocks/screens/gainers', $params);
     }
 
     /**
@@ -200,7 +200,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/losers', $params);
+        return $this->get('/api/stocks/screens/losers', $params);
     }
 
     /**
@@ -228,7 +228,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/pre_gainers', $params);
+        return $this->get('/api/stocks/screens/pre_gainers', $params);
     }
 
     /**
@@ -256,7 +256,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/pre_losers', $params);
+        return $this->get('/api/stocks/screens/pre_losers', $params);
     }
 
     /**
@@ -284,7 +284,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/post_gainers', $params);
+        return $this->get('/api/stocks/screens/post_gainers', $params);
     }
 
     /**
@@ -312,7 +312,7 @@ class Screens extends Resource
 
         $params = array_merge($params, $options);
 
-        return $this->get('/stocks/screens/post_losers', $params);
+        return $this->get('/api/stocks/screens/post_losers', $params);
     }
 
     /**
@@ -329,7 +329,7 @@ class Screens extends Resource
     public function ipos(IpoType|string $list = 'recent'): Response
     {
         $listValue = $list instanceof IpoType ? $list->value : $list;
-        return $this->get('/stocks/screens/ipos', ['list' => $listValue]);
+        return $this->get('/api/stocks/screens/ipos', ['list' => $listValue]);
     }
 
     /**
@@ -338,7 +338,7 @@ class Screens extends Resource
      */
     public function allStocks(): Response
     {
-        return $this->get('/stocks/screens/all_stocks_one_screen');
+        return $this->get('/api/stocks/screens/all_stocks_one_screen');
     }
 
     /**
@@ -347,7 +347,7 @@ class Screens extends Resource
      */
     public function allEtfs(): Response
     {
-        return $this->get('/stocks/screens/all_etf_one_screen');
+        return $this->get('/api/stocks/screens/all_etf_one_screen');
     }
 
     // =================================================================

@@ -108,7 +108,7 @@ class Stocks extends Resource
      */
     public function search(string $query): Response
     {
-        return parent::get('/stocks/search', ['q' => $query]);
+        return parent::get('/api/stocks/search', ['q' => $query]);
     }
 
     /**
@@ -158,7 +158,7 @@ class Stocks extends Resource
             $params['detailed'] = 'true';
         }
         
-        return parent::get('/stocks/get', $params);
+        return parent::get('/api/stocks/get', $params);
     }
 
     /**
@@ -219,7 +219,7 @@ class Stocks extends Resource
      */
     public function info(string $ticker): Response
     {
-        return parent::get('/stocks/info', ['ticker' => $ticker]);
+        return parent::get('/api/stocks/info', ['ticker' => $ticker]);
     }
 
     /**
@@ -263,7 +263,7 @@ class Stocks extends Resource
         // Convert ENUMs to strings for API compatibility
         $processedOptions = $this->processTimelineOptions($options);
 
-        return parent::get('/stocks/chart/timeline', array_merge(
+        return parent::get('/api/stocks/chart/timeline', array_merge(
             ['ticker' => $ticker],
             $processedOptions
         ));
@@ -408,7 +408,7 @@ class Stocks extends Resource
      */
     public function list(array $options = []): Response
     {
-        return parent::get('/stocks/get_list', $options);
+        return parent::get('/api/stocks/get_list', $options);
     }
 
     /**
@@ -422,7 +422,7 @@ class Stocks extends Resource
             $params['currency'] = $currency;
         }
 
-        return parent::get('/stocks/financials', $params);
+        return parent::get('/api/stocks/financials', $params);
     }
 
     /**
@@ -437,7 +437,7 @@ class Stocks extends Resource
     public function heatmap(MarketIndex|string $market): Response
     {
         $marketValue = $market instanceof MarketIndex ? $market->value : $market;
-        return parent::get('/stocks/heatmap', ['market' => $marketValue]);
+        return parent::get('/api/stocks/heatmap', ['market' => $marketValue]);
     }
 
     /**
@@ -445,7 +445,7 @@ class Stocks extends Resource
      */
     public function minimalChart(string $ticker): Response
     {
-        return parent::get('/stocks/chart/minimal', ['ticker' => $ticker]);
+        return parent::get('/api/stocks/chart/minimal', ['ticker' => $ticker]);
     }
 
     /**
@@ -572,7 +572,7 @@ class Stocks extends Resource
      */
     public function tickerAnalysis(string $symbol, array $options = []): Response
     {
-        return parent::get('/stocks/ticker-analysis', array_merge(
+        return parent::get('/api/stocks/ticker-analysis', array_merge(
             ['symbol' => $symbol],
             $options
         ));

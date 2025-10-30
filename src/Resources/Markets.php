@@ -74,6 +74,6 @@ class Markets extends Resource
      */
     public function status(): Response
     {
-        return parent::get('/market/status');
+        return parent::get('/api/market/status');
     }
 }

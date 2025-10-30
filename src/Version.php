@@ -15,12 +15,12 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.7.0 - API Versioning Removal Release:
-     * - BREAKING: Removed API versioning (/v1/, /v2/ prefixes)
-     * - SIMPLIFIED: All endpoints now use direct paths (/stocks/get, /stream/token)
-     * - FIXED: Production token generation for WebSocket streaming
-     * - IMPROVED: Cleaner API structure and better maintainability
-     * - MAINTAINED: Full backward compatibility during transition
+     * Version 2.7.1 - API Route Fix Release:
+     * - CRITICAL: Fixed all API endpoints to use correct /api/ prefix
+     * - FIXED: Account, Stocks, News, Currency, Logos endpoints now working
+     * - MAINTAINED: Stream endpoints use direct /stream/ paths
+     * - TESTED: All major endpoints verified working
+     * - STABLE: Production-ready with proper route handling
      * 
      * Previous features (2.5.0):
      * - Stock logo access functionality (6,840+ logos)
@@ -34,13 +34,13 @@ final class Version
      */
     public const MAJOR = 2;
     public const MINOR = 7;
-    public const PATCH = 0;
+    public const PATCH = 1;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-10-30';
-    public const CODENAME = 'API Versioning Removal Release';
+    public const CODENAME = 'API Route Fix Release';
 
     /**
      * Get current version string
