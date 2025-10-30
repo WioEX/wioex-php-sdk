@@ -33,10 +33,10 @@ echo "🔗 Test 2: Endpoint Structure\n";
 echo "-----------------------------\n";
 
 $endpoints = [
-    'https://api.wioex.com/v2/stocks/get?stocks=GM' => '✅ CORRECT',
+    'https://api.wioex.com/stocks/get?stocks=GM' => '✅ CORRECT',
     'https://wioker.com/api/stocks/GM' => '❌ INCORRECT',
-    'https://api.wioex.com/v2/stocks/search?query=General' => '✅ CORRECT',
-    'https://api.wioex.com/v2/account/info' => '✅ CORRECT'
+    'https://api.wioex.com/stocks/search?query=General' => '✅ CORRECT',
+    'https://api.wioex.com/account/info' => '✅ CORRECT'
 ];
 
 foreach ($endpoints as $endpoint => $status) {
@@ -48,7 +48,7 @@ foreach ($endpoints as $endpoint => $status) {
 echo "📡 Test 3: Basic Connectivity Test\n";
 echo "----------------------------------\n";
 
-$testUrl = 'https://api.wioex.com/v2/stocks/get?stocks=AAPL';
+$testUrl = 'https://api.wioex.com/stocks/get?stocks=AAPL';
 
 echo "Testing: $testUrl\n";
 echo "Expected: API key required error (not 'stock not found')\n\n";

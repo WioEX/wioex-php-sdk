@@ -15,7 +15,7 @@ class Account extends Resource
      */
     public function balance(): Response
     {
-        return $this->get('/v2/account/balance');
+        return $this->get('/account/balance');
     }
 
     /**
@@ -36,7 +36,7 @@ class Account extends Resource
             $params['days'] = $daysValue;
         }
 
-        return $this->get('/v2/account/usage', $params);
+        return $this->get('/account/usage', $params);
     }
 
     /**
@@ -52,7 +52,7 @@ class Account extends Resource
     public function analytics(AnalyticsPeriod|string $period = 'month'): Response
     {
         $periodValue = $period instanceof AnalyticsPeriod ? $period->value : $period;
-        return $this->get('/v2/account/analytics', ['period' => $periodValue]);
+        return $this->get('/account/analytics', ['period' => $periodValue]);
     }
 
     /**
@@ -60,6 +60,6 @@ class Account extends Resource
      */
     public function keys(): Response
     {
-        return $this->get('/v2/account/keys');
+        return $this->get('/account/keys');
     }
 }

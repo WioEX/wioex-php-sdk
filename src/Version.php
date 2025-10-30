@@ -15,30 +15,32 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.5.0 - Logo Feature Release:
-     * - NEW: Stock logo access functionality
-     * - NEW: Logos resource with comprehensive methods
-     * - NEW: Direct logo URL generation
-     * - NEW: Batch logo operations
-     * - NEW: Logo existence validation
-     * - NEW: Download and save logo functionality
-     * - NEW: Logo metadata and information access
-     * - Access to 6,840+ stock logos stored locally
+     * Version 2.6.0 - Stream Token Fix Release:
+     * - CRITICAL: Fixed production token generation for WebSocket streaming
+     * - FIXED: Stream token endpoint now sends API key in POST body (not query parameter)
+     * - FIXED: Eliminates demo token generation issue
+     * - IMPROVED: Enhanced WebSocket authentication compatibility
+     * - BACKWARD COMPATIBLE: All existing functionality preserved
+     * 
+     * Previous features (2.5.0):
+     * - Stock logo access functionality (6,840+ logos)
+     * - Comprehensive ticker analysis platform
+     * - Professional validation schemas
      */
-    public const CURRENT = '2.5.0';
+    public const CURRENT = '2.6.0';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 5;
+    public const MINOR = 6;
     public const PATCH = 0;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-10-25';
-    public const CODENAME = 'Logo Feature Release';
+    public const RELEASE_DATE = '2025-10-30';
+    public const CODENAME = 'Stream Token Fix Release';
 
     /**
      * Get current version string
@@ -74,6 +76,9 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
+                'production_stream_tokens',
+                'websocket_authentication_fix',
+                'post_body_api_key_support',
                 'stock_logo_access',
                 'logo_batch_operations',
                 'logo_metadata_info',

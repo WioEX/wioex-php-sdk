@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2025-10-30
+
+### 🚀 Stream Token Fix Release
+
+This release resolves the critical issue where customers were receiving demo tokens instead of production tokens when using the WebSocket streaming functionality.
+
+#### 🔧 Critical Fixes
+- **FIXED**: Stream token endpoint now sends API key in POST body instead of query parameter
+- **FIXED**: Production token generation - no more demo tokens for live API keys
+- **FIXED**: WebSocket authentication compatibility with binary/JSON protocols
+- **FIXED**: Enhanced stream token security and validation
+
+#### 🆕 Improvements
+- **IMPROVED**: WebSocket streaming token generation now produces proper JWT tokens
+- **IMPROVED**: Enhanced compatibility with WioEX Stream SDK
+- **IMPROVED**: Better error handling for stream authentication failures
+- **IMPROVED**: Direct API endpoint communication bypasses default client behavior
+
+#### 📊 Customer Impact
+- ✅ Resolves demo token issue - customers now receive production JWT tokens
+- ✅ WebSocket streaming works with proper authentication
+- ✅ Compatible with both binary MessagePack and JSON protocols
+- ✅ Maintains all existing functionality - fully backward compatible
+
+#### 🔧 Technical Details
+- Modified `Streaming::getToken()` to use direct `$this->client->request()` call
+- API key now sent in POST body: `{"api_key": "your-key"}` instead of query parameter
+- Generates proper JWT tokens with format: `eyJhbGciOiJIUzI1NiIs...`
+- Enhanced response includes `type: "stream_production"` and `websocket_url`
+
+#### 🏃 Migration Guide v2.5.0 → v2.6.0
+
+No code changes required for existing customers. Token generation will automatically work correctly:
+
+```php
+// Your existing code continues to work unchanged
+$token = $client->streaming()->getToken();
+if ($token->successful()) {
+    $auth = $token['token'];        // Now returns JWT (not demo_*)
+    $wsUrl = $token['websocket_url']; // Production WebSocket URL
+    echo "Production Token: {$auth}\n";
+}
+```
+
+**Expected Response Format:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "type": "stream_production",
+  "websocket_url": "wss://stream.wioex.com/ws",
+  "expires_at": 1764442041
+}
+```
+
 ## [2.4.1] - 2025-10-24
 
 ### 🔧 Critical Bug Fix Release
