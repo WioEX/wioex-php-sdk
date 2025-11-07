@@ -770,47 +770,61 @@ class WioexClient
             return; // Cache not enabled
         }
 
-        $defaultConfig = [
-            'enabled' => true,
-            'driver' => 'auto', // Auto-detect best driver
-            'prefix' => 'wioex_',
-            'ttl' => [
-                'stream_token' => 1800,  // 30 minutes
-                'market_data' => 60,     // 1 minute
-                'static_data' => 3600,   // 1 hour
-                'user_data' => 300,      // 5 minutes
-                'news' => 1800,          // 30 minutes
-                'signals' => 120,        // 2 minutes
-                'account' => 600,        // 10 minutes
-                'default' => 900         // 15 minutes fallback
-            ],
-            'redis' => [
-                'host' => '127.0.0.1',
-                'port' => 6379,
-                'persistent' => true
-            ],
-            'memcached' => [
-                'servers' => [['host' => '127.0.0.1', 'port' => 11211]],
-                'persistent_id' => 'wioex_cache'
-            ],
-            'opcache' => [
-                'cache_dir' => sys_get_temp_dir() . '/wioex_opcache'
-            ],
-            'file' => [
-                'cache_dir' => sys_get_temp_dir() . '/wioex_cache'
-            ]
-        ];
+        try {
+            $defaultConfig = [
+                'enabled' => true,
+                'driver' => 'auto', // Auto-detect best driver
+                'prefix' => 'wioex_',
+                'ttl' => [
+                    'stream_token' => 1800,  // 30 minutes
+                    'market_data' => 60,     // 1 minute
+                    'static_data' => 3600,   // 1 hour
+                    'user_data' => 300,      // 5 minutes
+                    'news' => 1800,          // 30 minutes
+                    'signals' => 120,        // 2 minutes
+                    'account' => 600,        // 10 minutes
+                    'default' => 900         // 15 minutes fallback
+                ],
+                'redis' => [
+                    'host' => '127.0.0.1',
+                    'port' => 6379,
+                    'persistent' => true
+                ],
+                'memcached' => [
+                    'servers' => [['host' => '127.0.0.1', 'port' => 11211]],
+                    'persistent_id' => 'wioex_cache'
+                ],
+                'opcache' => [
+                    'cache_dir' => sys_get_temp_dir() . '/wioex_opcache'
+                ],
+                'file' => [
+                    'cache_dir' => sys_get_temp_dir() . '/wioex_cache'
+                ]
+            ];
 
-        $config = array_merge($defaultConfig, $cacheConfig);
+            $config = array_merge($defaultConfig, $cacheConfig);
 
-        // Handle 'auto' driver selection
-        if ($config['driver'] === 'auto') {
-            $config['default'] = 'auto'; // Let CacheManager auto-detect
-        } else {
-            $config['default'] = $config['driver'];
+            // Handle 'auto' driver selection
+            if ($config['driver'] === 'auto') {
+                $config['default'] = 'auto'; // Let CacheManager auto-detect
+            } else {
+                $config['default'] = $config['driver'];
+            }
+
+            $this->cacheManager = new CacheManager($config);
+            
+        } catch (\Exception $e) {
+            // Graceful degradation: Disable cache on initialization error
+            $this->cacheManager = null;
+            
+            // Report error if ErrorReporter is available
+            if ($this->errorReporter !== null) {
+                $this->errorReporter->report($e, [
+                    'context' => 'wioex_client_cache_initialization_error',
+                    'requested_config' => $cacheConfig
+                ]);
+            }
         }
-
-        $this->cacheManager = new CacheManager($config);
     }
 
     /**
@@ -2108,19 +2122,4 @@ class WioexClient
         return $this->retry()->getCurrentConfig();
     }
 
-    /**
-     * Report error to WioEX monitoring system
-     *
-     * @param \Throwable $error
-     * @param array $context
-     * @return bool
-     */
-    public function reportError(\Throwable $error, array $context = []): bool
-    {
-        if ($this->errorReporter === null) {
-            $this->errorReporter = new ErrorReporter($this->config);
-        }
-        
-        return $this->errorReporter->report($error, $context);
-    }
 }
