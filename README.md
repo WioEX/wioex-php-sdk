@@ -1528,6 +1528,11 @@ if ($trumpPosts->successful()) {
         echo "Time: {$post['time']} | Sentiment: {$post['sentiment']['name']}\n";
         echo "Summary: {$post['summary']}\n";
 
+        // Show full post content (original tweet/post text)
+        if (!empty($post['content'])) {
+            echo "Full Content: {$post['content']}\n";
+        }
+
         // Show affected securities
         if (!empty($post['affected_securities'])) {
             $tickers = array_column($post['affected_securities'], 'ticker');

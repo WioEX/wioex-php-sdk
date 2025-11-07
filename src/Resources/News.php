@@ -71,6 +71,7 @@ class News extends Resource
      *     $moodIndex = $posts['data']['mood_index'];
      *     foreach ($posts['data']['posts'] as $post) {
      *         echo $post['timestamp'] . ': ' . $post['summary'] . "\n";
+     *         echo 'Content: ' . $post['content'] . "\n";  // Full tweet/post text
      *         echo 'Sentiment: ' . $post['sentiment']['name'] . "\n";
      *         echo 'Affected securities: ' . implode(', ', array_column($post['affected_securities'], 'ticker')) . "\n";
      *     }
