@@ -17,12 +17,31 @@ use Wioex\SDK\Resources\Streaming;
 use Wioex\SDK\Configuration\ConfigurationManager;
 use Wioex\SDK\Enums\Environment;
 use Wioex\SDK\Version;
+use Wioex\SDK\Cache\CacheManager;
+use Wioex\SDK\Cache\CacheInterface;
+use Wioex\SDK\Async\AsyncClient;
+use Wioex\SDK\Async\BatchRequestManager;
+use Wioex\SDK\Reliability\CircuitBreakerManager;
+use Wioex\SDK\Security\SecurityManager;
+use Wioex\SDK\RateLimit\RateLimitManager;
+use Wioex\SDK\Debug\DebugManager;
+use Wioex\SDK\Debug\PerformanceProfiler;
+use Wioex\SDK\Retry\RetryManager;
 
 class WioexClient
 {
     private Config $config;
     private Client $httpClient;
     private ?ConfigurationManager $configManager = null;
+    private ?CacheManager $cacheManager = null;
+    private ?AsyncClient $asyncClient = null;
+    private ?BatchRequestManager $batchManager = null;
+    private ?CircuitBreakerManager $circuitBreakerManager = null;
+    private ?SecurityManager $securityManager = null;
+    private ?RateLimitManager $rateLimitManager = null;
+    private ?DebugManager $debugManager = null;
+    private ?PerformanceProfiler $performanceProfiler = null;
+    private ?RetryManager $retryManager = null;
 
     private ?Stocks $stocks = null;
     private ?Screens $screens = null;
@@ -43,7 +62,8 @@ class WioexClient
      *     timeout?: int,
      *     connect_timeout?: int,
      *     retry?: array,
-     *     headers?: array
+     *     headers?: array,
+     *     cache?: array
      * } $options Configuration options:
      *   - api_key: string (required) Your WioEX API key
      *   - base_url: string (optional) API base URL, defaults to https://api.wioex.com
@@ -55,6 +75,11 @@ class WioexClient
      *       - multiplier: int (default: 2) Exponential backoff multiplier
      *       - max_delay: int (default: 5000) Maximum delay in milliseconds
      *   - headers: array (optional) Additional HTTP headers
+     *   - cache: array (optional) Cache configuration:
+     *       - enabled: bool (default: false) Enable caching
+     *       - driver: string (default: 'auto') Cache driver (redis, memcached, opcache, memory, file, auto)
+     *       - ttl: array TTL settings for different data types
+     *       - prefix: string (default: 'wioex_') Cache key prefix
      *
      * @throws \InvalidArgumentException If required options are missing or invalid
      *
@@ -63,7 +88,16 @@ class WioexClient
      * $client = new WioexClient([
      *     'api_key' => 'your-api-key-here',
      *     'timeout' => 30,
-     *     'retry' => ['times' => 3]
+     *     'retry' => ['times' => 3],
+     *     'cache' => [
+     *         'enabled' => true,
+     *         'driver' => 'redis',
+     *         'ttl' => [
+     *             'stream_token' => 1800,
+     *             'market_data' => 60,
+     *             'static_data' => 3600
+     *         ]
+     *     ]
      * ]);
      * ```
      */
@@ -72,6 +106,9 @@ class WioexClient
         $this->config = new Config($options);
         $this->httpClient = new Client($this->config);
         $this->configManager = $configManager;
+        
+        // Initialize cache if configured
+        $this->initializeCache($options['cache'] ?? []);
     }
 
     /**
@@ -153,6 +190,22 @@ class WioexClient
     public function getEnvironment(): ?Environment
     {
         return $this->configManager?->getEnvironment();
+    }
+
+    /**
+     * Get the configuration instance for dot notation access
+     *
+     * @return Config
+     *
+     * @example
+     * ```php
+     * $redisHost = $client->getConfig()->get('cache.redis.host');
+     * $client->getConfig()->set('debug.enabled', true);
+     * ```
+     */
+    public function getConfig(): Config
+    {
+        return $this->config;
     }
 
     /**
@@ -379,16 +432,6 @@ class WioexClient
     }
 
     /**
-     * Get the configuration instance
-     *
-     * @return Config
-     */
-    public function getConfig(): Config
-    {
-        return $this->config;
-    }
-
-    /**
      * Reset all resource instances to use updated client
      */
     private function resetResources(): void
@@ -494,15 +537,6 @@ class WioexClient
         return $this->configManager;
     }
 
-    /**
-     * Get async client instance
-     *
-     * @return \Wioex\SDK\Async\AsyncClient
-     */
-    public function async(): \Wioex\SDK\Async\AsyncClient
-    {
-        return new \Wioex\SDK\Async\AsyncClient($this->config);
-    }
 
     /**
      * Get cache interface
@@ -661,7 +695,8 @@ class WioexClient
 
         // Add cache health if available
         try {
-            $health['cache'] = $this->getCache()->isHealthy();
+            $cache = $this->getCache();
+            $health['cache'] = $cache !== null ? $cache->isHealthy() : false;
         } catch (\Throwable $e) {
             $health['cache'] = false;
         }
@@ -722,5 +757,1336 @@ class WioexClient
     public static function getVersionInfo(): array
     {
         return Version::info();
+    }
+
+    /**
+     * Initialize cache manager based on configuration
+     */
+    private function initializeCache(array $cacheConfig): void
+    {
+        if (count($cacheConfig) === 0 || !($cacheConfig['enabled'] ?? false)) {
+            return; // Cache not enabled
+        }
+
+        $defaultConfig = [
+            'enabled' => true,
+            'driver' => 'auto', // Auto-detect best driver
+            'prefix' => 'wioex_',
+            'ttl' => [
+                'stream_token' => 1800,  // 30 minutes
+                'market_data' => 60,     // 1 minute
+                'static_data' => 3600,   // 1 hour
+                'user_data' => 300,      // 5 minutes
+                'news' => 1800,          // 30 minutes
+                'signals' => 120,        // 2 minutes
+                'account' => 600,        // 10 minutes
+                'default' => 900         // 15 minutes fallback
+            ],
+            'redis' => [
+                'host' => '127.0.0.1',
+                'port' => 6379,
+                'persistent' => true
+            ],
+            'memcached' => [
+                'servers' => [['host' => '127.0.0.1', 'port' => 11211]],
+                'persistent_id' => 'wioex_cache'
+            ],
+            'opcache' => [
+                'cache_dir' => sys_get_temp_dir() . '/wioex_opcache'
+            ],
+            'file' => [
+                'cache_dir' => sys_get_temp_dir() . '/wioex_cache'
+            ]
+        ];
+
+        $config = array_merge_recursive($defaultConfig, $cacheConfig);
+
+        // Handle 'auto' driver selection
+        if ($config['driver'] === 'auto') {
+            $config['default'] = 'auto'; // Let CacheManager auto-detect
+        } else {
+            $config['default'] = $config['driver'];
+        }
+
+        $this->cacheManager = new CacheManager($config);
+    }
+
+    /**
+     * Get the cache manager instance
+     */
+    public function cache(): ?CacheManager
+    {
+        return $this->cacheManager;
+    }
+
+    /**
+     * Check if caching is enabled
+     */
+    public function isCacheEnabled(): bool
+    {
+        return $this->cacheManager !== null && $this->cacheManager->isHealthy();
+    }
+
+    /**
+     * Cache a value with automatic TTL based on data type
+     */
+    public function cacheSet(string $key, mixed $value, string $dataType = 'default'): bool
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return false;
+        }
+
+        $config = $this->config->toArray();
+        $ttl = $config['cache']['ttl'][$dataType] ?? $config['cache']['ttl']['default'] ?? 900;
+
+        return $this->cacheManager->set($key, $value, $ttl);
+    }
+
+    /**
+     * Get a cached value
+     */
+    public function cacheGet(string $key): mixed
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return null;
+        }
+
+        return $this->cacheManager->get($key);
+    }
+
+    /**
+     * Check if a key exists in cache
+     */
+    public function cacheHas(string $key): bool
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return false;
+        }
+
+        return $this->cacheManager->has($key);
+    }
+
+    /**
+     * Delete a cached value
+     */
+    public function cacheDelete(string $key): bool
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return false;
+        }
+
+        return $this->cacheManager->delete($key);
+    }
+
+    /**
+     * Clear all cached values
+     */
+    public function cacheClear(): bool
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return false;
+        }
+
+        return $this->cacheManager->clear();
+    }
+
+    /**
+     * Get cache statistics
+     */
+    public function getCacheStatistics(): array
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return ['cache_enabled' => false];
+        }
+
+        return array_merge(
+            ['cache_enabled' => true],
+            $this->cacheManager->getStatistics()
+        );
+    }
+
+    /**
+     * Get cache recommendations for current system
+     */
+    public function getCacheRecommendations(): array
+    {
+        if ($this->cacheManager === null) {
+            $tempManager = new CacheManager(['default' => 'memory']);
+            return $tempManager->getSystemRecommendations();
+        }
+
+        return $this->cacheManager->getSystemRecommendations();
+    }
+
+    /**
+     * Remember a value in cache using a callback
+     */
+    public function remember(string $key, callable $callback, string $dataType = 'default'): mixed
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return $callback();
+        }
+
+        $config = $this->config->toArray();
+        $ttl = $config['cache']['ttl'][$dataType] ?? $config['cache']['ttl']['default'] ?? 900;
+
+        return $this->cacheManager->remember($key, $callback, $ttl);
+    }
+
+    /**
+     * Remember a value in cache forever (no expiration)
+     */
+    public function rememberForever(string $key, callable $callback): mixed
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return $callback();
+        }
+
+        return $this->cacheManager->rememberForever($key, $callback);
+    }
+
+    /**
+     * Create a namespaced cache instance
+     */
+    public function cacheNamespace(string $namespace): ?CacheInterface
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return null;
+        }
+
+        return $this->cacheManager->namespace($namespace);
+    }
+
+    /**
+     * Create a tagged cache instance
+     */
+    public function cacheWithTags(array $tags): ?CacheInterface
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return null;
+        }
+
+        return $this->cacheManager->tags($tags);
+    }
+
+    /**
+     * Flush expired cache entries
+     */
+    public function flushExpiredCache(): int
+    {
+        if (!$this->isCacheEnabled() || $this->cacheManager === null) {
+            return 0;
+        }
+
+        return $this->cacheManager->flushExpired();
+    }
+
+    /**
+     * Enable cache for this client instance
+     */
+    public function enableCache(array $config = []): self
+    {
+        if (count($config) === 0) {
+            $config = ['enabled' => true, 'driver' => 'auto'];
+        } else {
+            $config['enabled'] = true;
+        }
+
+        $this->initializeCache($config);
+        
+        return $this;
+    }
+
+    /**
+     * Disable cache for this client instance
+     */
+    public function disableCache(): self
+    {
+        $this->cacheManager = null;
+        
+        return $this;
+    }
+
+    /**
+     * Configure cache for specific use case
+     */
+    public function configureCacheForUseCase(string $useCase): self
+    {
+        if ($this->cacheManager === null) {
+            $tempManager = new CacheManager(['default' => 'memory']);
+            $config = $tempManager->configureForUseCase($useCase);
+        } else {
+            $config = $this->cacheManager->configureForUseCase($useCase);
+        }
+        
+        $config['enabled'] = true;
+        $this->initializeCache($config);
+        
+        return $this;
+    }
+
+    /**
+     * Get async client for promise-based operations
+     */
+    public function async(): AsyncClient
+    {
+        if ($this->asyncClient === null) {
+            $this->asyncClient = new AsyncClient($this->config);
+        }
+        return $this->asyncClient;
+    }
+
+    /**
+     * Create a new batch request manager
+     */
+    public function batch(): BatchRequestManager
+    {
+        if ($this->batchManager === null) {
+            $this->batchManager = new BatchRequestManager(
+                $this->httpClient,
+                $this->config->toArray()['batch'] ?? [],
+                $this->cacheManager,
+                $this->circuitBreakerManager
+            );
+        }
+        return $this->batchManager;
+    }
+
+    /**
+     * Get circuit breaker manager
+     */
+    public function circuitBreaker(): CircuitBreakerManager
+    {
+        if ($this->circuitBreakerManager === null) {
+            $this->circuitBreakerManager = new CircuitBreakerManager($this->cacheManager);
+        }
+        return $this->circuitBreakerManager;
+    }
+
+    /**
+     * Execute multiple requests in batch
+     */
+    public function executeBatch(array $requests): array
+    {
+        $batchManager = $this->batch();
+        
+        foreach ($requests as $request) {
+            if (is_array($request)) {
+                $batchManager->add(
+                    $request['method'] ?? 'GET',
+                    $request['endpoint'],
+                    $request['params'] ?? [],
+                    $request['options'] ?? []
+                );
+            }
+        }
+        
+        return $batchManager->execute();
+    }
+
+    /**
+     * Convenience method for batch stock quotes
+     */
+    public function getBatchQuotes(array $symbols, array $options = []): array
+    {
+        $batchManager = $this->batch();
+        
+        foreach ($symbols as $symbol) {
+            $batchManager->addQuote($symbol, $options);
+        }
+        
+        return $batchManager->execute();
+    }
+
+    /**
+     * Get multiple stock info in batch
+     */
+    public function getBatchStockInfo(array $symbols, array $options = []): array
+    {
+        $batchManager = $this->batch();
+        
+        foreach ($symbols as $symbol) {
+            $batchManager->add('GET', '/v2/stocks/info', ['ticker' => $symbol], $options);
+        }
+        
+        return $batchManager->execute();
+    }
+
+    /**
+     * Get multiple timelines in batch
+     */
+    public function getBatchTimelines(array $symbols, string $interval = '1d', array $options = []): array
+    {
+        $batchManager = $this->batch();
+        
+        foreach ($symbols as $symbol) {
+            $batchManager->addTimeline($symbol, $interval, $options);
+        }
+        
+        return $batchManager->execute();
+    }
+
+    /**
+     * Get comprehensive data for multiple stocks
+     */
+    public function getPortfolioData(array $symbols, array $options = []): array
+    {
+        $batchManager = $this->batch();
+        
+        foreach ($symbols as $symbol) {
+            // Add quote
+            $batchManager->addQuote($symbol, array_merge($options, ['priority' => 3]));
+            
+            // Add news
+            $batchManager->addNews($symbol, array_merge($options, ['priority' => 1]));
+            
+            // Add timeline if requested
+            if ($options['include_timeline'] ?? false) {
+                $interval = $options['timeline_interval'] ?? '1d';
+                $batchManager->addTimeline($symbol, $interval, array_merge($options, ['priority' => 2]));
+            }
+            
+            // Add stock info if requested
+            if ($options['include_info'] ?? false) {
+                $batchManager->add('GET', '/v2/stocks/info', ['ticker' => $symbol], array_merge($options, ['priority' => 1]));
+            }
+        }
+        
+        return $batchManager->execute();
+    }
+
+    /**
+     * Execute requests with circuit breaker protection
+     */
+    public function withCircuitBreaker(string $service, callable $operation, ?callable $fallback = null): mixed
+    {
+        $circuitBreaker = $this->circuitBreaker();
+        
+        if ($fallback !== null) {
+            return $circuitBreaker->callWithFallback($service, $operation, $fallback);
+        }
+        
+        return $circuitBreaker->call($service, $operation);
+    }
+
+    /**
+     * Configure circuit breaker for a service
+     */
+    public function configureCircuitBreaker(string $serviceName, array $config = []): self
+    {
+        $this->circuitBreaker()->configureForService($serviceName, $config);
+        return $this;
+    }
+
+    /**
+     * Get batch processing statistics
+     */
+    public function getBatchStatistics(): array
+    {
+        if ($this->batchManager === null) {
+            return ['batch_manager_enabled' => false];
+        }
+        
+        return array_merge(
+            ['batch_manager_enabled' => true],
+            $this->batchManager->getMetrics()
+        );
+    }
+
+    /**
+     * Get circuit breaker health status
+     */
+    public function getCircuitBreakerHealth(): array
+    {
+        if ($this->circuitBreakerManager === null) {
+            return ['circuit_breaker_enabled' => false];
+        }
+        
+        return array_merge(
+            ['circuit_breaker_enabled' => true],
+            $this->circuitBreakerManager->getHealthStatus()
+        );
+    }
+
+    /**
+     * Example usage for batch operations
+     */
+    public function createPortfolioBatch(array $symbols): BatchRequestManager
+    {
+        $batch = $this->batch();
+        
+        // Essential data with high priority
+        foreach ($symbols as $symbol) {
+            $batch->addQuote($symbol, ['priority' => 3]);
+        }
+        
+        // Market status (shared across all)
+        $batch->addMarketStatus(['priority' => 3]);
+        
+        // Additional data with lower priority
+        foreach ($symbols as $symbol) {
+            $batch->addTimeline($symbol, '1d', ['priority' => 2]);
+            $batch->addNews($symbol, ['priority' => 1]);
+        }
+        
+        return $batch;
+    }
+
+    /**
+     * Benchmark batch processing performance
+     */
+    public function benchmarkBatch(int $requestCount = 100): array
+    {
+        return $this->batch()->benchmark($requestCount);
+    }
+
+    /**
+     * Test circuit breaker functionality
+     */
+    public function testCircuitBreaker(string $serviceName): bool
+    {
+        return $this->circuitBreaker()->test($serviceName);
+    }
+
+    /**
+     * Get security manager instance
+     *
+     * @return SecurityManager
+     */
+    public function security(): SecurityManager
+    {
+        if ($this->securityManager === null) {
+            $this->securityManager = new SecurityManager($this->config);
+        }
+        return $this->securityManager;
+    }
+
+    /**
+     * Validate request security
+     *
+     * @param string $method
+     * @param string $url
+     * @param array $headers
+     * @param string $body
+     * @param string|null $clientIp
+     * @return array
+     */
+    public function validateRequestSecurity(string $method, string $url, array $headers = [], string $body = '', ?string $clientIp = null): array
+    {
+        return $this->security()->validateRequest($method, $url, $headers, $body, $clientIp);
+    }
+
+    /**
+     * Secure a request with signing and encryption
+     *
+     * @param string $method
+     * @param string $url
+     * @param array $headers
+     * @param string $body
+     * @return array
+     */
+    public function secureRequest(string $method, string $url, array $headers = [], string $body = ''): array
+    {
+        return $this->security()->secureRequest($method, $url, $headers, $body);
+    }
+
+    /**
+     * Encrypt sensitive data
+     *
+     * @param string $data
+     * @param string|null $key
+     * @return array
+     */
+    public function encrypt(string $data, ?string $key = null): array
+    {
+        return $this->security()->getEncryptionManager()->encrypt($data, $key);
+    }
+
+    /**
+     * Decrypt sensitive data
+     *
+     * @param array $encryptedData
+     * @param string|null $key
+     * @return string
+     */
+    public function decrypt(array $encryptedData, ?string $key = null): string
+    {
+        return $this->security()->getEncryptionManager()->decrypt($encryptedData, $key);
+    }
+
+    /**
+     * Generate secure token
+     *
+     * @param int $length
+     * @return string
+     */
+    public function generateSecureToken(int $length = 32): string
+    {
+        return $this->security()->getEncryptionManager()->createSecureToken($length);
+    }
+
+    /**
+     * Get security status and configuration
+     *
+     * @return array
+     */
+    public function getSecurityStatus(): array
+    {
+        return $this->security()->getSecurityStatus();
+    }
+
+    /**
+     * Enable IP whitelist protection
+     *
+     * @param array $allowedIps
+     * @return self
+     */
+    public function withIpWhitelist(array $allowedIps): self
+    {
+        $securityConfig = $this->config->get('security', []);
+        $securityConfig['ip_whitelist'] = $allowedIps;
+        $this->config->set('security', $securityConfig);
+        
+        // Reset security manager to pick up new config
+        $this->securityManager = null;
+        
+        return $this;
+    }
+
+    /**
+     * Enable request signing with specified algorithm
+     *
+     * @param string $secretKey
+     * @param string $algorithm
+     * @return self
+     */
+    public function withRequestSigning(string $secretKey, string $algorithm = 'hmac-sha256'): self
+    {
+        $securityConfig = $this->config->get('security', []);
+        $securityConfig['request_signing'] = true;
+        $securityConfig['secret_key'] = $secretKey;
+        $securityConfig['signature_algorithm'] = $algorithm;
+        $this->config->set('security', $securityConfig);
+        
+        // Reset security manager to pick up new config
+        $this->securityManager = null;
+        
+        return $this;
+    }
+
+    /**
+     * Enable encryption for request/response data
+     *
+     * @param string $encryptionKey
+     * @param string $algorithm
+     * @return self
+     */
+    public function withEncryption(string $encryptionKey, string $algorithm = 'aes-256-gcm'): self
+    {
+        $securityConfig = $this->config->get('security', []);
+        $securityConfig['encryption'] = [
+            'enabled' => true,
+            'key' => $encryptionKey,
+            'algorithm' => $algorithm
+        ];
+        $this->config->set('security', $securityConfig);
+        
+        // Reset security manager to pick up new config
+        $this->securityManager = null;
+        
+        return $this;
+    }
+
+    /**
+     * Get audit log of security events
+     *
+     * @return array
+     */
+    public function getSecurityAuditLog(): array
+    {
+        return $this->security()->getAuditLog();
+    }
+
+    /**
+     * Clear security audit log
+     *
+     * @return self
+     */
+    public function clearSecurityAuditLog(): self
+    {
+        $this->security()->clearAuditLog();
+        return $this;
+    }
+
+    /**
+     * Get rate limiting manager instance
+     *
+     * @return RateLimitManager
+     */
+    public function rateLimit(): RateLimitManager
+    {
+        if ($this->rateLimitManager === null) {
+            $this->rateLimitManager = new RateLimitManager($this->config, $this->cacheManager);
+        }
+        return $this->rateLimitManager;
+    }
+
+    /**
+     * Check if request is allowed under rate limiting
+     *
+     * @param string $identifier
+     * @param array $categories
+     * @return bool
+     */
+    public function isRequestAllowed(string $identifier, array $categories = ['default']): bool
+    {
+        return $this->rateLimit()->isRequestAllowed($identifier, $categories);
+    }
+
+    /**
+     * Process request with rate limiting
+     *
+     * @param string $identifier
+     * @param array $categories
+     * @param int $tokens
+     * @return bool
+     */
+    public function processRateLimitedRequest(string $identifier, array $categories = ['default'], int $tokens = 1): bool
+    {
+        return $this->rateLimit()->processRequest($identifier, $categories, $tokens);
+    }
+
+    /**
+     * Get rate limiting status for identifier
+     *
+     * @param string $identifier
+     * @return array
+     */
+    public function getRateLimitStatus(string $identifier): array
+    {
+        return $this->rateLimit()->getComprehensiveStatus($identifier);
+    }
+
+    /**
+     * Configure intelligent rate limiting categories
+     *
+     * @return self
+     */
+    public function withIntelligentRateLimiting(): self
+    {
+        $this->rateLimit()->configureIntelligentLimiting();
+        
+        // Reset manager to pick up new config
+        $this->rateLimitManager = null;
+        
+        return $this;
+    }
+
+    /**
+     * Enable fair queuing for request processing
+     *
+     * @param array $requests
+     * @return array
+     */
+    public function applyFairQueuing(array $requests): array
+    {
+        return $this->rateLimit()->fairQueue($requests);
+    }
+
+    /**
+     * Apply burst protection for identifier
+     *
+     * @param string $identifier
+     * @param array $categories
+     * @return array
+     */
+    public function applyBurstProtection(string $identifier, array $categories = ['default']): array
+    {
+        return $this->rateLimit()->applyBurstProtection($identifier, $categories);
+    }
+
+    /**
+     * Get adaptive rate limiting recommendations
+     *
+     * @param string $identifier
+     * @param string $category
+     * @return array
+     */
+    public function getAdaptiveRateLimiting(string $identifier, string $category = 'default'): array
+    {
+        return $this->rateLimit()->adaptiveRateLimit($identifier, $category);
+    }
+
+    /**
+     * Process priority-based requests
+     *
+     * @param array $requests
+     * @return array
+     */
+    public function processPriorityRequests(array $requests): array
+    {
+        return $this->rateLimit()->processPriorityRequests($requests);
+    }
+
+    /**
+     * Get global rate limiting metrics
+     *
+     * @return array
+     */
+    public function getRateLimitingMetrics(): array
+    {
+        return $this->rateLimit()->getGlobalMetrics();
+    }
+
+    /**
+     * Cleanup expired rate limiting data
+     *
+     * @return array
+     */
+    public function cleanupRateLimiting(): array
+    {
+        return $this->rateLimit()->globalCleanup();
+    }
+
+    /**
+     * Configure custom rate limiting for specific operations
+     *
+     * @param string $category
+     * @param int $maxRequests
+     * @param int $refillRate
+     * @param int $refillPeriod
+     * @param float $burstMultiplier
+     * @return self
+     */
+    public function withCustomRateLimit(string $category, int $maxRequests, int $refillRate, int $refillPeriod = 60, float $burstMultiplier = 1.5): self
+    {
+        $this->rateLimit()->getLimiter($category)->configurateCategory($category, [
+            'max_requests' => $maxRequests,
+            'refill_rate' => $refillRate,
+            'refill_period' => $refillPeriod,
+            'burst_multiplier' => $burstMultiplier
+        ]);
+        
+        return $this;
+    }
+
+    /**
+     * Get debug manager instance
+     *
+     * @return DebugManager
+     */
+    public function debug(): DebugManager
+    {
+        if ($this->debugManager === null) {
+            $this->debugManager = new DebugManager($this->config, $this->cacheManager);
+        }
+        return $this->debugManager;
+    }
+
+    /**
+     * Get performance profiler instance
+     *
+     * @return PerformanceProfiler
+     */
+    public function profiler(): PerformanceProfiler
+    {
+        if ($this->performanceProfiler === null) {
+            $this->performanceProfiler = new PerformanceProfiler($this->config);
+        }
+        return $this->performanceProfiler;
+    }
+
+    /**
+     * Enable debug mode with specific features
+     *
+     * @param bool $queryLogging
+     * @param bool $performanceProfiling
+     * @param bool $responseValidation
+     * @return self
+     */
+    public function withDebugMode(bool $queryLogging = true, bool $performanceProfiling = true, bool $responseValidation = true): self
+    {
+        $debugConfig = $this->config->get('debug', []);
+        $debugConfig['enabled'] = true;
+        $debugConfig['query_logging'] = $queryLogging;
+        $debugConfig['performance_profiling'] = $performanceProfiling;
+        $debugConfig['response_validation'] = $responseValidation;
+        
+        $this->config->set('debug', $debugConfig);
+        
+        // Reset managers to pick up new config
+        $this->debugManager = null;
+        $this->performanceProfiler = null;
+        
+        return $this;
+    }
+
+    /**
+     * Profile a specific operation
+     *
+     * @param string $name
+     * @param callable $callback
+     * @param array $metadata
+     * @return mixed
+     */
+    public function profileOperation(string $name, callable $callback, array $metadata = []): mixed
+    {
+        return $this->profiler()->profileCallable($name, $callback, $metadata);
+    }
+
+    /**
+     * Take a memory snapshot
+     *
+     * @param string $name
+     * @param array $context
+     * @return array
+     */
+    public function takeMemorySnapshot(string $name, array $context = []): array
+    {
+        return $this->profiler()->takeMemorySnapshot($name, $context);
+    }
+
+    /**
+     * Start profiling an operation
+     *
+     * @param string $name
+     * @param array $metadata
+     * @return self
+     */
+    public function startProfiling(string $name, array $metadata = []): self
+    {
+        $this->profiler()->startProfiling($name, $metadata);
+        return $this;
+    }
+
+    /**
+     * Stop profiling and get results
+     *
+     * @param string $name
+     * @return array
+     */
+    public function stopProfiling(string $name): array
+    {
+        return $this->profiler()->stopProfiling($name);
+    }
+
+    /**
+     * Add a checkpoint during profiling
+     *
+     * @param string $profileName
+     * @param string $checkpointName
+     * @param array $data
+     * @return self
+     */
+    public function addCheckpoint(string $profileName, string $checkpointName, array $data = []): self
+    {
+        $this->profiler()->checkpoint($profileName, $checkpointName, $data);
+        return $this;
+    }
+
+    /**
+     * Log a query for debugging
+     *
+     * @param string $method
+     * @param string $url
+     * @param array $headers
+     * @param string $body
+     * @param array|null $response
+     * @param float $executionTime
+     * @return self
+     */
+    public function logQuery(string $method, string $url, array $headers = [], string $body = '', ?array $response = null, float $executionTime = 0): self
+    {
+        $this->debug()->logQuery($method, $url, $headers, $body, $response, $executionTime);
+        return $this;
+    }
+
+    /**
+     * Log an error for debugging
+     *
+     * @param \Throwable $error
+     * @param array $context
+     * @return self
+     */
+    public function logError(\Throwable $error, array $context = []): self
+    {
+        $this->debug()->logError($error, $context);
+        return $this;
+    }
+
+    /**
+     * Get debug summary
+     *
+     * @return array
+     */
+    public function getDebugSummary(): array
+    {
+        return $this->debug()->getDebugSummary();
+    }
+
+    /**
+     * Get performance report
+     *
+     * @return array
+     */
+    public function getPerformanceReport(): array
+    {
+        return $this->profiler()->getPerformanceReport();
+    }
+
+    /**
+     * Get query log with optional filters
+     *
+     * @param array $filters
+     * @return array
+     */
+    public function getQueryLog(array $filters = []): array
+    {
+        return $this->debug()->getQueryLog($filters);
+    }
+
+    /**
+     * Get slow operations
+     *
+     * @param int $limit
+     * @return array
+     */
+    public function getSlowOperations(int $limit = 10): array
+    {
+        return $this->profiler()->getSlowOperations($limit);
+    }
+
+    /**
+     * Get memory intensive operations
+     *
+     * @param int $limit
+     * @return array
+     */
+    public function getMemoryIntensiveOperations(int $limit = 10): array
+    {
+        return $this->profiler()->getMemoryIntensiveOperations($limit);
+    }
+
+    /**
+     * Detect potential memory leaks
+     *
+     * @return array
+     */
+    public function detectMemoryLeaks(): array
+    {
+        return $this->profiler()->detectMemoryLeaks();
+    }
+
+    /**
+     * Generate performance recommendations
+     *
+     * @return array
+     */
+    public function getPerformanceRecommendations(): array
+    {
+        return $this->profiler()->generateRecommendations();
+    }
+
+    /**
+     * Export debug data to file
+     *
+     * @param string $format
+     * @param string $filename
+     * @return string
+     */
+    public function exportDebugData(string $format = 'json', string $filename = ''): string
+    {
+        return $this->debug()->exportDebugData($format, $filename);
+    }
+
+    /**
+     * Clear all debug logs and profiling data
+     *
+     * @return self
+     */
+    public function clearDebugData(): self
+    {
+        $this->debug()->clearLogs();
+        $this->profiler()->clearProfiles();
+        return $this;
+    }
+
+    /**
+     * Get real-time debug information
+     *
+     * @return array
+     */
+    public function getRealTimeDebugInfo(): array
+    {
+        return $this->debug()->getRealTimeDebugInfo();
+    }
+
+    /**
+     * Compare memory snapshots
+     *
+     * @param string $snapshot1Name
+     * @param string $snapshot2Name
+     * @return array
+     */
+    public function compareMemorySnapshots(string $snapshot1Name, string $snapshot2Name): array
+    {
+        return $this->profiler()->compareMemorySnapshots($snapshot1Name, $snapshot2Name);
+    }
+
+    /**
+     * Check if debug mode is enabled
+     *
+     * @return bool
+     */
+    public function isDebugEnabled(): bool
+    {
+        return $this->debug()->isDebugEnabled();
+    }
+
+    /**
+     * Comprehensive performance and debug analysis
+     *
+     * @return array
+     */
+    public function getComprehensiveAnalysis(): array
+    {
+        return [
+            'debug_summary' => $this->getDebugSummary(),
+            'performance_report' => $this->getPerformanceReport(),
+            'slow_operations' => $this->getSlowOperations(5),
+            'memory_intensive_operations' => $this->getMemoryIntensiveOperations(5),
+            'memory_leaks' => $this->detectMemoryLeaks(),
+            'recommendations' => $this->getPerformanceRecommendations(),
+            'real_time_info' => $this->getRealTimeDebugInfo(),
+            'rate_limit_metrics' => $this->getRateLimitingMetrics(),
+            'security_status' => $this->getSecurityStatus(),
+            'circuit_breaker_health' => $this->getCircuitBreakerHealth()
+        ];
+    }
+
+    /**
+     * Get retry manager instance
+     *
+     * @return RetryManager
+     */
+    public function retry(): RetryManager
+    {
+        if ($this->retryManager === null) {
+            $this->retryManager = new RetryManager($this->config);
+        }
+        return $this->retryManager;
+    }
+
+    /**
+     * Execute operation with retry logic
+     *
+     * @param callable $operation
+     * @param array $retryConfig
+     * @return mixed
+     */
+    public function executeWithRetry(callable $operation, array $retryConfig = []): mixed
+    {
+        return $this->retry()->execute($operation, $retryConfig);
+    }
+
+    /**
+     * Execute operation with async retry
+     *
+     * @param callable $operation
+     * @param array $retryConfig
+     * @return array
+     */
+    public function executeWithAsyncRetry(callable $operation, array $retryConfig = []): array
+    {
+        return $this->retry()->executeAsync($operation, $retryConfig);
+    }
+
+    /**
+     * Execute bulk operations with retry
+     *
+     * @param array $operations
+     * @param array $retryConfig
+     * @return array
+     */
+    public function executeBulkWithRetry(array $operations, array $retryConfig = []): array
+    {
+        return $this->retry()->executeBulk($operations, $retryConfig);
+    }
+
+    /**
+     * Configure retry strategy
+     *
+     * @param string $strategy
+     * @param int $maxAttempts
+     * @param int $baseDelay
+     * @param float $multiplier
+     * @param bool $jitter
+     * @return self
+     */
+    public function withRetryStrategy(string $strategy = 'exponential_backoff', int $maxAttempts = 3, int $baseDelay = 1000, float $multiplier = 2.0, bool $jitter = true): self
+    {
+        $retryConfig = $this->config->get('retry', []);
+        $retryConfig = array_merge($retryConfig, [
+            'strategy' => $strategy,
+            'max_attempts' => $maxAttempts,
+            'base_delay' => $baseDelay,
+            'multiplier' => $multiplier,
+            'jitter' => $jitter
+        ]);
+        
+        $this->config->set('retry', $retryConfig);
+        
+        // Reset manager to pick up new config
+        $this->retryManager = null;
+        
+        return $this;
+    }
+
+    /**
+     * Configure exponential backoff retry
+     *
+     * @param int $maxAttempts
+     * @param int $baseDelay
+     * @param float $multiplier
+     * @return self
+     */
+    public function withExponentialBackoff(int $maxAttempts = 3, int $baseDelay = 1000, float $multiplier = 2.0): self
+    {
+        return $this->withRetryStrategy('exponential_backoff', $maxAttempts, $baseDelay, $multiplier, true);
+    }
+
+    /**
+     * Configure linear backoff retry
+     *
+     * @param int $maxAttempts
+     * @param int $baseDelay
+     * @return self
+     */
+    public function withLinearBackoff(int $maxAttempts = 3, int $baseDelay = 1000): self
+    {
+        return $this->withRetryStrategy('linear_backoff', $maxAttempts, $baseDelay);
+    }
+
+    /**
+     * Configure fibonacci backoff retry
+     *
+     * @param int $maxAttempts
+     * @param int $baseDelay
+     * @return self
+     */
+    public function withFibonacciBackoff(int $maxAttempts = 5, int $baseDelay = 1000): self
+    {
+        return $this->withRetryStrategy('fibonacci_backoff', $maxAttempts, $baseDelay);
+    }
+
+    /**
+     * Configure adaptive backoff retry
+     *
+     * @param int $maxAttempts
+     * @param int $baseDelay
+     * @param float $multiplier
+     * @return self
+     */
+    public function withAdaptiveBackoff(int $maxAttempts = 3, int $baseDelay = 1000, float $multiplier = 2.0): self
+    {
+        return $this->withRetryStrategy('adaptive_backoff', $maxAttempts, $baseDelay, $multiplier, true);
+    }
+
+    /**
+     * Get retry statistics
+     *
+     * @return array
+     */
+    public function getRetryStatistics(): array
+    {
+        return $this->retry()->getRetryStatistics();
+    }
+
+    /**
+     * Get retry history
+     *
+     * @param array $filters
+     * @return array
+     */
+    public function getRetryHistory(array $filters = []): array
+    {
+        return $this->retry()->getRetryHistory($filters);
+    }
+
+    /**
+     * Analyze retry patterns
+     *
+     * @return array
+     */
+    public function analyzeRetryPatterns(): array
+    {
+        return $this->retry()->analyzeRetryPatterns();
+    }
+
+    /**
+     * Get retry recommendations
+     *
+     * @return array
+     */
+    public function getRetryRecommendations(): array
+    {
+        return $this->retry()->generateRetryRecommendations();
+    }
+
+    /**
+     * Test retry configuration
+     *
+     * @param array $config
+     * @param int $simulatedFailures
+     * @return array
+     */
+    public function testRetryConfig(array $config = [], int $simulatedFailures = 2): array
+    {
+        return $this->retry()->testRetryConfig($config, $simulatedFailures);
+    }
+
+    /**
+     * Reset retry statistics
+     *
+     * @return self
+     */
+    public function resetRetryStatistics(): self
+    {
+        $this->retry()->resetStatistics();
+        return $this;
+    }
+
+    /**
+     * Execute API request with automatic retry on failures
+     *
+     * @param callable $apiCall
+     * @param array $retryConfig
+     * @return mixed
+     */
+    public function makeResilientApiCall(callable $apiCall, array $retryConfig = []): mixed
+    {
+        $defaultRetryConfig = [
+            'strategy' => 'exponential_backoff',
+            'max_attempts' => 3,
+            'base_delay' => 1000,
+            'multiplier' => 2.0,
+            'jitter' => true,
+            'retryable_status_codes' => [408, 429, 500, 502, 503, 504],
+            'non_retryable_status_codes' => [400, 401, 403, 404]
+        ];
+        
+        $config = array_merge($defaultRetryConfig, $retryConfig);
+        
+        return $this->executeWithRetry($apiCall, $config);
+    }
+
+    /**
+     * Get current retry configuration
+     *
+     * @return array
+     */
+    public function getRetryConfiguration(): array
+    {
+        return $this->retry()->getCurrentConfig();
     }
 }

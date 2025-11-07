@@ -6,6 +6,9 @@ namespace Wioex\SDK\Cache;
 
 use Wioex\SDK\Cache\Drivers\FileDriver;
 use Wioex\SDK\Cache\Drivers\MemoryDriver;
+use Wioex\SDK\Cache\Drivers\RedisDriver;
+use Wioex\SDK\Cache\Drivers\MemcachedDriver;
+use Wioex\SDK\Cache\Drivers\OpcacheDriver;
 use Wioex\SDK\Exceptions\InvalidArgumentException;
 
 class CacheManager implements CacheInterface
@@ -14,6 +17,7 @@ class CacheManager implements CacheInterface
     private string $defaultDriver;
     private array $drivers = [];
     private array $config;
+    private array $macros = [];
 
     /**
      * @param array{
@@ -27,7 +31,7 @@ class CacheManager implements CacheInterface
     public function __construct(array $config = [])
     {
         $this->config = $config;
-        $this->defaultDriver = $config['default'] ?? 'memory';
+        $this->defaultDriver = $config['default'] ?? $this->autoDetectBestDriver();
 
         $this->initializeDrivers();
         $this->driver = $this->getDriver($this->defaultDriver);
@@ -37,32 +41,37 @@ class CacheManager implements CacheInterface
     {
         $driverConfigs = $this->config['drivers'] ?? [];
 
-        // Register default drivers if not explicitly configured
-        if (!isset($driverConfigs['memory'])) {
-            $driverConfigs['memory'] = [
-                'driver' => 'memory',
-                'config' => $this->config['memory'] ?? []
-            ];
-        }
-
-        if (!isset($driverConfigs['file'])) {
-            $driverConfigs['file'] = [
-                'driver' => 'file',
-                'config' => $this->config['file'] ?? []
-            ];
+        // Auto-register available drivers if not explicitly configured
+        $availableDrivers = $this->getAvailableDriverTypes();
+        
+        foreach ($availableDrivers as $driverName) {
+            if (!isset($driverConfigs[$driverName])) {
+                $driverConfigs[$driverName] = [
+                    'driver' => $driverName,
+                    'config' => $this->config[$driverName] ?? []
+                ];
+            }
         }
 
         foreach ($driverConfigs as $name => $driverConfig) {
-            $this->drivers[$name] = $this->createDriver(
-                $driverConfig['driver'],
-                $driverConfig['config'] ?? []
-            );
+            try {
+                $this->drivers[$name] = $this->createDriver(
+                    $driverConfig['driver'],
+                    $driverConfig['config'] ?? []
+                );
+            } catch (\Exception $e) {
+                // Skip drivers that fail to initialize
+                error_log("Failed to initialize cache driver '{$name}': " . $e->getMessage());
+            }
         }
     }
 
     private function createDriver(string $driverType, array $config): CacheInterface
     {
         return match ($driverType) {
+            'redis' => new RedisDriver($config),
+            'memcached' => new MemcachedDriver($config),
+            'opcache' => new OpcacheDriver($config),
             'memory' => new MemoryDriver(),
             'file' => new FileDriver($config),
             default => throw new InvalidArgumentException("Unsupported cache driver: {$driverType}")
@@ -198,7 +207,7 @@ class CacheManager implements CacheInterface
         return $this->driver->flushExpired();
     }
 
-    public function remember(string $key, callable $callback, int $ttl = 0)
+    public function remember(string $key, callable $callback, int $ttl = 0): mixed
     {
         $value = $this->get($key);
 
@@ -212,19 +221,19 @@ class CacheManager implements CacheInterface
         return $value;
     }
 
-    public function rememberForever(string $key, callable $callback)
+    public function rememberForever(string $key, callable $callback): mixed
     {
         return $this->remember($key, $callback, 0);
     }
 
-    public function pull(string $key)
+    public function pull(string $key): mixed
     {
         $value = $this->get($key);
         $this->delete($key);
         return $value;
     }
 
-    public function put(string $key, $value, int $ttl = 0): bool
+    public function put(string $key, mixed $value, int $ttl = 0): bool
     {
         return $this->set($key, $value, $ttl);
     }
@@ -374,12 +383,200 @@ class CacheManager implements CacheInterface
         $this->macros[$name] = $macro;
     }
 
-    public function __call(string $method, array $parameters)
+    public function __call(string $method, array $parameters): mixed
     {
         if (isset($this->macros[$method])) {
             return call_user_func_array($this->macros[$method], $parameters);
         }
 
         throw new InvalidArgumentException("Method '{$method}' does not exist on CacheManager");
+    }
+
+    /**
+     * Auto-detect the best available cache driver
+     */
+    private function autoDetectBestDriver(): string
+    {
+        // Priority order: Redis > Memcached > OPcache > Memory > File
+        $priority = ['redis', 'memcached', 'opcache', 'memory', 'file'];
+        
+        foreach ($priority as $driver) {
+            if ($this->isDriverAvailable($driver)) {
+                return $driver;
+            }
+        }
+
+        return 'memory'; // Fallback
+    }
+
+    /**
+     * Get all available driver types on this system
+     */
+    private function getAvailableDriverTypes(): array
+    {
+        $drivers = [];
+        $allDrivers = ['redis', 'memcached', 'opcache', 'memory', 'file'];
+        
+        foreach ($allDrivers as $driver) {
+            if ($this->isDriverAvailable($driver)) {
+                $drivers[] = $driver;
+            }
+        }
+
+        return $drivers;
+    }
+
+    /**
+     * Check if a driver is available on this system
+     */
+    private function isDriverAvailable(string $driver): bool
+    {
+        return match ($driver) {
+            'redis' => extension_loaded('redis'),
+            'memcached' => extension_loaded('memcached'),
+            'opcache' => function_exists('opcache_compile_file') && ini_get('opcache.enable'),
+            'memory' => true, // Always available
+            'file' => true, // Always available
+            default => false
+        };
+    }
+
+    /**
+     * Get system cache recommendations
+     */
+    public function getSystemRecommendations(): array
+    {
+        $recommendations = [];
+        
+        // Check Redis
+        if (extension_loaded('redis')) {
+            $recommendations['redis'] = [
+                'available' => true,
+                'recommended' => true,
+                'reason' => 'High performance, clustering support, persistence'
+            ];
+        } else {
+            $recommendations['redis'] = [
+                'available' => false,
+                'recommended' => true,
+                'reason' => 'Install php-redis extension for best performance'
+            ];
+        }
+
+        // Check Memcached
+        if (extension_loaded('memcached')) {
+            $recommendations['memcached'] = [
+                'available' => true,
+                'recommended' => true,
+                'reason' => 'Good performance, distributed caching'
+            ];
+        } else {
+            $recommendations['memcached'] = [
+                'available' => false,
+                'recommended' => true,
+                'reason' => 'Install php-memcached extension for distributed caching'
+            ];
+        }
+
+        // Check OPcache
+        if (function_exists('opcache_compile_file') && ini_get('opcache.enable')) {
+            $recommendations['opcache'] = [
+                'available' => true,
+                'recommended' => true,
+                'reason' => 'File-based caching with opcode compilation'
+            ];
+        } else {
+            $recommendations['opcache'] = [
+                'available' => false,
+                'recommended' => false,
+                'reason' => 'Enable OPcache extension for file-based caching'
+            ];
+        }
+
+        $recommendations['memory'] = [
+            'available' => true,
+            'recommended' => false,
+            'reason' => 'Fast but lost on process restart'
+        ];
+
+        $recommendations['file'] = [
+            'available' => true,
+            'recommended' => false,
+            'reason' => 'Persistent but slower than memory-based drivers'
+        ];
+
+        return [
+            'current_driver' => $this->defaultDriver,
+            'available_drivers' => $this->getAvailableDriverTypes(),
+            'recommendations' => $recommendations,
+            'system_info' => [
+                'php_version' => PHP_VERSION,
+                'loaded_extensions' => get_loaded_extensions(),
+                'memory_limit' => ini_get('memory_limit'),
+                'opcache_enabled' => ini_get('opcache.enable') ? 'Yes' : 'No'
+            ]
+        ];
+    }
+
+    /**
+     * Configure cache with smart defaults based on use case
+     */
+    public function configureForUseCase(string $useCase): array
+    {
+        $config = [];
+
+        switch ($useCase) {
+            case 'api_responses':
+                $config = [
+                    'default' => 'redis',
+                    'ttl' => [
+                        'market_data' => 60,
+                        'static_data' => 3600,
+                        'user_data' => 300
+                    ]
+                ];
+                break;
+
+            case 'session_storage':
+                $config = [
+                    'default' => 'redis',
+                    'persistent' => true,
+                    'ttl' => [
+                        'session' => 1440, // 24 minutes
+                        'remember_token' => 43200 // 30 days
+                    ]
+                ];
+                break;
+
+            case 'file_caching':
+                $config = [
+                    'default' => 'opcache',
+                    'ttl' => [
+                        'compiled_templates' => 86400,
+                        'configuration' => 3600
+                    ]
+                ];
+                break;
+
+            case 'high_frequency':
+                $config = [
+                    'default' => 'memory',
+                    'ttl' => [
+                        'counters' => 300,
+                        'rate_limits' => 60
+                    ]
+                ];
+                break;
+
+            default:
+                $config = [
+                    'default' => $this->autoDetectBestDriver(),
+                    'ttl' => [
+                        'default' => 3600
+                    ]
+                ];
+        }
+
+        return $config;
     }
 }

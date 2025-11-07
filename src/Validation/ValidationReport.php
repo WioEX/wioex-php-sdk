@@ -46,12 +46,12 @@ class ValidationReport
 
     public function hasErrors(): bool
     {
-        return !empty($this->errors);
+        return count($this->errors) > 0;
     }
 
     public function hasWarnings(): bool
     {
-        return !empty($this->warnings);
+        return count($this->warnings) > 0;
     }
 
     public function getResult(): ValidationResult
@@ -131,7 +131,7 @@ class ValidationReport
 
     public function getLastError(): ?array
     {
-        return end($this->errors) ?: null;
+        return end($this->errors) !== false ? end($this->errors) : null;
     }
 
     public function getErrorsForField(string $field): array
@@ -144,7 +144,7 @@ class ValidationReport
 
     public function hasErrorForField(string $field): bool
     {
-        return !empty($this->getErrorsForField($field));
+        return count($this->getErrorsForField($field)) > 0;
     }
 
     public function getFormattedErrors(): array
@@ -284,7 +284,7 @@ class ValidationReport
 
     private function analyzeErrors(): void
     {
-        if (empty($this->errors)) {
+        if (count($this->errors) === 0) {
             return;
         }
 

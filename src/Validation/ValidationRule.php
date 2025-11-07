@@ -29,7 +29,7 @@ class ValidationRule
         $this->type = $type;
         $this->rule = $rule;
         $this->required = $required;
-        $this->message = $message ?: $this->getDefaultMessage();
+        $this->message = $message !== '' ? $message : $this->getDefaultMessage();
         $this->options = $options;
     }
 

@@ -15,32 +15,33 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.7.1 - API Route Fix Release:
-     * - CRITICAL: Fixed all API endpoints to use correct /api/ prefix
-     * - FIXED: Account, Stocks, News, Currency, Logos endpoints now working
-     * - MAINTAINED: Stream endpoints use direct /stream/ paths
-     * - TESTED: All major endpoints verified working
-     * - STABLE: Production-ready with proper route handling
+     * Version 2.4.1 - Configuration & Type Safety Release:
+     * - ENHANCED: Configuration management with dot notation support
+     * - IMPROVED: PHPStan Level 8 compliance with comprehensive type safety
+     * - ADDED: Cache management enhancements and macro support
+     * - FIXED: 300+ null safety and type declaration issues
+     * - OPTIMIZED: Strict comparison operators and validation improvements
+     * - MAINTAINED: Full backward compatibility
      * 
-     * Previous features (2.5.0):
-     * - Stock logo access functionality (6,840+ logos)
+     * Previous features (2.4.0):
      * - Comprehensive ticker analysis platform
+     * - Investment research grade functionality
      * - Professional validation schemas
      */
-    public const CURRENT = '2.6.0';
+    public const CURRENT = '2.4.1';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 7;
+    public const MINOR = 4;
     public const PATCH = 1;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-10-30';
-    public const CODENAME = 'API Route Fix Release';
+    public const RELEASE_DATE = '2025-11-07';
+    public const CODENAME = 'Configuration & Type Safety Release';
 
     /**
      * Get current version string
@@ -76,27 +77,25 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
+                'enhanced_configuration_management',
+                'dot_notation_config_support',
+                'phpstan_level8_compliance',
+                'comprehensive_type_safety',
+                'null_safety_improvements',
+                'cache_management_enhancements',
+                'macro_support_caching',
+                'strict_comparison_optimization',
                 'production_stream_tokens',
                 'websocket_authentication_fix',
-                'post_body_api_key_support',
-                'stock_logo_access',
-                'logo_batch_operations',
-                'logo_metadata_info',
-                'logo_existence_validation',
-                'logo_download_save',
                 'comprehensive_ticker_analysis',
                 'analyst_ratings_integration',
                 'earnings_insights_analysis',
                 'insider_activity_tracking',
                 'news_sentiment_analysis',
                 'options_analysis_system',
-                'price_movement_analytics',
-                'financial_metrics_evaluation',
                 'investment_research_platform',
                 'professional_validation_schemas',
                 'unified_response_template',
-                'multi_provider_architecture',
-                'source_masking_compliance',
                 'enhanced_stock_data',
                 'backward_compatibility',
                 'php_8_4_support',
