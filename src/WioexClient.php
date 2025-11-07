@@ -799,7 +799,7 @@ class WioexClient
             ]
         ];
 
-        $config = array_merge_recursive($defaultConfig, $cacheConfig);
+        $config = array_merge($defaultConfig, $cacheConfig);
 
         // Handle 'auto' driver selection
         if ($config['driver'] === 'auto') {
