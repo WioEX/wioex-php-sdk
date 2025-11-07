@@ -217,8 +217,7 @@ class EventLoop
                 $callback = $callbackInfo['callback'];
                 $callback();
             } catch (\Throwable $e) {
-                // Log error but continue processing
-                error_log("Event loop callback error: " . $e->getMessage());
+                // Continue with remaining callbacks
             }
         }
     }
@@ -246,8 +245,6 @@ class EventLoop
                     unset($this->timers[$timerId]);
                 }
             } catch (\Throwable $e) {
-                // Log error and remove timer
-                error_log("Event loop timer error: " . $e->getMessage());
                 unset($this->timers[$timerId]);
             }
         }
@@ -266,8 +263,7 @@ class EventLoop
             $operation = $operationInfo['operation'];
             $operation();
         } catch (\Throwable $e) {
-            // Log error but continue processing
-            error_log("Event loop operation error: " . $e->getMessage());
+            // Continue processing operations
         }
     }
 

@@ -1400,18 +1400,6 @@ class Response implements ArrayAccess
         return null;
     }
 
-    /**
-     * Log deprecation warning for legacy format usage
-     */
-    private function logLegacyFormatWarning(string $method): void
-    {
-        if ($this->isLegacyFormat()) {
-            error_log(sprintf(
-                'WioEX SDK: Legacy format detected in %s. Please migrate to unified ResponseTemplate format.',
-                $method
-            ));
-        }
-    }
 
     /**
      * Wrapper for legacy format compatibility

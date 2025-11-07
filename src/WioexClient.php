@@ -27,6 +27,7 @@ use Wioex\SDK\RateLimit\RateLimitManager;
 use Wioex\SDK\Debug\DebugManager;
 use Wioex\SDK\Debug\PerformanceProfiler;
 use Wioex\SDK\Retry\RetryManager;
+use Wioex\SDK\ErrorReporter;
 
 class WioexClient
 {
@@ -42,6 +43,7 @@ class WioexClient
     private ?DebugManager $debugManager = null;
     private ?PerformanceProfiler $performanceProfiler = null;
     private ?RetryManager $retryManager = null;
+    private ?ErrorReporter $errorReporter = null;
 
     private ?Stocks $stocks = null;
     private ?Screens $screens = null;
@@ -1715,6 +1717,22 @@ class WioexClient
     }
 
     /**
+     * Report error to WioEX for monitoring and improvements
+     *
+     * @param \Throwable $error
+     * @param array $context
+     * @return bool Success status
+     */
+    public function reportError(\Throwable $error, array $context = []): bool
+    {
+        if ($this->errorReporter === null) {
+            $this->errorReporter = new ErrorReporter($this->config);
+        }
+        
+        return $this->errorReporter->report($error, $context);
+    }
+
+    /**
      * Get debug summary
      *
      * @return array
@@ -2088,5 +2106,21 @@ class WioexClient
     public function getRetryConfiguration(): array
     {
         return $this->retry()->getCurrentConfig();
+    }
+
+    /**
+     * Report error to WioEX monitoring system
+     *
+     * @param \Throwable $error
+     * @param array $context
+     * @return bool
+     */
+    public function reportError(\Throwable $error, array $context = []): bool
+    {
+        if ($this->errorReporter === null) {
+            $this->errorReporter = new ErrorReporter($this->config);
+        }
+        
+        return $this->errorReporter->report($error, $context);
     }
 }

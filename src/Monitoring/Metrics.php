@@ -283,7 +283,13 @@ class Metrics
             try {
                 $collector($this);
             } catch (\Throwable $e) {
-                error_log("Metrics collector error: " . $e->getMessage());
+                // Report metrics collector error and continue with others
+                if (class_exists('\Wioex\SDK\ErrorReporter')) {
+                    (new \Wioex\SDK\ErrorReporter([]))->report($e, [
+                        'context' => 'metrics_collector_error',
+                        'collector_count' => count($this->collectors)
+                    ]);
+                }
             }
         }
 
@@ -304,7 +310,13 @@ class Metrics
             try {
                 $exporter($exportData, $this);
             } catch (\Throwable $e) {
-                error_log("Metrics exporter error: " . $e->getMessage());
+                // Report metrics exporter error and continue with others
+                if (class_exists('\Wioex\SDK\ErrorReporter')) {
+                    (new \Wioex\SDK\ErrorReporter([]))->report($e, [
+                        'context' => 'metrics_exporter_error',
+                        'exporter_count' => count($this->exporters)
+                    ]);
+                }
             }
         }
 

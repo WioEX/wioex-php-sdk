@@ -67,8 +67,7 @@ class CacheManager implements CacheInterface
                     $driverConfig['config'] ?? []
                 );
             } catch (\Exception $e) {
-                // Skip drivers that fail to initialize
-                error_log("Failed to initialize cache driver '{$name}': " . $e->getMessage());
+                // Skip failed drivers - continue with available ones
             }
         }
     }

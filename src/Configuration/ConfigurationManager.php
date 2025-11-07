@@ -89,9 +89,6 @@ class ConfigurationManager
             } catch (\Throwable $e) {
                 $this->validationResults[] = ValidationState::fromException($e);
 
-                if ($this->environment->isDevelopment()) {
-                    error_log("Configuration load error from {$sourceInfo['source']->value}: " . $e->getMessage());
-                }
             }
         }
 
@@ -465,7 +462,13 @@ class ConfigurationManager
             try {
                 $callback($oldConfig, $newConfig);
             } catch (\Throwable $e) {
-                error_log("Configuration watcher error: " . $e->getMessage());
+                // Log watcher errors but continue with other watchers
+                if (class_exists('\Wioex\SDK\ErrorReporter')) {
+                    (new \Wioex\SDK\ErrorReporter($this->config ?? []))->report($e, [
+                        'context' => 'configuration_watcher_error',
+                        'watcher_count' => count($this->watchers)
+                    ]);
+                }
             }
         }
     }
