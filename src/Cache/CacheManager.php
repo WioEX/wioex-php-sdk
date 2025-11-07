@@ -31,7 +31,14 @@ class CacheManager implements CacheInterface
     public function __construct(array $config = [])
     {
         $this->config = $config;
-        $this->defaultDriver = $config['default'] ?? $this->autoDetectBestDriver();
+        
+        // Handle 'auto' driver detection
+        $defaultDriver = $config['default'] ?? 'auto';
+        if ($defaultDriver === 'auto') {
+            $this->defaultDriver = $this->autoDetectBestDriver();
+        } else {
+            $this->defaultDriver = $defaultDriver;
+        }
 
         $this->initializeDrivers();
         $this->driver = $this->getDriver($this->defaultDriver);
