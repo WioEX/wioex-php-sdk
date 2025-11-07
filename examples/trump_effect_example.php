@@ -36,6 +36,11 @@ if ($response->successful()) {
         echo "Post at " . $post['time'] . " (" . $post['sentiment']['name'] . "):\n";
         echo "  Summary: " . $post['summary'] . "\n";
 
+        // Show full post content (original tweet/post text)
+        if (!empty($post['content'])) {
+            echo "  Full Content: " . substr($post['content'], 0, 200) . "...\n";
+        }
+
         if (!empty($post['sectors'])) {
             echo "  Sectors: " . implode(', ', $post['sectors']) . "\n";
         }
