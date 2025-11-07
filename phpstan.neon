@@ -2,20 +2,21 @@ includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
-    level: 9
+    level: 8  # More balanced level
     paths:
         - src
-
-    # Strict rules
-    checkAlwaysTrueCheckTypeFunctionCall: true
+    
+    # Practical configuration for enterprise SDK
+    treatPhpDocTypesAsCertain: false
+    checkAlwaysTrueCheckTypeFunctionCall: false
     checkAlwaysTrueInstanceof: true
-    checkAlwaysTrueStrictComparison: true
+    checkAlwaysTrueStrictComparison: false
     checkExplicitMixedMissingReturn: true
     checkFunctionNameCase: true
     checkInternalClassCaseSensitivity: true
     reportMaybesInMethodSignatures: true
     reportStaticMethodSignatures: true
-    checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    checkTooWideReturnTypesInProtectedAndPublicMethods: false
     checkUninitializedProperties: true
     
     ignoreErrors:

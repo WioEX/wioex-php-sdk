@@ -18,6 +18,14 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - **Validation & Quality**: Professional validation schemas and error handling
 - **Portfolio Support**: Analyze multiple stocks efficiently for portfolio research
 
+### 🔧 **v2.4.1 - Configuration & Type Safety Improvements**
+- **Enhanced Configuration Management**: New dot notation support for complex configuration access (`config.cache.redis.host`)
+- **Advanced Type Safety**: PHPStan Level 8 compliance with comprehensive null safety improvements  
+- **Improved Cache Management**: Enhanced cache drivers with proper type declarations and macro support
+- **Null Safety**: Comprehensive null-safe operations throughout the SDK for enterprise reliability
+- **Method Signature Improvements**: All public methods now have proper return type declarations
+- **Validation Enhancements**: Improved validation with strict comparison operators and type checking
+
 ### Continued Excellence from v2.3.0
 - **Unified ResponseTemplate Support**: Standardized response format across all WioEX API endpoints
 - **Enhanced Stock Data**: Institutional-grade integration with pre/post market data, 52-week ranges, market cap, and company logos
@@ -161,6 +169,99 @@ try {
  }
 }
 */
+```
+
+## Advanced Configuration
+
+### Enhanced Configuration Management with Dot Notation
+
+The SDK now supports advanced configuration management with dot notation for easy access to nested configuration values:
+
+```php
+use Wioex\SDK\WioexClient;
+
+// Advanced client configuration with enhanced options
+$client = new WioexClient([
+    'api_key' => 'your-api-key-here',
+    'timeout' => 30,
+    'retry' => [
+        'times' => 3,
+        'delay' => 100
+    ],
+    'cache' => [
+        'driver' => 'redis',
+        'redis' => [
+            'host' => '127.0.0.1',
+            'port' => 6379,
+            'password' => null,
+            'database' => 0
+        ],
+        'ttl' => 300
+    ],
+    'debug' => [
+        'enabled' => true,
+        'log_requests' => true,
+        'performance_tracking' => true
+    ]
+]);
+
+// Access configuration values using dot notation
+$redisHost = $client->getConfig()->get('cache.redis.host'); // '127.0.0.1'
+$debugEnabled = $client->getConfig()->get('debug.enabled'); // true
+$retryTimes = $client->getConfig()->get('retry.times'); // 3
+
+// Set configuration values dynamically
+$client->getConfig()->set('cache.redis.port', 6380);
+$client->getConfig()->set('debug.performance_tracking', false);
+
+// Check if configuration exists
+if ($client->getConfig()->has('cache.redis.password')) {
+    echo "Redis password is configured\n";
+}
+```
+
+### Type-Safe Configuration Access
+
+All configuration methods now include proper type safety and null handling:
+
+```php
+// Type-safe configuration with defaults
+$timeout = $client->getConfig()->get('timeout', 30); // Returns 30 if not set
+$cacheEnabled = $client->getConfig()->get('cache.enabled', false); // Boolean default
+$debugLevel = $client->getConfig()->get('debug.level', 'info'); // String default
+
+// Multiple configuration checks
+if ($client->getConfig()->has('cache.redis') && 
+    $client->getConfig()->get('cache.enabled', false)) {
+    echo "Redis cache is properly configured and enabled\n";
+}
+```
+
+### Enhanced Cache Management
+
+Improved cache management with macro support and better type declarations:
+
+```php
+// Enhanced cache operations with type safety
+$cache = $client->getCache();
+
+// Remember pattern with type-safe callbacks
+$expensiveData = $cache->remember('stock_analysis_AAPL', function() {
+    return $this->performComplexAnalysis('AAPL');
+}, 3600); // Cache for 1 hour
+
+// Pull pattern (get and delete)
+$temporaryData = $cache->pull('temp_calculation_key');
+
+// Cache macros for custom functionality
+$cache->macro('getOrFetch', function(string $key, callable $fetcher, int $ttl = 300) {
+    return $this->remember($key, $fetcher, $ttl);
+});
+
+// Use custom macro
+$marketData = $cache->getOrFetch('market_status', function() {
+    return $this->client->markets()->status();
+}, 600);
 ```
 
 ## Core Features

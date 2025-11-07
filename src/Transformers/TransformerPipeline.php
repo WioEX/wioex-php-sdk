@@ -312,7 +312,7 @@ class PipelineResult
 
     public function hasErrors(): bool
     {
-        return !empty($this->errors);
+        return count($this->errors) > 0;
     }
 
     public function toArray(): array

@@ -29,6 +29,12 @@ class Config
     private array $enhancedRetryConfig;
     /** @var array{enabled: bool, auto_report_errors: bool, performance_tracking: bool, privacy_mode: string, sampling_rate: float, endpoint: string, flush_interval: int, max_queue_size: int, filters: array} */
     private array $telemetryConfig;
+    
+    /** @var array Configuration data for dot notation access */
+    private array $configData = [];
+    
+    /** @var array Dynamic configuration for runtime changes */
+    private array $dynamicConfig = [];
 
     /**
      * @param array{
@@ -51,6 +57,9 @@ class Config
      */
     public function __construct(array $options = [])
     {
+        // Store complete configuration data for dot notation access
+        $this->configData = $options;
+        
         // API key is optional for public endpoints
         $this->apiKey = isset($options['api_key']) && $options['api_key'] !== ''
             ? $options['api_key']
@@ -445,5 +454,189 @@ class Config
     public function getEnvironment(): \Wioex\SDK\Enums\Environment
     {
         return \Wioex\SDK\Enums\Environment::PRODUCTION;
+    }
+
+    /**
+     * Get configuration value by key
+     */
+    public function get(string $key, mixed $default = null): mixed
+    {
+        // Handle dot notation for nested keys
+        $keys = explode('.', $key);
+        $value = $this->getConfigValue($keys);
+        
+        return $value !== null ? $value : $default;
+    }
+
+    /**
+     * Set configuration value by key
+     */
+    public function set(string $key, mixed $value): void
+    {
+        // Handle dot notation for nested keys
+        $keys = explode('.', $key);
+        $this->setConfigValue($keys, $value);
+    }
+
+    /**
+     * Check if configuration key exists
+     */
+    public function has(string $key): bool
+    {
+        $keys = explode('.', $key);
+        return $this->getConfigValue($keys) !== null;
+    }
+
+    /**
+     * Get all configuration as array
+     */
+    public function all(): array
+    {
+        return array_merge($this->toArray(), $this->dynamicConfig);
+    }
+
+    /**
+     * Get configuration value from nested array structure
+     */
+    private function getConfigValue(array $keys): mixed
+    {
+        $firstKey = array_shift($keys);
+        
+        // Check built-in properties first
+        $value = match ($firstKey) {
+            'api_key' => $this->apiKey,
+            'base_url' => $this->baseUrl,
+            'timeout' => $this->timeout,
+            'connect_timeout' => $this->connectTimeout,
+            'retry' => $this->retryConfig,
+            'headers' => $this->headers,
+            'error_reporting' => $this->errorReporting,
+            'error_reporting_endpoint' => $this->errorReportingEndpoint,
+            'include_stack_trace' => $this->includeStackTrace,
+            'error_reporting_level' => $this->errorReportingLevel,
+            'include_request_data' => $this->includeRequestData,
+            'include_response_data' => $this->includeResponseData,
+            'rate_limit', 'rate_limiting' => $this->rateLimitConfig,
+            'enhanced_retry' => $this->enhancedRetryConfig,
+            'telemetry' => $this->telemetryConfig,
+            'cache' => $this->getCacheConfig(),
+            'monitoring' => $this->getMonitoringConfig(),
+            default => $this->dynamicConfig[$firstKey] ?? null
+        };
+
+        // If we have more keys, traverse deeper
+        if (!empty($keys) && is_array($value)) {
+            return $this->traverseArray($value, $keys);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Set configuration value in nested array structure
+     */
+    private function setConfigValue(array $keys, mixed $value): void
+    {
+        $firstKey = array_shift($keys);
+        
+        // For built-in properties, update them directly if it's a top-level set
+        if (empty($keys)) {
+            match ($firstKey) {
+                'api_key' => $this->apiKey = $value,
+                'base_url' => $this->baseUrl = $value,
+                'timeout' => $this->timeout = (int) $value,
+                'connect_timeout' => $this->connectTimeout = (int) $value,
+                'error_reporting' => $this->errorReporting = (bool) $value,
+                'include_stack_trace' => $this->includeStackTrace = (bool) $value,
+                'include_request_data' => $this->includeRequestData = (bool) $value,
+                'include_response_data' => $this->includeResponseData = (bool) $value,
+                default => $this->dynamicConfig[$firstKey] = $value
+            };
+            return;
+        }
+
+        // For nested values, store in dynamic config
+        if (!isset($this->dynamicConfig[$firstKey])) {
+            $this->dynamicConfig[$firstKey] = [];
+        }
+
+        $this->setNestedValue($this->dynamicConfig[$firstKey], $keys, $value);
+    }
+
+    /**
+     * Traverse array with keys
+     */
+    private function traverseArray(array $array, array $keys): mixed
+    {
+        $current = $array;
+        
+        foreach ($keys as $key) {
+            if (!is_array($current) || !isset($current[$key])) {
+                return null;
+            }
+            $current = $current[$key];
+        }
+        
+        return $current;
+    }
+
+    /**
+     * Set nested value in array
+     */
+    private function setNestedValue(array &$array, array $keys, mixed $value): void
+    {
+        $key = array_shift($keys);
+        
+        if (empty($keys)) {
+            $array[$key] = $value;
+            return;
+        }
+        
+        if (!isset($array[$key]) || !is_array($array[$key])) {
+            $array[$key] = [];
+        }
+        
+        $this->setNestedValue($array[$key], $keys, $value);
+    }
+
+    /**
+     * Remove configuration key
+     */
+    public function remove(string $key): void
+    {
+        $keys = explode('.', $key);
+        $firstKey = array_shift($keys);
+        
+        if (empty($keys)) {
+            unset($this->dynamicConfig[$firstKey]);
+        } else {
+            $this->removeNestedValue($this->dynamicConfig[$firstKey] ?? [], $keys);
+        }
+    }
+
+    /**
+     * Remove nested value from array
+     */
+    private function removeNestedValue(array &$array, array $keys): void
+    {
+        $key = array_shift($keys);
+        
+        if (empty($keys)) {
+            unset($array[$key]);
+            return;
+        }
+        
+        if (isset($array[$key]) && is_array($array[$key])) {
+            $this->removeNestedValue($array[$key], $keys);
+        }
+    }
+
+    /**
+     * Merge configuration with another array
+     */
+    public function merge(array $config): self
+    {
+        $this->dynamicConfig = array_merge_recursive($this->dynamicConfig, $config);
+        return $this;
     }
 }
