@@ -306,23 +306,56 @@ class ErrorReporter
      */
     private function sendReport(array $data): void
     {
-        if ($this->client === null) {
-            return;
-        }
-
         try {
             $endpoint = $this->config->getErrorReportingEndpoint();
+            $jsonData = json_encode($data);
+            
+            if ($jsonData === false) {
+                return;
+            }
 
-            $this->client->post($endpoint, [
-                'json' => $data,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'X-SDK-Version' => $this->config->getSdkVersion(),
-                ],
-            ]);
-        } catch (GuzzleException $e) {
+            // Use cURL for background request
+            $this->sendCurlBackground($endpoint, $jsonData);
+            
+        } catch (\Throwable $e) {
             // Silently fail - don't throw exceptions from error reporter
         }
+    }
+
+    /**
+     * Send error report using cURL in background (non-blocking)
+     *
+     * @param string $url
+     * @param string $jsonData
+     * @return void
+     */
+    private function sendCurlBackground(string $url, string $jsonData): void
+    {
+        $ch = curl_init();
+        
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $jsonData,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($jsonData),
+                'X-SDK-Version: ' . $this->config->getSdkVersion(),
+                'User-Agent: WioEX-PHP-SDK/' . $this->config->getSdkVersion(),
+            ],
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_HEADER => false,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_NOSIGNAL => 1,
+        ]);
+        
+        // Execute and close immediately (fire and forget)
+        curl_exec($ch);
+        curl_close($ch);
     }
 
     /**
