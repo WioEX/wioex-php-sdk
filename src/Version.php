@@ -15,7 +15,7 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.4.1 - Configuration & Type Safety Release:
+     * Version 2.9.0 - Configuration & Type Safety Release:
      * - ENHANCED: Configuration management with dot notation support
      * - IMPROVED: PHPStan Level 8 compliance with comprehensive type safety
      * - ADDED: Cache management enhancements and macro support
@@ -23,19 +23,20 @@ final class Version
      * - OPTIMIZED: Strict comparison operators and validation improvements
      * - MAINTAINED: Full backward compatibility
      * 
-     * Previous features (2.4.0):
+     * Previous features (2.8.x):
+     * - API route fixes and endpoint optimizations
      * - Comprehensive ticker analysis platform
      * - Investment research grade functionality
      * - Professional validation schemas
      */
-    public const CURRENT = '2.4.1';
+    public const CURRENT = '2.9.0';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 4;
-    public const PATCH = 1;
+    public const MINOR = 9;
+    public const PATCH = 0;
 
     /**
      * Version metadata

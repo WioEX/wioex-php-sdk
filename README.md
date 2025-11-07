@@ -7,18 +7,11 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 [![License](https://img.shields.io/packagist/l/wioex/php-sdk.svg)](https://packagist.org/packages/wioex/php-sdk)
 [![Tests](https://img.shields.io/badge/tests-135%2B%20passing-brightgreen.svg)](https://github.com/wioex/php-sdk)
 
-## What's New in v2.4.0
+## What's New in v2.9.0
 
-**Comprehensive Ticker Analysis & Investment Research Platform.**
+**Enhanced Configuration Management & Enterprise-Grade Type Safety.**
 
-### 🚀 Major New Feature: Ticker Analysis
-- **Comprehensive Analysis**: Complete stock analysis combining analyst ratings, earnings insights, insider activity, news sentiment, and options analysis
-- **Investment Research Grade**: Institutional-quality data for professional portfolio management
-- **15+ Helper Methods**: Structured access to all analysis sections with type-safe methods
-- **Validation & Quality**: Professional validation schemas and error handling
-- **Portfolio Support**: Analyze multiple stocks efficiently for portfolio research
-
-### 🔧 **v2.4.1 - Configuration & Type Safety Improvements**
+### 🔧 **v2.9.0 - Configuration & Type Safety Release**
 - **Enhanced Configuration Management**: New dot notation support for complex configuration access (`config.cache.redis.host`)
 - **Advanced Type Safety**: PHPStan Level 8 compliance with comprehensive null safety improvements  
 - **Improved Cache Management**: Enhanced cache drivers with proper type declarations and macro support
@@ -26,7 +19,14 @@ Official PHP SDK for **WioEX Financial Data API** - Enterprise-grade client libr
 - **Method Signature Improvements**: All public methods now have proper return type declarations
 - **Validation Enhancements**: Improved validation with strict comparison operators and type checking
 
-### Continued Excellence from v2.3.0
+### Continued Excellence from v2.8.x
+- **API Route Optimization**: Improved endpoint routing and request handling
+- **Comprehensive Ticker Analysis**: Complete stock analysis combining analyst ratings, earnings insights, insider activity, news sentiment, and options analysis
+- **Investment Research Grade**: Institutional-quality data for professional portfolio management
+- **15+ Helper Methods**: Structured access to all analysis sections with type-safe methods
+- **Portfolio Support**: Analyze multiple stocks efficiently for portfolio research
+
+### Built on v2.7.x Foundation
 - **Unified ResponseTemplate Support**: Standardized response format across all WioEX API endpoints
 - **Enhanced Stock Data**: Institutional-grade integration with pre/post market data, 52-week ranges, market cap, and company logos
 - **Advanced Type Safety**: Complete PHPStan compliance with comprehensive array type specifications
