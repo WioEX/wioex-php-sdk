@@ -15,33 +15,32 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.10.0 - Production Stability Release:
-     * - CLEANED: Removed all console messages (error_log, echo, print)
-     * - ENHANCED: ErrorReporter with cURL background reporting
-     * - IMPROVED: Error handling integration throughout SDK
-     * - REMOVED: Dead code cleanup for production readiness
-     * - OPTIMIZED: Background error reporting without blocking
+     * Version 2.10.1 - Critical Cache Fix Release:
+     * - CRITICAL FIX: Resolved cache system 500 internal server errors
+     * - ADDED: Missing autoDetectBestDriver() method causing fatal errors
+     * - ENHANCED: Graceful cache degradation with memory fallback
+     * - IMPROVED: Error handling for cache initialization failures
+     * - STABILIZED: Production cache system reliability
      * - MAINTAINED: Full backward compatibility
      * 
-     * Previous features (2.9.x):
-     * - Enhanced configuration management with dot notation support
-     * - PHPStan Level 8 compliance with comprehensive type safety
-     * - Cache management enhancements and macro support
+     * Previous features (2.10.0):
+     * - Console message cleanup and ErrorReporter cURL integration
+     * - Dead code removal and production stability improvements
      */
-    public const CURRENT = '2.10.0';
+    public const CURRENT = '2.10.1';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
     public const MINOR = 10;
-    public const PATCH = 0;
+    public const PATCH = 1;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-11-07';
-    public const CODENAME = 'Production Stability Release';
+    public const CODENAME = 'Critical Cache Fix Release';
 
     /**
      * Get current version string
@@ -77,6 +76,10 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
+                'critical_cache_system_fix',
+                'graceful_cache_degradation',
+                'auto_driver_detection_fix',
+                'cache_error_handling',
                 'production_ready_console_cleanup',
                 'background_curl_error_reporting',
                 'integrated_error_handling',
