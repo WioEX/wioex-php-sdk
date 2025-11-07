@@ -32,16 +32,36 @@ class CacheManager implements CacheInterface
     {
         $this->config = $config;
         
-        // Handle 'auto' driver detection
-        $defaultDriver = $config['default'] ?? 'auto';
-        if ($defaultDriver === 'auto') {
-            $this->defaultDriver = $this->autoDetectBestDriver();
-        } else {
-            $this->defaultDriver = $defaultDriver;
-        }
+        try {
+            // Handle 'auto' driver detection
+            $defaultDriver = $config['default'] ?? 'auto';
+            if ($defaultDriver === 'auto') {
+                $this->defaultDriver = $this->autoDetectBestDriver();
+            } else {
+                $this->defaultDriver = $defaultDriver;
+            }
 
-        $this->initializeDrivers();
-        $this->driver = $this->getDriver($this->defaultDriver);
+            $this->initializeDrivers();
+            $this->driver = $this->getDriver($this->defaultDriver);
+        } catch (\Exception $e) {
+            // Graceful degradation: Fall back to memory driver on any error
+            $this->defaultDriver = 'memory';
+            $this->drivers = ['memory' => new MemoryDriver()];
+            $this->driver = $this->drivers['memory'];
+            
+            // Report error if ErrorReporter is available
+            if (class_exists('\Wioex\SDK\ErrorReporter')) {
+                try {
+                    (new \Wioex\SDK\ErrorReporter([]))->report($e, [
+                        'context' => 'cache_initialization_error',
+                        'requested_driver' => $config['default'] ?? 'auto',
+                        'fallback_driver' => 'memory'
+                    ]);
+                } catch (\Exception $reportError) {
+                    // Silent fail on error reporting
+                }
+            }
+        }
     }
 
     private function initializeDrivers(): void
