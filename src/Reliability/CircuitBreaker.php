@@ -277,7 +277,6 @@ class CircuitBreaker
                 break;
         }
 
-        error_log("Circuit breaker '{$this->name}' transitioned from {$oldState} to {$newState}");
     }
 
     public function getState(): string
