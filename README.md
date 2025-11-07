@@ -1508,6 +1508,181 @@ if (isset($advancedAnalysis['volume_trends'])) {
 }
 ```
 
+### Trump Effect - Social Media Market Impact
+
+Monitor Trump's social media posts and their impact on financial markets.
+
+```php
+// 1. Get latest posts with default settings (20 per page)
+$trumpPosts = $client->news()->trumpEffect();
+
+if ($trumpPosts->successful()) {
+    $data = $trumpPosts['data'];
+
+    // Overall market mood (0 = bearish, 1 = bullish)
+    echo "Market Mood Index: {$data['mood_index']}\n";
+    echo "Sentiment: " . ($data['mood_index'] > 0.6 ? 'Bullish' : ($data['mood_index'] < 0.4 ? 'Bearish' : 'Neutral')) . "\n\n";
+
+    // Display posts
+    foreach ($data['posts'] as $post) {
+        echo "Time: {$post['time']} | Sentiment: {$post['sentiment']['name']}\n";
+        echo "Summary: {$post['summary']}\n";
+
+        // Show affected securities
+        if (!empty($post['affected_securities'])) {
+            $tickers = array_column($post['affected_securities'], 'ticker');
+            echo "Affected Tickers: " . implode(', ', $tickers) . "\n";
+        }
+
+        // Show sectors
+        if (!empty($post['sectors'])) {
+            echo "Sectors: " . implode(', ', $post['sectors']) . "\n";
+        }
+        echo "\n";
+    }
+
+    // Pagination
+    if ($data['pagination']['has_more']) {
+        echo "More posts available (use 'page' parameter)\n";
+    }
+}
+
+// 2. Filter by sentiment (only bullish/positive posts)
+$bullishPosts = $client->news()->trumpEffect([
+    'sentiment' => ['trumpy'],
+    'pageSize' => 10
+]);
+
+if ($bullishPosts->successful()) {
+    echo "Bullish Posts:\n";
+    foreach ($bullishPosts['data']['posts'] as $post) {
+        echo "• {$post['summary']}\n";
+    }
+}
+
+// 3. Track specific stocks mentioned in posts
+$allPosts = $client->news()->trumpEffect(['pageSize' => 100]);
+
+if ($allPosts->successful()) {
+    $trackingSymbols = ['TSLA', 'AAPL', 'BA'];
+    $mentionedPosts = [];
+
+    foreach ($allPosts['data']['posts'] as $post) {
+        if (empty($post['affected_securities'])) continue;
+
+        $tickers = array_column($post['affected_securities'], 'ticker');
+        $mentioned = array_intersect($trackingSymbols, $tickers);
+
+        if (!empty($mentioned)) {
+            foreach ($mentioned as $ticker) {
+                if (!isset($mentionedPosts[$ticker])) {
+                    $mentionedPosts[$ticker] = [];
+                }
+                $mentionedPosts[$ticker][] = $post;
+            }
+        }
+    }
+
+    // Display mentions
+    foreach ($trackingSymbols as $ticker) {
+        if (isset($mentionedPosts[$ticker])) {
+            $count = count($mentionedPosts[$ticker]);
+            echo "{$ticker}: {$count} mentions\n";
+
+            // Show latest mention
+            $latestPost = $mentionedPosts[$ticker][0];
+            echo "Latest: {$latestPost['summary']}\n";
+            echo "Sentiment: {$latestPost['sentiment']['name']}\n\n";
+        } else {
+            echo "{$ticker}: No mentions\n";
+        }
+    }
+}
+
+// 4. Analyze sentiment distribution
+$response = $client->news()->trumpEffect(['pageSize' => 50]);
+
+if ($response->successful()) {
+    $sentiments = ['trumpy' => 0, 'neutral' => 0, 'grumpy' => 0];
+
+    foreach ($response['data']['posts'] as $post) {
+        $sentiment = $post['sentiment']['name'];
+        if (isset($sentiments[$sentiment])) {
+            $sentiments[$sentiment]++;
+        }
+    }
+
+    $total = array_sum($sentiments);
+    echo "Sentiment Distribution (Last 50 Posts):\n";
+    echo "Trumpy (Bullish): " . round(($sentiments['trumpy'] / $total) * 100, 1) . "%\n";
+    echo "Neutral: " . round(($sentiments['neutral'] / $total) * 100, 1) . "%\n";
+    echo "Grumpy (Bearish): " . round(($sentiments['grumpy'] / $total) * 100, 1) . "%\n";
+}
+
+// 5. Monitor specific sectors
+$response = $client->news()->trumpEffect(['pageSize' => 100]);
+
+if ($response->successful()) {
+    $sectorImpact = [];
+
+    foreach ($response['data']['posts'] as $post) {
+        if (empty($post['sectors'])) continue;
+
+        foreach ($post['sectors'] as $sector) {
+            if (!isset($sectorImpact[$sector])) {
+                $sectorImpact[$sector] = [
+                    'count' => 0,
+                    'sentiments' => ['trumpy' => 0, 'neutral' => 0, 'grumpy' => 0]
+                ];
+            }
+
+            $sectorImpact[$sector]['count']++;
+            $sentiment = $post['sentiment']['name'];
+            if (isset($sectorImpact[$sector]['sentiments'][$sentiment])) {
+                $sectorImpact[$sector]['sentiments'][$sentiment]++;
+            }
+        }
+    }
+
+    // Display sector analysis
+    echo "Sector Impact Analysis:\n";
+    foreach ($sectorImpact as $sector => $data) {
+        $positive = $data['sentiments']['trumpy'];
+        $negative = $data['sentiments']['grumpy'];
+        $netSentiment = $positive - $negative;
+
+        echo "{$sector}: {$data['count']} mentions (Net Sentiment: " .
+             ($netSentiment > 0 ? "+{$netSentiment}" : $netSentiment) . ")\n";
+    }
+}
+
+// 6. Pagination through all posts
+$page = 1;
+$allTrumpPosts = [];
+
+while ($page <= 5) {  // Get first 5 pages
+    $response = $client->news()->trumpEffect([
+        'page' => $page,
+        'pageSize' => 20
+    ]);
+
+    if ($response->successful()) {
+        $data = $response['data'];
+        $allTrumpPosts = array_merge($allTrumpPosts, $data['posts']);
+
+        if (!$data['pagination']['has_more']) {
+            break;  // No more posts
+        }
+
+        $page++;
+    } else {
+        break;  // Error occurred
+    }
+}
+
+echo "Total Trump posts retrieved: " . count($allTrumpPosts) . "\n";
+```
+
 ### Currency Exchange
 ```php
 // Exchange rates
