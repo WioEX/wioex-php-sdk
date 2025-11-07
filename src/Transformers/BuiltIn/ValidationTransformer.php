@@ -238,7 +238,7 @@ class ValidationTransformer extends AbstractTransformer
 
     public function supports(array $data, array $context = []): bool
     {
-        return !empty($data);
+        return is_array($data) ? count($data) > 0 : $data !== null && $data !== '';
     }
 
     public function addRule(string $field, string $rule, mixed $parameter = null): self
