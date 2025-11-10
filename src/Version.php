@@ -15,33 +15,32 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.11.0 - Financial Timeline Data Release:
-     * - NEW FEATURE: Perplexity Finance Timeline API integration
-     * - ADDED: Financial timeline events with sentiment analysis
-     * - ENHANCED: Event impact level detection and classification
-     * - IMPLEMENTED: Cookie-based session management for external APIs
-     * - INTEGRATED: Real-time financial event data processing
-     * - MAINTAINED: Full backward compatibility
+     * Version 2.11.1 - NewsAnalysis Clarity Update:
+     * - BREAKING CHANGE: Timeline renamed to NewsAnalysis for clarity
+     * - IMPROVED: Method names better reflect news analysis purpose
+     * - CLARIFIED: This analyzes financial news, not stock price timelines
+     * - UPDATED: Documentation and examples for NewsAnalysis usage
+     * - MAINTAINED: Same functionality with clearer naming
      * 
-     * Previous features (2.10.x):
-     * - Critical cache system fixes and graceful degradation
-     * - Console message cleanup and ErrorReporter cURL integration
-     * - Production stability and dead code cleanup
+     * Previous features (2.11.0):
+     * - External Finance API integration for news analysis
+     * - Financial event sentiment analysis and impact detection
+     * - Cookie-based session management and real-time data processing
      */
-    public const CURRENT = '2.11.0';
+    public const CURRENT = '2.11.1';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
     public const MINOR = 11;
-    public const PATCH = 0;
+    public const PATCH = 1;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-11-07';
-    public const CODENAME = 'Financial Timeline Data Release';
+    public const CODENAME = 'NewsAnalysis Clarity Update';
 
     /**
      * Get current version string
@@ -77,14 +76,14 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
-                'perplexity_finance_timeline_api',
-                'financial_event_sentiment_analysis',
-                'timeline_impact_level_detection',
+                'news_analysis_api',
+                'financial_news_sentiment_analysis', 
+                'news_impact_level_detection',
                 'cookie_based_session_management',
-                'external_api_integration',
-                'real_time_financial_events',
-                'event_type_normalization',
-                'batch_timeline_requests',
+                'external_finance_api_integration',
+                'real_time_financial_news_events',
+                'news_event_type_normalization',
+                'batch_news_analysis_requests',
                 'critical_cache_system_fix',
                 'graceful_cache_degradation',
                 'auto_driver_detection_fix',
