@@ -15,6 +15,7 @@ use Wioex\SDK\Resources\Signals;
 use Wioex\SDK\Resources\Stocks;
 use Wioex\SDK\Resources\Streaming;
 use Wioex\SDK\Resources\NewsAnalysis;
+use Wioex\SDK\News\NewsManager;
 use Wioex\SDK\Configuration\ConfigurationManager;
 use Wioex\SDK\Enums\Environment;
 use Wioex\SDK\Version;
@@ -56,6 +57,7 @@ class WioexClient
     private ?Streaming $streaming = null;
     private ?Logos $logos = null;
     private ?NewsAnalysis $newsAnalysis = null;
+    private ?NewsManager $newsManager = null;
 
     /**
      * Create a new WioEX API client instance
@@ -457,6 +459,50 @@ class WioexClient
     }
 
     /**
+     * Get unified news manager with intelligent source routing
+     *
+     * Provides access to the new unified news system that automatically
+     * routes requests to the best available provider based on content type.
+     *
+     * @return NewsManager Unified news management instance
+     *
+     * @example
+     * ```php
+     * // Auto-select best provider for each content type
+     * $news = $client->newsManager()->get('TSLA', ['type' => 'news']);
+     * $analysis = $client->newsManager()->get('AAPL', ['type' => 'analysis']);
+     * $sentiment = $client->newsManager()->get('MSFT', ['type' => 'sentiment']);
+     * 
+     * // Specify provider explicitly
+     * $wioexNews = $client->newsManager()->get('TSLA', ['source' => 'wioex']);
+     * $perplexityAnalysis = $client->newsManager()->get('TSLA', ['source' => 'perplexity']);
+     * $socialSentiment = $client->newsManager()->get('TSLA', ['source' => 'social']);
+     * 
+     * // Get from multiple sources
+     * $multiSource = $client->newsManager()->getFromMultipleSources('TSLA', 
+     *     ['wioex', 'perplexity', 'social']
+     * );
+     * 
+     * // Provider-specific access
+     * $wioexProvider = $client->newsManager()->provider('wioex');
+     * $perplexityProvider = $client->newsManager()->provider('perplexity');
+     * ```
+     */
+    public function newsManager(): NewsManager
+    {
+        if ($this->newsManager === null) {
+            $this->newsManager = new NewsManager($this->httpClient, $this->cacheManager);
+            
+            // Set error reporter if available
+            if ($this->errorReporter !== null) {
+                $this->newsManager->setErrorReporter($this->errorReporter);
+            }
+        }
+
+        return $this->newsManager;
+    }
+
+    /**
      * Reset all resource instances to use updated client
      */
     private function resetResources(): void
@@ -471,6 +517,7 @@ class WioexClient
         $this->streaming = null;
         $this->logos = null;
         $this->newsAnalysis = null;
+        $this->newsManager = null;
     }
 
     /**

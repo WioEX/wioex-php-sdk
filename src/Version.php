@@ -15,32 +15,37 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.11.1 - NewsAnalysis Clarity Update:
-     * - BREAKING CHANGE: Timeline renamed to NewsAnalysis for clarity
-     * - IMPROVED: Method names better reflect news analysis purpose
-     * - CLARIFIED: This analyzes financial news, not stock price timelines
-     * - UPDATED: Documentation and examples for NewsAnalysis usage
-     * - MAINTAINED: Same functionality with clearer naming
+     * Version 2.12.0 - Unified NewsManager Architecture:
+     * - NEW MAJOR FEATURE: Unified NewsManager with intelligent source routing
+     * - NEW: Provider-based architecture (WioexProvider, PerplexityProvider, SocialProvider)
+     * - NEW: Automatic provider selection based on content type
+     * - NEW: Multi-source data aggregation and comparison
+     * - NEW: Advanced fallback mechanisms and error handling
+     * - NEW: Comprehensive caching and performance optimization
+     * - NEW: Provider health monitoring and capabilities management
+     * - ENHANCED: Unified API interface with backwards compatibility
+     * - ENHANCED: Advanced filtering and options for all providers
+     * - ARCHITECTURE: Scalable and extensible provider system
      * 
-     * Previous features (2.11.0):
-     * - External Finance API integration for news analysis
-     * - Financial event sentiment analysis and impact detection
-     * - Cookie-based session management and real-time data processing
+     * Previous features (2.11.1):
+     * - NewsAnalysis clarity improvements and naming consistency
+     * - External Finance API integration and sentiment analysis
+     * - Cache system fixes and console cleanup
      */
-    public const CURRENT = '2.11.1';
+    public const CURRENT = '2.12.0';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 11;
-    public const PATCH = 1;
+    public const MINOR = 12;
+    public const PATCH = 0;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-11-07';
-    public const CODENAME = 'NewsAnalysis Clarity Update';
+    public const RELEASE_DATE = '2025-11-10';
+    public const CODENAME = 'Unified NewsManager Architecture';
 
     /**
      * Get current version string
@@ -76,6 +81,14 @@ final class Version
             'codename' => self::CODENAME,
             'php_version' => PHP_VERSION,
             'features' => [
+                'unified_news_manager_architecture',
+                'intelligent_provider_routing',
+                'multi_source_news_aggregation',
+                'provider_based_architecture',
+                'automatic_provider_selection',
+                'advanced_fallback_mechanisms',
+                'provider_health_monitoring',
+                'comprehensive_caching_optimization',
                 'news_analysis_api',
                 'financial_news_sentiment_analysis', 
                 'news_impact_level_detection',
