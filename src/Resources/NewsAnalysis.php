@@ -7,12 +7,12 @@ namespace Wioex\SDK\Resources;
 use Wioex\SDK\Http\Client;
 
 /**
- * Timeline Resource - Financial Timeline Data from Perplexity
+ * NewsAnalysis Resource - Stock News Analysis and Financial Events
  *
- * Provides access to financial timeline data for stocks including
- * key events, earnings, news, and market movements.
+ * Provides access to analyzed financial news and events for stocks including
+ * sentiment analysis, impact assessment, and categorized news events.
  */
-class Timeline
+class NewsAnalysis
 {
     private Client $client;
 
@@ -22,21 +22,21 @@ class Timeline
     }
 
     /**
-     * Get financial timeline for a symbol
+     * Get analyzed financial news and events for a symbol
      *
      * @param string $symbol Stock symbol (e.g., 'TSLA', 'AAPL')
      * @param array $options Additional options:
      *   - version: string (default: '2.18') API version
      *   - source: string (default: 'default') Data source
      *   - format: string (default: 'wioex') Response format
-     *   - limit: int (default: 50) Number of timeline events
+     *   - limit: int (default: 50) Number of news events
      * 
-     * @return array Formatted timeline data
+     * @return array Analyzed news data with sentiment and impact
      *
      * @example
      * ```php
-     * $timeline = $client->timeline()->get('TSLA');
-     * $timeline = $client->timeline()->get('AAPL', [
+     * $news = $client->newsAnalysis()->get('TSLA');
+     * $news = $client->newsAnalysis()->get('AAPL', [
      *     'version' => '2.18',
      *     'limit' => 100
      * ]);
@@ -59,11 +59,11 @@ class Timeline
             // Step 1: Get trace information first
             $traceData = $this->getTraceData();
             
-            // Step 2: Fetch timeline data from Perplexity
-            $rawData = $this->fetchTimelineData($symbol, $options, $traceData);
+            // Step 2: Fetch news data from external API
+            $rawData = $this->fetchNewsData($symbol, $options, $traceData);
             
             // Step 3: Format data according to WioEX standards
-            return $this->formatTimelineData($rawData, $symbol, $options);
+            return $this->formatNewsData($rawData, $symbol, $options);
             
         } catch (\Exception $e) {
             // Report error if ErrorReporter is available
@@ -71,7 +71,7 @@ class Timeline
                 try {
                     $config = new \Wioex\SDK\Config(['api_key' => 'timeline_error']);
                     (new \Wioex\SDK\ErrorReporter($config))->report($e, [
-                        'context' => 'timeline_fetch_error',
+                        'context' => 'news_analysis_fetch_error',
                         'symbol' => $symbol,
                         'options' => $options
                     ]);
@@ -85,11 +85,11 @@ class Timeline
     }
 
     /**
-     * Get multiple timeline data
+     * Get analyzed news for multiple symbols
      *
      * @param array $symbols List of stock symbols
      * @param array $options Options for all requests
-     * @return array Multi-symbol timeline data
+     * @return array Multi-symbol news analysis data
      */
     public function getMultiple(array $symbols, array $options = []): array
     {
@@ -108,11 +108,11 @@ class Timeline
     }
 
     /**
-     * Get recent timeline events for a symbol
+     * Get recent news analysis for a symbol
      *
      * @param string $symbol Stock symbol
      * @param int $days Number of days to look back (default: 30)
-     * @return array Recent timeline events
+     * @return array Recent news events with analysis
      */
     public function getRecent(string $symbol, int $days = 30): array
     {
@@ -124,11 +124,11 @@ class Timeline
     }
 
     /**
-     * Get major timeline events only
+     * Get major financial news and events only
      *
      * @param string $symbol Stock symbol
      * @param array $options Additional options
-     * @return array Major timeline events (earnings, announcements, etc.)
+     * @return array Major news events (earnings, announcements, etc.) with analysis
      */
     public function getMajorEvents(string $symbol, array $options = []): array
     {
@@ -229,14 +229,14 @@ class Timeline
     }
 
     /**
-     * Fetch timeline data from Perplexity Finance API
+     * Fetch news data from external Finance API
      *
      * @param string $symbol Stock symbol
      * @param array $options Request options
      * @param array $traceData Trace data for session
-     * @return array Raw timeline data
+     * @return array Raw news data
      */
-    private function fetchTimelineData(string $symbol, array $options, array $traceData): array
+    private function fetchNewsData(string $symbol, array $options, array $traceData): array
     {
         $url = "https://www.perplexity.ai/rest/finance/timeline/v2/{$symbol}";
         
@@ -269,18 +269,18 @@ class Timeline
     }
 
     /**
-     * Format timeline data according to WioEX standards
+     * Format news analysis data according to WioEX standards
      *
-     * @param array $rawData Raw data from Perplexity
+     * @param array $rawData Raw data from external API
      * @param string $symbol Stock symbol
      * @param array $options Request options
-     * @return array Formatted timeline data
+     * @return array Formatted news analysis data
      */
-    private function formatTimelineData(array $rawData, string $symbol, array $options): array
+    private function formatNewsData(array $rawData, string $symbol, array $options): array
     {
-        $timeline = [
+        $newsAnalysis = [
             'symbol' => $symbol,
-            'data_source' => 'perplexity_finance',
+            'data_source' => 'external_finance_api',
             'api_version' => $options['version'],
             'timestamp' => time(),
             'events' => [],
@@ -290,7 +290,7 @@ class Timeline
                 'event_types' => []
             ],
             'metadata' => [
-                'request_id' => uniqid('tl_'),
+                'request_id' => uniqid('na_'),
                 'processing_time_ms' => 0,
                 'cache_hit' => false,
                 'data_freshness' => 'real_time'
@@ -307,20 +307,20 @@ class Timeline
             foreach ($events as $event) {
                 $formattedEvent = $this->formatSingleEvent($event, $symbol);
                 if ($formattedEvent) {
-                    $timeline['events'][] = $formattedEvent;
+                    $newsAnalysis['events'][] = $formattedEvent;
                     $eventTypes[] = $formattedEvent['event_type'];
                     $dates[] = $formattedEvent['date'];
                 }
 
                 // Apply limit if specified
-                if (count($timeline['events']) >= $options['limit']) {
+                if (count($newsAnalysis['events']) >= $options['limit']) {
                     break;
                 }
             }
 
             // Update summary
-            $timeline['summary'] = [
-                'total_events' => count($timeline['events']),
+            $newsAnalysis['summary'] = [
+                'total_events' => count($newsAnalysis['events']),
                 'date_range' => [
                     'earliest' => !empty($dates) ? min($dates) : null,
                     'latest' => !empty($dates) ? max($dates) : null
@@ -329,9 +329,9 @@ class Timeline
             ];
         }
 
-        $timeline['metadata']['processing_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
+        $newsAnalysis['metadata']['processing_time_ms'] = round((microtime(true) - $startTime) * 1000, 2);
 
-        return $timeline;
+        return $newsAnalysis;
     }
 
     /**
@@ -482,11 +482,11 @@ class Timeline
     {
         return [
             'symbol' => $symbol,
-            'data_source' => 'perplexity_finance',
+            'data_source' => 'external_finance_api',
             'timestamp' => time(),
             'events' => [],
             'error' => [
-                'code' => 'TIMELINE_FETCH_ERROR',
+                'code' => 'NEWS_ANALYSIS_FETCH_ERROR',
                 'message' => $message,
                 'occurred_at' => date('Y-m-d H:i:s')
             ],
