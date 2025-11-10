@@ -14,7 +14,7 @@ use Wioex\SDK\Resources\Screens;
 use Wioex\SDK\Resources\Signals;
 use Wioex\SDK\Resources\Stocks;
 use Wioex\SDK\Resources\Streaming;
-use Wioex\SDK\Resources\Timeline;
+use Wioex\SDK\Resources\NewsAnalysis;
 use Wioex\SDK\Configuration\ConfigurationManager;
 use Wioex\SDK\Enums\Environment;
 use Wioex\SDK\Version;
@@ -55,7 +55,7 @@ class WioexClient
     private ?Account $account = null;
     private ?Streaming $streaming = null;
     private ?Logos $logos = null;
-    private ?Timeline $timeline = null;
+    private ?NewsAnalysis $newsAnalysis = null;
 
     /**
      * Create a new WioEX API client instance
@@ -436,24 +436,24 @@ class WioexClient
     }
 
     /**
-     * Access financial timeline data from Perplexity Finance
+     * Access stock news analysis and financial events
      *
-     * @return Timeline
+     * @return NewsAnalysis
      *
      * @example
      * ```php
-     * $timeline = $client->timeline()->get('TSLA');
-     * $events = $client->timeline()->getRecent('AAPL', 30);
-     * $major = $client->timeline()->getMajorEvents('MSFT');
+     * $news = $client->newsAnalysis()->get('TSLA');
+     * $recent = $client->newsAnalysis()->getRecent('AAPL', 30);
+     * $major = $client->newsAnalysis()->getMajorEvents('MSFT');
      * ```
      */
-    public function timeline(): Timeline
+    public function newsAnalysis(): NewsAnalysis
     {
-        if ($this->timeline === null) {
-            $this->timeline = new Timeline($this->httpClient);
+        if ($this->newsAnalysis === null) {
+            $this->newsAnalysis = new NewsAnalysis($this->httpClient);
         }
 
-        return $this->timeline;
+        return $this->newsAnalysis;
     }
 
     /**
@@ -470,7 +470,7 @@ class WioexClient
         $this->account = null;
         $this->streaming = null;
         $this->logos = null;
-        $this->timeline = null;
+        $this->newsAnalysis = null;
     }
 
     /**
