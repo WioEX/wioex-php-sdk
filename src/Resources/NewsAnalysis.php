@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wioex\SDK\Resources;
 
 use Wioex\SDK\Http\Client;
+use Wioex\SDK\Http\Response;
 
 /**
  * NewsAnalysis Resource - Stock News Analysis and Financial Events
@@ -12,17 +13,11 @@ use Wioex\SDK\Http\Client;
  * Provides access to analyzed financial news and events for stocks including
  * sentiment analysis, impact assessment, and categorized news events.
  */
-class NewsAnalysis
+class NewsAnalysis extends Resource
 {
-    private Client $client;
-
-    public function __construct(Client $client)
-    {
-        $this->client = $client;
-    }
 
     /**
-     * Get analyzed financial news and events for a symbol
+     * Get analyzed financial news and events for a symbol from external source
      *
      * @param string $symbol Stock symbol (e.g., 'TSLA', 'AAPL')
      * @param array $options Additional options:
@@ -35,14 +30,14 @@ class NewsAnalysis
      *
      * @example
      * ```php
-     * $news = $client->newsAnalysis()->get('TSLA');
-     * $news = $client->newsAnalysis()->get('AAPL', [
+     * $news = $client->newsAnalysis()->getFromExternal('TSLA');
+     * $news = $client->newsAnalysis()->getFromExternal('AAPL', [
      *     'version' => '2.18',
      *     'limit' => 100
      * ]);
      * ```
      */
-    public function get(string $symbol, array $options = []): array
+    public function getFromExternal(string $symbol, array $options = []): array
     {
         $symbol = strtoupper($symbol);
         
@@ -96,7 +91,7 @@ class NewsAnalysis
         $results = [];
         
         foreach ($symbols as $symbol) {
-            $results[$symbol] = $this->get($symbol, $options);
+            $results[$symbol] = $this->getFromExternal($symbol, $options);
         }
         
         return [
@@ -116,7 +111,7 @@ class NewsAnalysis
      */
     public function getRecent(string $symbol, int $days = 30): array
     {
-        return $this->get($symbol, [
+        return $this->getFromExternal($symbol, [
             'limit' => 100,
             'days_back' => $days,
             'filter' => 'recent'
@@ -135,7 +130,66 @@ class NewsAnalysis
         $options['filter'] = 'major';
         $options['event_types'] = ['earnings', 'announcements', 'splits', 'dividends'];
         
-        return $this->get($symbol, $options);
+        return $this->getFromExternal($symbol, $options);
+    }
+
+    /**
+     * Get news analysis from WioEX API endpoint
+     *
+     * @param string $symbol Stock symbol (e.g., 'TSLA', 'AAPL')
+     * @param array $options Additional options:
+     *   - limit: int (default: 50) Number of news events to return
+     *   - days: int (default: 30) Number of days to look back
+     *   - sentiment: string Filter by sentiment: 'positive', 'negative', 'neutral'
+     *   - impact: string Filter by impact: 'low', 'medium', 'high', 'major'
+     *   - type: string Filter by event type: 'earnings', 'news', 'announcements'
+     * 
+     * @return Response WioEX standardized news analysis response
+     *
+     * @example
+     * ```php
+     * // Get basic news analysis from WioEX API
+     * $analysis = $client->newsAnalysis()->getFromWioex('TSLA');
+     * 
+     * // With filters
+     * $recent = $client->newsAnalysis()->getFromWioex('AAPL', [
+     *     'limit' => 100,
+     *     'days' => 7,
+     *     'sentiment' => 'positive',
+     *     'impact' => 'high'
+     * ]);
+     *
+     * // Filter by event type
+     * $earnings = $client->newsAnalysis()->getFromWioex('MSFT', [
+     *     'type' => 'earnings',
+     *     'limit' => 20
+     * ]);
+     * ```
+     */
+    public function getFromWioex(string $symbol, array $options = []): Response
+    {
+        $symbol = strtoupper($symbol);
+        
+        $params = [
+            'ticker' => $symbol,
+            'limit' => $options['limit'] ?? 50,
+            'days' => $options['days'] ?? 30
+        ];
+
+        // Add optional filters
+        if (isset($options['sentiment'])) {
+            $params['sentiment'] = $options['sentiment'];
+        }
+
+        if (isset($options['impact'])) {
+            $params['impact'] = $options['impact'];
+        }
+
+        if (isset($options['type'])) {
+            $params['type'] = $options['type'];
+        }
+
+        return $this->get('/api/news/analysis', $params);
     }
 
     /**
