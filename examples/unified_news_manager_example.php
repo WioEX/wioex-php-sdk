@@ -361,10 +361,10 @@ echo "✓ Comprehensive error handling & fallbacks\n";
 echo "✓ Advanced filtering & options\n";
 echo "✓ Performance optimization with caching\n";
 echo "✓ Provider health monitoring\n";
-echo "✓ Backwards compatibility maintained\n";
+echo "✓ Clean, professional provider interface\n";
 
-echo "\n=== Migration Guide ===\n";
-echo "Old API (still works):\n";
+echo "\n=== API Guide ===\n";
+echo "Legacy API (deprecated):\n";
 echo "  \$client->news()->latest('TSLA')\n";
 echo "  \$client->newsAnalysis()->getFromExternal('TSLA')\n";
 echo "\n";
