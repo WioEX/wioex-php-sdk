@@ -15,35 +15,35 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.12.1 - Customer-Friendly Provider Naming:
-     * - ENHANCED: Neutral provider naming for customer-facing API
-     * - RENAMED: WioexProvider → NativeProvider (primary API provider)
-     * - RENAMED: PerplexityProvider → AnalysisProvider (AI analysis provider)
-     * - RENAMED: SocialProvider → SentimentProvider (sentiment analysis provider)
-     * - MAINTAINED: Full backwards compatibility with legacy provider names
-     * - IMPROVED: Customer-neutral terminology throughout documentation
-     * - ENHANCED: Clean provider interface without internal branding exposure
+     * Version 2.13.0 - Clean Provider Architecture:
+     * - BREAKING CHANGE: Removed all legacy provider aliases
+     * - CLEAN INTERFACE: Only three providers: native, analysis, sentiment
+     * - PROFESSIONAL: No internal company/service names exposed
+     * - SIMPLIFIED: Clean, purpose-based provider naming only
+     * - REMOVED: wioex, perplexity, social, external aliases
+     * - ENHANCED: Professional, vendor-neutral API interface
+     * - FOCUSED: Streamlined provider registration without legacy clutter
      * 
-     * Previous features (2.12.0):
+     * Previous features (2.12.x):
      * - Unified NewsManager with intelligent source routing
      * - Provider-based architecture with automatic selection
      * - Multi-source data aggregation and advanced fallbacks
-     * - Comprehensive caching and provider health monitoring
+     * - Customer-friendly provider naming with neutral terminology
      */
-    public const CURRENT = '2.12.1';
+    public const CURRENT = '2.13.0';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
-    public const MINOR = 12;
-    public const PATCH = 1;
+    public const MINOR = 13;
+    public const PATCH = 0;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-11-10';
-    public const CODENAME = 'Customer-Friendly Provider Naming';
+    public const CODENAME = 'Clean Provider Architecture';
 
     /**
      * Get current version string

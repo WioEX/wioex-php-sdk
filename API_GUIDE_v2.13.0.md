@@ -1,8 +1,8 @@
-# WioEX PHP SDK v2.12.0 Migration Guide
+# WioEX PHP SDK v2.13.0 API Guide
 
-## 🚀 Major New Feature: Unified NewsManager Architecture
+## 🚀 Clean Provider Architecture
 
-Version 2.12.0 introduces a revolutionary unified news management system that intelligently routes requests to the best provider based on content type while maintaining full backwards compatibility.
+Version 2.13.0 introduces a clean, professional provider architecture with neutral naming and simplified API interface.
 
 ## 📋 Summary of Changes
 
@@ -15,16 +15,16 @@ Version 2.12.0 introduces a revolutionary unified news management system that in
 - **Health Monitoring**: Real-time provider availability tracking
 - **Performance Optimization**: Enhanced caching and error handling
 
-### 🔄 Backwards Compatibility
-- **100% Compatible**: All existing code continues to work
-- **No Breaking Changes**: Existing APIs remain unchanged
-- **Gradual Migration**: Adopt new features at your own pace
+### 🎯 Clean Interface
+- **Professional Naming**: Only neutral, purpose-based provider names
+- **Simplified API**: Three clean providers: native, analysis, sentiment
+- **No Legacy Clutter**: Removed all internal/third-party naming references
 
 ## 🗺️ Migration Paths
 
-### Current API (Still Supported)
+### Legacy API (Deprecated)
 ```php
-// These continue to work exactly as before
+// These legacy methods are deprecated
 $client->news()->latest('TSLA');
 $client->news()->companyAnalysis('TSLA');
 $client->news()->trumpEffect(['sentiment' => ['trumpy']]);
@@ -32,9 +32,9 @@ $client->newsAnalysis()->getFromExternal('TSLA');
 $client->newsAnalysis()->getFromWioex('TSLA');
 ```
 
-### New Unified API (Recommended)
+### New Clean API
 ```php
-// Unified interface with intelligent routing
+// Clean, professional interface
 $newsManager = $client->newsManager();
 
 // Auto-select best provider for each content type

@@ -260,12 +260,6 @@ class NewsManager
         $this->registerProvider('native', NativeProvider::class);
         $this->registerProvider('analysis', AnalysisProvider::class);
         $this->registerProvider('sentiment', SentimentProvider::class);
-        
-        // Legacy aliases for backwards compatibility
-        $this->registerProvider('wioex', NativeProvider::class);
-        $this->registerProvider('perplexity', AnalysisProvider::class);
-        $this->registerProvider('external', AnalysisProvider::class);
-        $this->registerProvider('social', SentimentProvider::class);
     }
 
     /**
