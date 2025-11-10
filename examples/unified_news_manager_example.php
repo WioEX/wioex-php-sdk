@@ -73,39 +73,39 @@ echo "Example 2: Explicit Provider Selection\n";
 echo str_repeat('-', 60) . "\n";
 
 try {
-    // Force WioEX provider
-    $wioexNews = $newsManager->get('AAPL', [
-        'source' => 'wioex',
+    // Force Native provider
+    $nativeNews = $newsManager->get('AAPL', [
+        'source' => 'native',
         'type' => 'news'
     ]);
     
-    if ($wioexNews->successful()) {
-        echo "✓ WioEX Provider: Successfully retrieved news\n";
-        $data = $wioexNews->json();
+    if ($nativeNews->successful()) {
+        echo "✓ Native Provider: Successfully retrieved news\n";
+        $data = $nativeNews->data();
         echo "  Status: " . ($data['status'] ?? 'unknown') . "\n";
     }
 
-    // Force Perplexity provider
-    $perplexityAnalysis = $newsManager->get('AAPL', [
-        'source' => 'perplexity',
+    // Force Analysis provider
+    $analysisProvider = $newsManager->get('AAPL', [
+        'source' => 'analysis',
         'type' => 'analysis'
     ]);
     
-    if ($perplexityAnalysis->successful()) {
-        echo "✓ Perplexity Provider: Successfully retrieved analysis\n";
-        $data = $perplexityAnalysis->json();
+    if ($analysisProvider->successful()) {
+        echo "✓ Analysis Provider: Successfully retrieved analysis\n";
+        $data = $analysisProvider->data();
         echo "  Events: " . count($data['events'] ?? []) . " items\n";
     }
 
-    // Force Social provider
-    $socialSentiment = $newsManager->get('AAPL', [
-        'source' => 'social',
+    // Force Sentiment provider
+    $sentimentProvider = $newsManager->get('AAPL', [
+        'source' => 'sentiment',
         'type' => 'sentiment'
     ]);
     
-    if ($socialSentiment->successful()) {
-        echo "✓ Social Provider: Successfully retrieved sentiment\n";
-        $data = $socialSentiment->json();
+    if ($sentimentProvider->successful()) {
+        echo "✓ Sentiment Provider: Successfully retrieved sentiment\n";
+        $data = $sentimentProvider->data();
         echo "  Overall sentiment: " . ($data['overall_sentiment'] ?? 'unknown') . "\n";
     }
 
@@ -121,7 +121,7 @@ echo str_repeat('-', 60) . "\n";
 
 try {
     $multiSource = $newsManager->getFromMultipleSources('MSFT', 
-        ['wioex', 'perplexity', 'social'], 
+        ['native', 'analysis', 'sentiment'], 
         ['type' => 'analysis', 'limit' => 5]
     );
     
@@ -198,7 +198,7 @@ try {
     // Advanced sentiment analysis with filters
     $advancedSentiment = $newsManager->get('NVDA', [
         'type' => 'sentiment',
-        'source' => 'social',
+        'source' => 'sentiment',
         'sentiment' => ['positive', 'negative'], // Exclude neutral
         'timeframe' => '7d',
         'limit' => 50
@@ -223,7 +223,7 @@ try {
     // Events analysis with type filtering
     $events = $newsManager->get('NVDA', [
         'type' => 'events',
-        'source' => 'wioex',
+        'source' => 'native',
         'event_types' => ['earnings', 'announcements'],
         'timeframe' => '30d'
     ]);
@@ -250,25 +250,25 @@ echo str_repeat('-', 60) . "\n";
 
 try {
     // Direct access to specific providers
-    $wioexProvider = $newsManager->provider('wioex');
-    $perplexityProvider = $newsManager->provider('perplexity');
+    $nativeProvider = $newsManager->provider('native');
+    $analysisProvider = $newsManager->provider('analysis');
     
     echo "Available providers:\n";
-    echo "  • WioEX: " . $wioexProvider->getName() . "\n";
-    echo "    Supports: " . implode(', ', array_keys(array_filter($wioexProvider->getCapabilities()['features'] ?? []))) . "\n";
+    echo "  • Native: " . $nativeProvider->getName() . "\n";
+    echo "    Supports: " . implode(', ', array_keys(array_filter($nativeProvider->getCapabilities()['features'] ?? []))) . "\n";
     
-    echo "  • Perplexity: " . $perplexityProvider->getName() . "\n";  
-    echo "    Supports: " . implode(', ', array_keys(array_filter($perplexityProvider->getCapabilities()['features'] ?? []))) . "\n";
+    echo "  • Analysis: " . $analysisProvider->getName() . "\n";  
+    echo "    Supports: " . implode(', ', array_keys(array_filter($analysisProvider->getCapabilities()['features'] ?? []))) . "\n";
     
     // Use provider directly
-    $directNews = $wioexProvider->getNews('GOOGL');
+    $directNews = $nativeProvider->getNews('GOOGL');
     if ($directNews->successful()) {
-        echo "✓ Direct WioEX provider access successful\n";
+        echo "✓ Direct Native provider access successful\n";
     }
     
-    $directAnalysis = $perplexityProvider->getAnalysis('GOOGL');
+    $directAnalysis = $analysisProvider->getAnalysis('GOOGL');
     if ($directAnalysis->successful()) {
-        echo "✓ Direct Perplexity provider access successful\n";
+        echo "✓ Direct Analysis provider access successful\n";
     }
 
 } catch (Exception $e) {
@@ -371,7 +371,7 @@ echo "\n";
 echo "New Unified API:\n";
 echo "  \$client->newsManager()->get('TSLA', ['type' => 'news'])\n";
 echo "  \$client->newsManager()->get('TSLA', ['type' => 'analysis'])\n";
-echo "  \$client->newsManager()->get('TSLA', ['source' => 'wioex'])\n";
-echo "  \$client->newsManager()->get('TSLA', ['source' => 'perplexity'])\n";
+echo "  \$client->newsManager()->get('TSLA', ['source' => 'native'])\n";
+echo "  \$client->newsManager()->get('TSLA', ['source' => 'analysis'])\n";
 
 echo "\n=== Examples Complete ===\n";

@@ -9,15 +9,15 @@ use Wioex\SDK\Http\Response;
 use Wioex\SDK\Http\Client;
 
 /**
- * WioexProvider - WioEX native news and analysis provider
+ * NativeProvider - Primary native news and analysis provider
  *
- * Provides access to WioEX's internal news sources including:
+ * Provides access to native financial news sources including:
  * - Latest financial news
  * - AI-powered company analysis  
- * - Trump Effect social media analysis
+ * - Social media sentiment analysis
  * - Company-specific news analysis
  */
-class WioexProvider implements SourceProviderInterface
+class NativeProvider implements SourceProviderInterface
 {
     private Client $client;
     
@@ -33,7 +33,7 @@ class WioexProvider implements SourceProviderInterface
      */
     public function getName(): string
     {
-        return 'wioex';
+        return 'native';
     }
 
     /**
@@ -140,7 +140,7 @@ class WioexProvider implements SourceProviderInterface
     public function getCapabilities(): array
     {
         return [
-            'provider' => 'wioex',
+            'provider' => 'native',
             'supports' => self::SUPPORTED_TYPES,
             'features' => [
                 'real_time_news' => true,
@@ -159,7 +159,7 @@ class WioexProvider implements SourceProviderInterface
                 'max_timeframe_days' => 365
             ],
             'data_sources' => [
-                'wioex_native',
+                'native_api',
                 'financial_news_feeds',
                 'social_media_analysis',
                 'ai_analysis_engine'
@@ -184,7 +184,7 @@ class WioexProvider implements SourceProviderInterface
                 'timeout' => 30,
                 'page_size' => 20,
                 'timeframe' => '30d',
-                'format' => 'wioex_standard'
+                'format' => 'standard'
             ],
             'authentication' => 'api_key_required'
         ];
@@ -267,7 +267,7 @@ class WioexProvider implements SourceProviderInterface
                         'date' => $item['date'] ?? $item['published_at'] ?? date('Y-m-d'),
                         'impact_level' => $this->calculateImpactLevel($item),
                         'description' => $item['summary'] ?? $item['content'] ?? '',
-                        'source' => 'wioex'
+                        'source' => 'native'
                     ];
                 }
             }
@@ -277,7 +277,7 @@ class WioexProvider implements SourceProviderInterface
             'symbol' => $symbol,
             'events' => $events,
             'total' => count($events),
-            'source' => 'wioex',
+            'source' => 'native',
             'timestamp' => time()
         ]);
     }

@@ -9,15 +9,15 @@ use Wioex\SDK\Http\Response;
 use Wioex\SDK\Http\Client;
 
 /**
- * SocialProvider - Social media sentiment and market impact provider
+ * SentimentProvider - Social media sentiment and market impact provider
  *
  * Specializes in social media analysis including:
- * - Trump Effect social media monitoring
- * - Social sentiment analysis
+ * - Social media sentiment monitoring
+ * - Market sentiment analysis
  * - Market mood tracking
  * - Influencer impact analysis
  */
-class SocialProvider implements SourceProviderInterface
+class SentimentProvider implements SourceProviderInterface
 {
     private Client $client;
     
@@ -33,7 +33,7 @@ class SocialProvider implements SourceProviderInterface
      */
     public function getName(): string
     {
-        return 'social';
+        return 'sentiment';
     }
 
     /**
@@ -158,7 +158,7 @@ class SocialProvider implements SourceProviderInterface
     public function getCapabilities(): array
     {
         return [
-            'provider' => 'social',
+            'provider' => 'sentiment',
             'supports' => self::SUPPORTED_TYPES,
             'features' => [
                 'trump_effect_monitoring' => true,
@@ -317,8 +317,8 @@ class SocialProvider implements SourceProviderInterface
         // Calculate analysis metrics
         $analysis = [
             'symbol' => $symbol,
-            'provider' => 'social',
-            'social_analysis' => [
+            'provider' => 'sentiment',
+            'sentiment_analysis' => [
                 'mood_index' => $moodIndex,
                 'mood_interpretation' => $this->interpretMoodIndex($moodIndex),
                 'total_posts' => count($posts),
@@ -351,7 +351,7 @@ class SocialProvider implements SourceProviderInterface
 
         $sentimentData = [
             'symbol' => $symbol,
-            'provider' => 'social',
+            'provider' => 'sentiment',
             'overall_sentiment' => $this->interpretMoodIndex($moodIndex),
             'mood_index' => $moodIndex,
             'sentiment_metrics' => [
@@ -379,7 +379,7 @@ class SocialProvider implements SourceProviderInterface
     private function transformToSocialEventsFormat(Response $response, string $symbol): Response
     {
         $data = $response->json();
-        $posts = $data['posts'] ?? $data['social_analysis']['posts'] ?? [];
+        $posts = $data['posts'] ?? $data['sentiment_analysis']['posts'] ?? [];
 
         // Identify "events" in social media (viral posts, sentiment spikes, etc.)
         $socialEvents = [];
@@ -394,7 +394,7 @@ class SocialProvider implements SourceProviderInterface
                     'sentiment' => $this->normalizeSentiment($post['sentiment']['name'] ?? 'neutral'),
                     'impact_level' => $this->calculateSocialImpact($post),
                     'timestamp' => $post['timestamp'] ?? $post['time'] ?? time(),
-                    'source' => 'social',
+                    'source' => 'sentiment',
                     'engagement_score' => $this->calculateEngagementScore($post),
                     'virality_score' => $this->calculateViralityScore($post)
                 ];
@@ -405,7 +405,7 @@ class SocialProvider implements SourceProviderInterface
             'symbol' => $symbol,
             'social_events' => $socialEvents,
             'total_events' => count($socialEvents),
-            'provider' => 'social',
+            'provider' => 'sentiment',
             'event_types' => ['social_viral', 'sentiment_spike'],
             'timestamp' => time()
         ]);

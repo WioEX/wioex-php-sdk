@@ -6,9 +6,9 @@ namespace Wioex\SDK\News;
 
 use Wioex\SDK\Http\Response;
 use Wioex\SDK\News\SourceProviderInterface;
-use Wioex\SDK\News\Providers\WioexProvider;
-use Wioex\SDK\News\Providers\PerplexityProvider;
-use Wioex\SDK\News\Providers\SocialProvider;
+use Wioex\SDK\News\Providers\NativeProvider;
+use Wioex\SDK\News\Providers\AnalysisProvider;
+use Wioex\SDK\News\Providers\SentimentProvider;
 use Wioex\SDK\Http\Client;
 use Wioex\SDK\Cache\CacheInterface;
 use Wioex\SDK\ErrorReporter;
@@ -24,7 +24,7 @@ class NewsManager
     private Client $httpClient;
     private array $providers = [];
     private array $providerInstances = [];
-    private string $defaultProvider = 'wioex';
+    private string $defaultProvider = 'native';
     private ?CacheInterface $cache = null;
     private ?ErrorReporter $errorReporter = null;
 
@@ -36,7 +36,7 @@ class NewsManager
     /**
      * Supported source types
      */
-    private const SOURCE_TYPES = ['wioex', 'external', 'social', 'perplexity'];
+    private const SOURCE_TYPES = ['native', 'analysis', 'sentiment'];
 
     public function __construct(Client $httpClient, ?CacheInterface $cache = null)
     {
@@ -257,12 +257,15 @@ class NewsManager
      */
     private function registerDefaultProviders(): void
     {
-        $this->registerProvider('wioex', WioexProvider::class);
-        $this->registerProvider('perplexity', PerplexityProvider::class);
-        $this->registerProvider('social', SocialProvider::class);
+        $this->registerProvider('native', NativeProvider::class);
+        $this->registerProvider('analysis', AnalysisProvider::class);
+        $this->registerProvider('sentiment', SentimentProvider::class);
         
-        // Aliases
-        $this->registerProvider('external', PerplexityProvider::class);
+        // Legacy aliases for backwards compatibility
+        $this->registerProvider('wioex', NativeProvider::class);
+        $this->registerProvider('perplexity', AnalysisProvider::class);
+        $this->registerProvider('external', AnalysisProvider::class);
+        $this->registerProvider('social', SentimentProvider::class);
     }
 
     /**
@@ -272,13 +275,13 @@ class NewsManager
     {
         // Provider priority based on content type
         $priorities = [
-            'news' => ['wioex', 'perplexity', 'social'],
-            'analysis' => ['perplexity', 'wioex', 'social'],
-            'sentiment' => ['social', 'perplexity', 'wioex'],
-            'events' => ['wioex', 'perplexity', 'social']
+            'news' => ['native', 'analysis', 'sentiment'],
+            'analysis' => ['analysis', 'native', 'sentiment'],
+            'sentiment' => ['sentiment', 'analysis', 'native'],
+            'events' => ['native', 'analysis', 'sentiment']
         ];
 
-        $candidates = $priorities[$type] ?? ['wioex'];
+        $candidates = $priorities[$type] ?? ['native'];
 
         // Find first available and healthy provider
         foreach ($candidates as $provider) {
@@ -325,7 +328,7 @@ class NewsManager
         $fallbackOrder = $this->selectBestProvider($type, $options);
         $tried = [$excludeSource];
 
-        foreach ([$fallbackOrder, 'wioex', 'perplexity'] as $fallbackSource) {
+        foreach ([$fallbackOrder, 'native', 'analysis'] as $fallbackSource) {
             if (in_array($fallbackSource, $tried)) {
                 continue;
             }

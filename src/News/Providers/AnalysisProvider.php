@@ -9,15 +9,15 @@ use Wioex\SDK\Http\Response;
 use Wioex\SDK\Http\Client;
 
 /**
- * PerplexityProvider - External news analysis provider using Perplexity Finance API
+ * AnalysisProvider - Advanced news analysis provider using external AI systems
  *
- * Provides access to Perplexity's financial news analysis including:
+ * Provides access to advanced financial news analysis including:
  * - Advanced sentiment analysis
  * - Event impact classification  
  * - Financial timeline data
  * - AI-powered news interpretation
  */
-class PerplexityProvider implements SourceProviderInterface
+class AnalysisProvider implements SourceProviderInterface
 {
     private Client $client;
     
@@ -33,7 +33,7 @@ class PerplexityProvider implements SourceProviderInterface
      */
     public function getName(): string
     {
-        return 'perplexity';
+        return 'analysis';
     }
 
     /**
@@ -81,7 +81,7 @@ class PerplexityProvider implements SourceProviderInterface
                 'error' => 'Analysis failed',
                 'message' => $e->getMessage(),
                 'symbol' => $symbol,
-                'provider' => 'perplexity'
+                'provider' => 'analysis'
             ]);
             
             $mockResponse = new \GuzzleHttp\Psr7\Response(500, [], $body);
@@ -156,7 +156,7 @@ class PerplexityProvider implements SourceProviderInterface
     public function getCapabilities(): array
     {
         return [
-            'provider' => 'perplexity',
+            'provider' => 'analysis',
             'supports' => self::SUPPORTED_TYPES,
             'features' => [
                 'ai_analysis' => true,
@@ -174,7 +174,7 @@ class PerplexityProvider implements SourceProviderInterface
                 'max_timeline_days' => 90
             ],
             'data_sources' => [
-                'perplexity_finance_api',
+                'external_finance_api',
                 'financial_news_aggregation', 
                 'ai_powered_analysis',
                 'real_time_market_data'
@@ -189,7 +189,7 @@ class PerplexityProvider implements SourceProviderInterface
     {
         return [
             'name' => $this->getName(),
-            'base_url' => 'https://www.perplexity.ai',
+            'base_url' => 'https://external-analysis-api.example.com',
             'endpoints' => [
                 'trace' => '/cdn-cgi/trace',
                 'finance' => '/rest/finance/timeline/v2',
@@ -197,7 +197,7 @@ class PerplexityProvider implements SourceProviderInterface
             'default_options' => [
                 'version' => '2.18',
                 'timeout' => 30,
-                'format' => 'wioex'
+                'format' => 'standard'
             ],
             'authentication' => 'session_based',
             'session_management' => true
@@ -373,7 +373,7 @@ class PerplexityProvider implements SourceProviderInterface
             'events' => $events,
             'sentiment_summary' => $sentimentSummary,
             'total_events' => count($events),
-            'provider' => 'perplexity',
+            'provider' => 'analysis',
             'timestamp' => time(),
             'timeframe' => $options['timeframe'] ?? '30d'
         ];
@@ -394,7 +394,7 @@ class PerplexityProvider implements SourceProviderInterface
             'impact_level' => $this->normalizeImpactLevel($item['impact'] ?? null),
             'summary' => $item['summary'] ?? $item['description'] ?? '',
             'content' => $item['content'] ?? $item['full_text'] ?? '',
-            'source' => 'perplexity',
+            'source' => 'analysis',
             'confidence' => $item['confidence'] ?? 0.5,
             'sectors' => $item['sectors'] ?? [],
             'affected_securities' => $item['affected_securities'] ?? []
@@ -449,7 +449,7 @@ class PerplexityProvider implements SourceProviderInterface
             'sentiment_distribution' => $data['sentiment_summary'] ?? [],
             'sentiment_timeline' => $this->buildSentimentTimeline($events),
             'confidence_score' => $this->calculateConfidenceScore($events),
-            'provider' => 'perplexity',
+            'provider' => 'analysis',
             'timestamp' => time()
         ];
 
@@ -474,7 +474,7 @@ class PerplexityProvider implements SourceProviderInterface
             'total_events' => count($majorEvents),
             'event_types' => $this->categorizeEvents($majorEvents),
             'impact_distribution' => $this->analyzeImpactDistribution($majorEvents),
-            'provider' => 'perplexity',
+            'provider' => 'analysis',
             'timestamp' => time()
         ];
     }

@@ -49,17 +49,17 @@ $events = $newsManager->get('TSLA', ['type' => 'events']);
 ### Content Type → Best Provider
 | Content Type | Auto-Selected Provider | Alternative |
 |--------------|----------------------|------------|
-| `news` | WioEX (native) | Perplexity |
-| `analysis` | Perplexity (AI-powered) | WioEX |
-| `sentiment` | Social (Trump Effect) | Perplexity |
-| `events` | WioEX (structured) | Perplexity |
+| `news` | Native (primary API) | Analysis |
+| `analysis` | Analysis (AI-powered) | Native |
+| `sentiment` | Sentiment (social media) | Analysis |
+| `events` | Native (structured) | Analysis |
 
 ### Explicit Provider Selection
 ```php
 // Force specific provider
-$wioexNews = $newsManager->get('TSLA', ['source' => 'wioex']);
-$perplexityAnalysis = $newsManager->get('TSLA', ['source' => 'perplexity']);
-$socialSentiment = $newsManager->get('TSLA', ['source' => 'social']);
+$nativeNews = $newsManager->get('TSLA', ['source' => 'native']);
+$analysisData = $newsManager->get('TSLA', ['source' => 'analysis']);
+$sentimentData = $newsManager->get('TSLA', ['source' => 'sentiment']);
 ```
 
 ## 🔧 Advanced Features
@@ -68,7 +68,7 @@ $socialSentiment = $newsManager->get('TSLA', ['source' => 'social']);
 ```php
 // Get data from multiple providers simultaneously
 $multiSource = $newsManager->getFromMultipleSources('TSLA', 
-    ['wioex', 'perplexity', 'social'],
+    ['native', 'analysis', 'sentiment'],
     ['type' => 'analysis']
 );
 
@@ -213,7 +213,7 @@ $news = $newsManager->get('TSLA', ['type' => 'news']);
 // Get AI analysis (auto-routed to Perplexity)
 $analysis = $newsManager->get('TSLA', ['type' => 'analysis']);
 
-// Get social sentiment (auto-routed to Trump Effect)
+// Get social sentiment (auto-routed to Sentiment provider)
 $sentiment = $newsManager->get('TSLA', ['type' => 'sentiment']);
 ```
 
@@ -221,13 +221,13 @@ $sentiment = $newsManager->get('TSLA', ['type' => 'sentiment']);
 ```php
 // Multi-provider comparison
 $comparison = $newsManager->getFromMultipleSources('AAPL', 
-    ['wioex', 'perplexity', 'social'],
+    ['native', 'analysis', 'sentiment'],
     ['type' => 'sentiment', 'limit' => 20]
 );
 
 // Direct provider access
-$wioexProvider = $newsManager->provider('wioex');
-$directNews = $wioexProvider->getNews('GOOGL');
+$nativeProvider = $newsManager->provider('native');
+$directNews = $nativeProvider->getNews('GOOGL');
 
 // Health monitoring
 $health = $newsManager->getProvidersHealth();

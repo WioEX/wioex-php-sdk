@@ -15,37 +15,35 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.12.0 - Unified NewsManager Architecture:
-     * - NEW MAJOR FEATURE: Unified NewsManager with intelligent source routing
-     * - NEW: Provider-based architecture (WioexProvider, PerplexityProvider, SocialProvider)
-     * - NEW: Automatic provider selection based on content type
-     * - NEW: Multi-source data aggregation and comparison
-     * - NEW: Advanced fallback mechanisms and error handling
-     * - NEW: Comprehensive caching and performance optimization
-     * - NEW: Provider health monitoring and capabilities management
-     * - ENHANCED: Unified API interface with backwards compatibility
-     * - ENHANCED: Advanced filtering and options for all providers
-     * - ARCHITECTURE: Scalable and extensible provider system
+     * Version 2.12.1 - Customer-Friendly Provider Naming:
+     * - ENHANCED: Neutral provider naming for customer-facing API
+     * - RENAMED: WioexProvider → NativeProvider (primary API provider)
+     * - RENAMED: PerplexityProvider → AnalysisProvider (AI analysis provider)
+     * - RENAMED: SocialProvider → SentimentProvider (sentiment analysis provider)
+     * - MAINTAINED: Full backwards compatibility with legacy provider names
+     * - IMPROVED: Customer-neutral terminology throughout documentation
+     * - ENHANCED: Clean provider interface without internal branding exposure
      * 
-     * Previous features (2.11.1):
-     * - NewsAnalysis clarity improvements and naming consistency
-     * - External Finance API integration and sentiment analysis
-     * - Cache system fixes and console cleanup
+     * Previous features (2.12.0):
+     * - Unified NewsManager with intelligent source routing
+     * - Provider-based architecture with automatic selection
+     * - Multi-source data aggregation and advanced fallbacks
+     * - Comprehensive caching and provider health monitoring
      */
-    public const CURRENT = '2.12.0';
+    public const CURRENT = '2.12.1';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
     public const MINOR = 12;
-    public const PATCH = 0;
+    public const PATCH = 1;
 
     /**
      * Version metadata
      */
     public const RELEASE_DATE = '2025-11-10';
-    public const CODENAME = 'Unified NewsManager Architecture';
+    public const CODENAME = 'Customer-Friendly Provider Naming';
 
     /**
      * Get current version string
