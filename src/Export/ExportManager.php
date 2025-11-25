@@ -179,7 +179,7 @@ class ExportManager
                 $validation['is_valid'] = false;
                 $validation['errors'][] = "Exporter for {$format->value} is not available";
                 $requiredLibraries = $exporter->getRequiredLibraries();
-                if (!empty($requiredLibraries)) {
+                if (($requiredLibraries !== null && $requiredLibraries !== '' && $requiredLibraries !== [])) {
                     $validation['errors'][] = "Required libraries: " . implode(', ', $requiredLibraries);
                 }
             }
@@ -198,7 +198,7 @@ class ExportManager
             $validation['estimated_duration'] = $this->estimateExportDuration($estimatedSize, $format);
 
             // Check data structure
-            if (empty($data)) {
+            if (($data === null || $data === '' || $data === [])) {
                 $validation['warnings'][] = "Export data is empty";
             } elseif (count($data) > 100000) {
                 $validation['warnings'][] = "Large dataset detected (" . count($data) . " rows). Consider using chunked export.";
@@ -416,7 +416,7 @@ class ExportManager
 
     private function getAverageExportTime(): float
     {
-        if (empty($this->statistics)) {
+        if (($this->statistics === null || $this->statistics === '' || $this->statistics === [])) {
             return 0.0;
         }
 

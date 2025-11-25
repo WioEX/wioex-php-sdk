@@ -137,9 +137,9 @@ enum ValidationState: string
         $hasPending = false;
 
         foreach ($results as $result) {
-            if ($result === false || (is_array($result) && !empty($result['errors']))) {
+            if ($result === false || (is_array($result) && ($result['errors'] !== null && $result['errors'] !== '' && $result['errors'] !== []))) {
                 $hasErrors = true;
-            } elseif (is_array($result) && !empty($result['warnings'])) {
+            } elseif (is_array($result) && ($result['warnings'] !== null && $result['warnings'] !== '' && $result['warnings'] !== [])) {
                 $hasWarnings = true;
             } elseif (is_null($result)) {
                 $hasPending = true;
@@ -163,7 +163,7 @@ enum ValidationState: string
 
     public static function merge(self ...$states): self
     {
-        if (empty($states)) {
+        if (($states === null || $states === '' || $states === [])) {
             return self::UNKNOWN;
         }
 

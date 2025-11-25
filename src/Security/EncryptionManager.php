@@ -147,7 +147,7 @@ class EncryptionManager
 
     public function deriveKeyFromPassword(string $password, string $salt = '', string $algorithm = 'sha256', int $iterations = 10000): string
     {
-        if (empty($salt)) {
+        if (($salt === null || $salt === '' || $salt === [])) {
             $salt = 'wioex-sdk-' . bin2hex(random_bytes(16));
         }
 
@@ -207,7 +207,7 @@ class EncryptionManager
             'openssl_available' => extension_loaded('openssl'),
             'supported_ciphers' => $this->supportedCiphers,
             'available_ciphers' => openssl_get_cipher_methods(),
-            'security_headers_enabled' => !empty($securityConfig['headers'] ?? [])
+            'security_headers_enabled' => ($securityConfig['headers'] ?? [] !== null && $securityConfig['headers'] ?? [] !== '' && $securityConfig['headers'] ?? [] !== [])
         ];
     }
 }

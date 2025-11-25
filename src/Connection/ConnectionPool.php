@@ -130,7 +130,7 @@ class ConnectionPool
     {
         $availableConnections = $this->getAvailableConnections();
 
-        if (empty($availableConnections)) {
+        if (($availableConnections === null || $availableConnections === '' || $availableConnections === [])) {
             return null;
         }
 
@@ -447,7 +447,7 @@ class ConnectionPool
 
     private function calculateAverageErrorRate(array $connections): float
     {
-        if (empty($connections)) {
+        if (($connections === null || $connections === '' || $connections === [])) {
             return 0.0;
         }
 
@@ -457,7 +457,7 @@ class ConnectionPool
 
     private function calculateAverageHealthScore(array $connections): float
     {
-        if (empty($connections)) {
+        if (($connections === null || $connections === '' || $connections === [])) {
             return 0.0;
         }
 

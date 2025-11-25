@@ -430,7 +430,7 @@ class ErrorReporter
      */
     public function flushErrorQueue(): bool
     {
-        if (empty($this->errorQueue) || !$this->enabled) {
+        if (($this->errorQueue === null || $this->errorQueue === '' || $this->errorQueue === []) || !$this->enabled) {
             return false;
         }
 
@@ -728,17 +728,20 @@ class ErrorReporter
     {
         // Patterns to remove from error messages
         $patterns = [
-            '/api[_-]?key[_-:]?\s*[^\s\]},]{10,}/i' => '[API_KEY]',
-            '/token[_-:]?\s*[^\s\]},]{10,}/i' => '[TOKEN]',
-            '/secret[_-:]?\s*[^\s\]},]{10,}/i' => '[SECRET]',
-            '/password[_-:]?\s*[^\s\]},]{4,}/i' => '[PASSWORD]',
-            '/authorization:\s*bearer\s+[^\s\]},]+/i' => 'authorization: bearer [TOKEN]',
-            '/\/[a-z]:[^\/\s\]},]+/i' => '/[PATH]', // Windows paths
-            '/\/home\/[^\/\s\]},]+/i' => '/home/[USER]', // Unix home paths
+            '/api[_-]?key[_-:]?\s*[^\s\\\[\]},]{10,}/i' => '[API_KEY]',
+            '/token[_-:]?\s*[^\s\\\[\]},]{10,}/i' => '[TOKEN]',
+            '/secret[_-:]?\s*[^\s\\\[\]},]{10,}/i' => '[SECRET]',
+            '/password[_-:]?\s*[^\s\\\[\]},]{4,}/i' => '[PASSWORD]',
+            '/authorization:\s*bearer\s+[^\s\\\[\]},]+/i' => 'authorization: bearer [TOKEN]',
+            '/\/[a-z]:[^\/\s\\\[\]},]+/i' => '/[PATH]', // Windows paths
+            '/\/home\/[^\/\s\\\[\]},]+/i' => '/home/[USER]', // Unix home paths
         ];
         
         foreach ($patterns as $pattern => $replacement) {
-            $message = preg_replace($pattern, $replacement, $message);
+            $result = preg_replace($pattern, $replacement, $message);
+            if ($result !== null) {
+                $message = $result;
+            }
         }
         
         return $message;

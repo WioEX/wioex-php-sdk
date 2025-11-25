@@ -197,7 +197,7 @@ class JsonExporter extends AbstractExporter
         $options = $this->validateOptions(array_merge($this->getDefaultOptions(), $options));
         $chunkSize = $options['chunk_size'] ?? 1000;
 
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return $this->exportToFile([], $filename, $options);
         }
 
@@ -309,7 +309,7 @@ class JsonExporter extends AbstractExporter
 
     public function estimateSize(array $data, array $options = []): int
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return 2; // Empty array: []
         }
 

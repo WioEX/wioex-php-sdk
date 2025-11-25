@@ -307,6 +307,15 @@ class Client
 
         // 500+ Server Errors
         if ($statusCode >= 500) {
+            if ($statusCode === 503) {
+                $exception = ServerException::serviceUnavailable();
+                $this->reportError($exception, $response, $method, $path, $options, [
+                    'service_unavailable_detected' => true,
+                    'original_message' => $errorMessage
+                ]);
+                throw $exception;
+            }
+            
             $exception = ServerException::internalError($errorMessage);
             $this->reportError($exception, $response, $method, $path, $options);
             throw $exception;
@@ -503,5 +512,15 @@ class Client
         }
 
         return substr($value, 0, 2) . str_repeat('*', $length - 4) . substr($value, -2);
+    }
+
+    public function sendAsync(\Psr\Http\Message\RequestInterface $request): \GuzzleHttp\Promise\PromiseInterface
+    {
+        return $this->client->sendAsync($request);
+    }
+
+    public function getGuzzleClient(): GuzzleClient
+    {
+        return $this->client;
     }
 }

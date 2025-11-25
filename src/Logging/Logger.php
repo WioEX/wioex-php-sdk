@@ -323,7 +323,7 @@ class Logger
         $level = $logEntry['level'];
         $timestamp = $includeTimestamp ? date('Y-m-d H:i:s', (int) $logEntry['timestamp']) : '';
         $message = $logEntry['message'];
-        $context = !empty($logEntry['context']) ? ' ' . json_encode($logEntry['context']) : '';
+        $context = ($logEntry['context'] !== null && $logEntry['context'] !== '' && $logEntry['context'] !== []) ? ' ' . json_encode($logEntry['context']) : '';
 
         $parts = array_filter([
             $timestamp,

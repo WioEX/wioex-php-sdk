@@ -423,7 +423,7 @@ class MiddlewarePipeline
 
     private function getExecutionSummary(): array
     {
-        if (empty($this->executionMetrics)) {
+        if (($this->executionMetrics === null || $this->executionMetrics === '' || $this->executionMetrics === [])) {
             return [];
         }
 
@@ -443,7 +443,7 @@ class MiddlewarePipeline
 
     private function calculateAverageDuration(array $metrics): float
     {
-        if (empty($metrics)) {
+        if (($metrics === null || $metrics === '' || $metrics === [])) {
             return 0.0;
         }
 
@@ -453,7 +453,7 @@ class MiddlewarePipeline
 
     private function calculateMaxDuration(array $metrics): float
     {
-        if (empty($metrics)) {
+        if (($metrics === null || $metrics === '' || $metrics === [])) {
             return 0.0;
         }
 

@@ -311,7 +311,7 @@ class ValidationReport
         }
 
         // Email/URL format errors
-        $formatErrors = array_filter($errorTypes, fn($type) => in_array($type, ['email_format', 'url_format']));
+        $formatErrors = array_filter($errorTypes, fn($type) => in_array($type, ['email_format', 'url_format'], true));
         if (count($formatErrors) > 0) {
             $this->addSuggestion('Verify that email addresses and URLs are properly formatted');
         }

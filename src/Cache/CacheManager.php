@@ -52,7 +52,7 @@ class CacheManager implements CacheInterface
             // Report error if ErrorReporter is available
             if (class_exists('\Wioex\SDK\ErrorReporter')) {
                 try {
-                    (new \Wioex\SDK\ErrorReporter([]))->report($e, [
+                    (new \Wioex\SDK\ErrorReporter(new \Wioex\SDK\Config([])))->report($e, [
                         'context' => 'cache_initialization_error',
                         'requested_driver' => $config['default'] ?? 'auto',
                         'fallback_driver' => 'memory'
@@ -104,7 +104,7 @@ class CacheManager implements CacheInterface
         };
     }
 
-    public function driver(string $name = null): CacheInterface
+    public function driver(?string $name = null): CacheInterface
     {
         $driverName = $name ?? $this->defaultDriver;
 
@@ -460,7 +460,7 @@ class CacheManager implements CacheInterface
         return match ($driver) {
             'redis' => extension_loaded('redis'),
             'memcached' => extension_loaded('memcached'),
-            'opcache' => function_exists('opcache_compile_file') && ini_get('opcache.enable'),
+            'opcache' => function_exists('opcache_compile_file') && (bool) ini_get('opcache.enable'),
             'memory' => true, // Always available
             'file' => true, // Always available
             default => false
@@ -505,7 +505,7 @@ class CacheManager implements CacheInterface
         }
 
         // Check OPcache
-        if (function_exists('opcache_compile_file') && ini_get('opcache.enable')) {
+        if (function_exists('opcache_compile_file') && (bool) ini_get('opcache.enable')) {
             $recommendations['opcache'] = [
                 'available' => true,
                 'recommended' => true,
@@ -539,7 +539,7 @@ class CacheManager implements CacheInterface
                 'php_version' => PHP_VERSION,
                 'loaded_extensions' => get_loaded_extensions(),
                 'memory_limit' => ini_get('memory_limit'),
-                'opcache_enabled' => ini_get('opcache.enable') ? 'Yes' : 'No'
+                'opcache_enabled' => (bool) ini_get('opcache.enable') ? 'Yes' : 'No'
             ]
         ];
     }

@@ -86,7 +86,7 @@ enum ValidationResult: string
 
     public static function combine(array $results): self
     {
-        if (empty($results)) {
+        if (($results === null || $results === '' || $results === [])) {
             return self::UNKNOWN;
         }
 

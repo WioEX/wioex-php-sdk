@@ -319,7 +319,7 @@ class HistoricalDataHelper
 
     public function calculateVolatility(array $returns): float
     {
-        if (empty($returns)) {
+        if (($returns === null || $returns === '' || $returns === [])) {
             return 0.0;
         }
 
@@ -331,14 +331,14 @@ class HistoricalDataHelper
 
     public function calculateSharpeRatio(array $returns, float $riskFreeRate = 0.02): float
     {
-        if (empty($returns)) {
+        if (($returns === null || $returns === '' || $returns === [])) {
             return 0.0;
         }
 
         $averageReturn = array_sum($returns) / count($returns);
         $volatility = $this->calculateVolatility($returns);
 
-        if ($volatility == 0) {
+        if ($volatility === 0) {
             return 0.0;
         }
 
@@ -350,7 +350,7 @@ class HistoricalDataHelper
      */
     public function aggregateToInterval(array $data, TimePeriod $interval, string $timestampField = 'timestamp'): array
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return [];
         }
 

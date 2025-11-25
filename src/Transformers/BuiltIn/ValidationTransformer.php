@@ -86,7 +86,7 @@ class ValidationTransformer extends AbstractTransformer
 
         // Check required fields
         foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || $data[$field] === null || $data[$field] === '') {
+            if (!isset($data[$field]) || $data[$field] === '') {
                 $errors[] = "Required field '{$field}' is missing or empty";
             }
         }
@@ -118,7 +118,7 @@ class ValidationTransformer extends AbstractTransformer
         ];
     }
 
-    private function validateField(string $field, $value, array $rules): array
+    private function validateField(string $field, mixed $value, array $rules): array
     {
         $errors = [];
 
@@ -132,7 +132,7 @@ class ValidationTransformer extends AbstractTransformer
         return $errors;
     }
 
-    private function validateRule(string $field, $value, string $rule, $parameter): ?string
+    private function validateRule(string $field, mixed $value, string $rule, mixed $parameter): ?string
     {
         switch ($rule) {
             case 'type':
@@ -166,7 +166,7 @@ class ValidationTransformer extends AbstractTransformer
                 break;
 
             case 'pattern':
-                if (is_string($value) && !preg_match($parameter, $value)) {
+                if (is_string($value) && preg_match($parameter, $value) === 0) {
                     return "Field '{$field}' does not match required pattern";
                 }
                 break;
@@ -186,13 +186,13 @@ class ValidationTransformer extends AbstractTransformer
                 break;
 
             case 'email':
-                if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
                     return "Field '{$field}' must be a valid email address";
                 }
                 break;
 
             case 'url':
-                if (!filter_var($value, FILTER_VALIDATE_URL)) {
+                if (filter_var($value, FILTER_VALIDATE_URL) === false) {
                     return "Field '{$field}' must be a valid URL";
                 }
                 break;
@@ -207,7 +207,7 @@ class ValidationTransformer extends AbstractTransformer
         return null;
     }
 
-    private function validateType($value, string $expectedType): bool
+    private function validateType(mixed $value, string $expectedType): bool
     {
         return match ($expectedType) {
             'string' => is_string($value),
@@ -221,14 +221,14 @@ class ValidationTransformer extends AbstractTransformer
         };
     }
 
-    private function validateDate($value, string $format): bool
+    private function validateDate(mixed $value, string $format): bool
     {
         if (!is_string($value)) {
             return false;
         }
 
         $date = \DateTime::createFromFormat($format, $value);
-        return $date && $date->format($format) === $value;
+        return $date !== false && $date->format($format) === $value;
     }
 
     public function validate(array $data, array $context = []): bool
@@ -238,7 +238,7 @@ class ValidationTransformer extends AbstractTransformer
 
     public function supports(array $data, array $context = []): bool
     {
-        return is_array($data) ? count($data) > 0 : $data !== null && $data !== '';
+        return is_array($data) && count($data) > 0;
     }
 
     public function addRule(string $field, string $rule, mixed $parameter = null): self

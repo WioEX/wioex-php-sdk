@@ -279,7 +279,7 @@ class ConfigurationManager
         foreach ($lines as $line) {
             $line = trim($line);
 
-            if (empty($line) || $line[0] === '#') {
+            if (($line === null || $line === '' || $line === []) || $line[0] === '#') {
                 continue;
             }
 

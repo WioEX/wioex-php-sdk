@@ -472,8 +472,8 @@ class CircuitBreaker
         }
 
         return [
-            'healthy' => empty($errors),
-            'status' => empty($errors) ? (empty($warnings) ? 'excellent' : 'good') : 'critical',
+            'healthy' => ($errors === null || $errors === '' || $errors === []),
+            'status' => ($errors === null || $errors === '' || $errors === []) ? (($warnings === null || $warnings === '' || $warnings === []) ? 'excellent' : 'good') : 'critical',
             'state' => $this->state,
             'warnings' => $warnings,
             'errors' => $errors,

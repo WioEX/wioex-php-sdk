@@ -172,9 +172,13 @@ class BatchRequestManager
         $promise = new Promise(function () use (&$promise) {
             try {
                 $results = $this->flush();
-                $promise->resolve($results);
+                if ($promise !== null) {
+                    $promise->resolve($results);
+                }
             } catch (\Throwable $e) {
-                $promise->reject($e);
+                if ($promise !== null) {
+                    $promise->reject($e);
+                }
             }
         });
 
@@ -278,7 +282,7 @@ class BatchRequestManager
         return new Request($method, $endpoint, [
             'Content-Type' => 'application/json',
             'User-Agent' => 'WioEX-SDK-PHP-Batch/1.0'
-        ], $body);
+        ], $body !== false ? $body : null);
     }
 
     private function handleSuccessfulResponse(BatchRequest $request, mixed $response): void
@@ -314,7 +318,7 @@ class BatchRequestManager
 
     private function cacheResult(BatchRequest $request): void
     {
-        if (!$this->cache || !$this->config['cache_results'] || !$request->hasResult()) {
+        if ($this->cache === null || !$this->config['cache_results'] || !$request->hasResult()) {
             return;
         }
 

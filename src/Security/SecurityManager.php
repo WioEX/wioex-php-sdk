@@ -103,7 +103,7 @@ class SecurityManager
 
         // Encrypt sensitive data in body if needed
         $secureBody = $body;
-        if ($securityConfig['encrypt_request_body'] ?? false && !empty($body)) {
+        if ($securityConfig['encrypt_request_body'] ?? false && ($body !== null && $body !== '' && $body !== [])) {
             $encryptedData = $this->encryptionManager->encrypt($body);
             if ($encryptedData['encrypted']) {
                 $secureBody = json_encode($encryptedData);
@@ -126,7 +126,7 @@ class SecurityManager
         }
 
         // If whitelist is empty, allow all (except blacklisted)
-        if (empty($this->ipWhitelist)) {
+        if (($this->ipWhitelist === null || $this->ipWhitelist === '' || $this->ipWhitelist === [])) {
             return true;
         }
 
@@ -227,7 +227,7 @@ class SecurityManager
         $contentType = $headers['Content-Type'] ?? '';
         $allowedContentTypes = $securityConfig['allowed_content_types'] ?? ['application/json', 'application/x-www-form-urlencoded'];
         
-        if (!empty($body) && !empty($allowedContentTypes)) {
+        if (($body !== null && $body !== '' && $body !== []) && ($allowedContentTypes !== null && $allowedContentTypes !== '' && $allowedContentTypes !== [])) {
             $isAllowed = false;
             foreach ($allowedContentTypes as $allowed) {
                 if (strpos($contentType, $allowed) === 0) {
@@ -337,9 +337,9 @@ class SecurityManager
             'ip_blacklist_count' => count($this->blacklistedIps),
             'rate_limiting_enabled' => $securityConfig['rate_limiting']['enabled'] ?? false,
             'csrf_protection' => $securityConfig['csrf_protection'] ?? false,
-            'content_validation' => !empty($securityConfig['allowed_content_types'] ?? []),
-            'malicious_content_detection' => !empty($securityConfig['malicious_patterns'] ?? []),
-            'security_headers' => !empty($securityConfig['headers'] ?? []),
+            'content_validation' => ($securityConfig['allowed_content_types'] ?? [] !== null && $securityConfig['allowed_content_types'] ?? [] !== '' && $securityConfig['allowed_content_types'] ?? [] !== []),
+            'malicious_content_detection' => ($securityConfig['malicious_patterns'] ?? [] !== null && $securityConfig['malicious_patterns'] ?? [] !== '' && $securityConfig['malicious_patterns'] ?? [] !== []),
+            'security_headers' => ($securityConfig['headers'] ?? [] !== null && $securityConfig['headers'] ?? [] !== '' && $securityConfig['headers'] ?? [] !== []),
             'audit_log_entries' => count($this->auditLog),
             'openssl_available' => extension_loaded('openssl'),
             'hash_functions_available' => function_exists('hash_hmac')

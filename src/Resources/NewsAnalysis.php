@@ -269,7 +269,7 @@ class NewsAnalysis extends Resource
         // Get response as text
         $responseText = $response->json();
 
-        if (!empty($responseText)) {
+        if (($responseText !== null && $responseText !== '' && $responseText !== [])) {
             $lines = explode("\n", $responseText);
             foreach ($lines as $line) {
                 if (strpos($line, '=') !== false) {
@@ -376,8 +376,8 @@ class NewsAnalysis extends Resource
             $newsAnalysis['summary'] = [
                 'total_events' => count($newsAnalysis['events']),
                 'date_range' => [
-                    'earliest' => !empty($dates) ? min($dates) : null,
-                    'latest' => !empty($dates) ? max($dates) : null
+                    'earliest' => ($dates !== null && $dates !== '' && $dates !== []) ? min($dates) : null,
+                    'latest' => ($dates !== null && $dates !== '' && $dates !== []) ? max($dates) : null
                 ],
                 'event_types' => array_unique($eventTypes)
             ];

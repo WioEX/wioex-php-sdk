@@ -31,7 +31,7 @@ class Config
     private array $telemetryConfig;
     
     /** @var array Configuration data for dot notation access */
-    private array $configData = [];
+    private readonly array $configData;
     
     /** @var array Dynamic configuration for runtime changes */
     private array $dynamicConfig = [];
@@ -87,16 +87,20 @@ class Config
             'burst_allowance' => (int)($rateLimit['burst_allowance'] ?? 10) // extra requests for burst
         ];
 
-        // Enhanced retry configuration with intelligent backoff
+        // Enhanced retry configuration with intelligent backoff for server errors
         $enhancedRetry = $options['enhanced_retry'] ?? [];
         $this->enhancedRetryConfig = [
-            'enabled' => (bool)($enhancedRetry['enabled'] ?? false),
+            'enabled' => (bool)($enhancedRetry['enabled'] ?? true), // Enable by default for server error handling
             'attempts' => (int)($enhancedRetry['attempts'] ?? 5),
             'backoff' => $enhancedRetry['backoff'] ?? 'exponential', // exponential, linear, fixed
-            'base_delay' => (int)($enhancedRetry['base_delay'] ?? 100), // base delay in ms
+            'base_delay' => (int)($enhancedRetry['base_delay'] ?? 500), // Higher base delay for server errors
             'max_delay' => (int)($enhancedRetry['max_delay'] ?? 30000), // max delay in ms (30 seconds)
             'jitter' => (bool)($enhancedRetry['jitter'] ?? true), // add randomization
-            'exponential_base' => (float)($enhancedRetry['exponential_base'] ?? 2.0) // exponential multiplier
+            'exponential_base' => (float)($enhancedRetry['exponential_base'] ?? 2.0), // exponential multiplier
+            'retry_on_server_errors' => (bool)($enhancedRetry['retry_on_server_errors'] ?? true), // Retry on all 5xx errors
+            'retry_on_connection_errors' => (bool)($enhancedRetry['retry_on_connection_errors'] ?? true), // Network/timeout errors
+            'retry_on_rate_limit' => (bool)($enhancedRetry['retry_on_rate_limit'] ?? true), // 429 errors
+            'circuit_breaker_enabled' => (bool)($enhancedRetry['circuit_breaker_enabled'] ?? true)
         ];
 
         // Telemetry configuration for comprehensive SDK monitoring
@@ -525,7 +529,7 @@ class Config
         };
 
         // If we have more keys, traverse deeper
-        if (!empty($keys) && is_array($value)) {
+        if ($keys !== '' && is_array($value)) {
             return $this->traverseArray($value, $keys);
         }
 
@@ -587,7 +591,7 @@ class Config
     {
         $key = array_shift($keys);
         
-        if (empty($keys)) {
+        if (($keys === null || $keys === '' || $keys === [])) {
             $array[$key] = $value;
             return;
         }
@@ -607,7 +611,7 @@ class Config
         $keys = explode('.', $key);
         $firstKey = array_shift($keys);
         
-        if (empty($keys)) {
+        if (($keys === null || $keys === '' || $keys === [])) {
             unset($this->dynamicConfig[$firstKey]);
         } else {
             $this->removeNestedValue($this->dynamicConfig[$firstKey] ?? [], $keys);
@@ -621,7 +625,7 @@ class Config
     {
         $key = array_shift($keys);
         
-        if (empty($keys)) {
+        if (($keys === null || $keys === '' || $keys === [])) {
             unset($array[$key]);
             return;
         }

@@ -212,7 +212,7 @@ class AnalysisProvider implements SourceProviderInterface
         try {
             // Test trace endpoint availability
             $traceData = $this->getTraceData();
-            return !empty($traceData['success']);
+            return ($traceData['success'] !== null && $traceData['success'] !== '' && $traceData['success'] !== []);
         } catch (\Exception $e) {
             return false;
         }
@@ -282,7 +282,7 @@ class AnalysisProvider implements SourceProviderInterface
         if ($response->successful()) {
             $responseText = $response->json();
             
-            if (!empty($responseText)) {
+            if (($responseText !== null && $responseText !== '' && $responseText !== [])) {
                 $lines = explode("\n", $responseText);
                 foreach ($lines as $line) {
                     if (strpos($line, '=') !== false) {
@@ -484,7 +484,7 @@ class AnalysisProvider implements SourceProviderInterface
      */
     private function calculateOverallSentiment(array $events): string
     {
-        if (empty($events)) return 'neutral';
+        if (($events === null || $events === '' || $events === [])) return 'neutral';
         
         $scores = ['positive' => 0, 'negative' => 0, 'neutral' => 0];
         
@@ -520,7 +520,7 @@ class AnalysisProvider implements SourceProviderInterface
      */
     private function calculateConfidenceScore(array $events): float
     {
-        if (empty($events)) return 0.0;
+        if (($events === null || $events === '' || $events === [])) return 0.0;
         
         $totalConfidence = 0;
         foreach ($events as $event) {

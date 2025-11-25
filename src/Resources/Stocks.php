@@ -562,11 +562,11 @@ class Stocks extends Resource
      * }
      * ```
      * 
-     * @throws AuthenticationException When API key is invalid
-     * @throws ValidationException When symbol is invalid or not found in database
-     * @throws RateLimitException When rate limits are exceeded
-     * @throws RequestException When API request fails
-     * @throws WioexException For other API-related errors
+     * @throws \Wioex\SDK\Exceptions\AuthenticationException When API key is invalid
+     * @throws \Wioex\SDK\Exceptions\ValidationException When symbol is invalid or not found in database
+     * @throws \Wioex\SDK\Exceptions\RateLimitException When rate limits are exceeded
+     * @throws \Wioex\SDK\Exceptions\RequestException When API request fails
+     * @throws \Wioex\SDK\Exceptions\WioexException For other API-related errors
      * 
      * @see https://docs.wioex.com/api/stocks/ticker-analysis Documentation
      */
@@ -803,11 +803,11 @@ class Stocks extends Resource
      * @param string $endpoint API endpoint for bulk operation
      * @param array<string> $symbols Array of stock symbols
      * @param array<string, mixed> $options Request and bulk options
-     * @return Response
+     * @return \Wioex\SDK\Http\Response
      * @throws BulkOperationException
      * @throws ValidationException
      */
-    private function executeBulkOperation(string $endpoint, array $symbols, array $options = []): Response
+    private function executeBulkOperation(string $endpoint, array $symbols, array $options = []): \Wioex\SDK\Http\Response
     {
         // Extract bulk-specific options
         $chunkSize = (int)($options['chunk_size'] ?? 50);

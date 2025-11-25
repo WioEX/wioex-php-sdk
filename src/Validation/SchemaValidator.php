@@ -25,7 +25,7 @@ class SchemaValidator
      * @param array<string, mixed> $config
      * @param Logger|null $logger
      */
-    public function __construct(array $config = [], Logger $logger = null)
+    public function __construct(array $config = [], ?Logger $logger = null)
     {
         $this->config = array_merge($this->getDefaultConfig(), $config);
         $this->stopOnFirstError = $this->config['stop_on_first_error'] ?? false;
@@ -533,9 +533,7 @@ class SchemaValidator
             ->type('data.total_results', 'integer', true)
             ->required('data.instruments')
             ->type('data.instruments', 'array', true)
-            ->optional('data.country')
             ->type('data.country', 'string', false)
-            ->optional('data.search_provider')
             ->type('data.search_provider', 'string', false);
             
         // Metadata validation
@@ -544,7 +542,6 @@ class SchemaValidator
             ->type('metadata.wioex', 'array', true)
             ->required('metadata.response')
             ->type('metadata.response', 'array', true)
-            ->optional('metadata.performance')
             ->type('metadata.performance', 'array', false);
             
         return $validator;
@@ -565,7 +562,7 @@ class SchemaValidator
             return;
         }
 
-        if ($report->isValid()) {
+        if (!$report instanceof \Wioex\SDK\Validation\ValidationReport || $report->isValid()) {
             $this->logger->debug('Validation passed', [
                 'schema' => $report->getMetadata()['schema_name'] ?? 'default',
                 'rules_count' => $report->getMetadata()['rules_count'] ?? 0,

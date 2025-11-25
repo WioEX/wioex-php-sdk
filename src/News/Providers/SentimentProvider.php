@@ -62,7 +62,7 @@ class SentimentProvider implements SourceProviderInterface
         ];
 
         // Add sentiment filter
-        if (!empty($sentiment)) {
+        if (($sentiment !== null && $sentiment !== '' && $sentiment !== [])) {
             $params['sentiment'] = is_array($sentiment) ? $sentiment : [$sentiment];
         }
 
@@ -96,7 +96,7 @@ class SentimentProvider implements SourceProviderInterface
         ];
 
         // Add sentiment filter
-        if (!empty($sentiment)) {
+        if (($sentiment !== null && $sentiment !== '' && $sentiment !== [])) {
             // Map standard sentiments to Trump Effect sentiments
             $trumpSentiments = $this->mapToTrumpSentiments($sentiment);
             $params['sentiment'] = $trumpSentiments;
@@ -476,8 +476,8 @@ class SentimentProvider implements SourceProviderInterface
         $withSecurities = 0;
 
         foreach ($posts as $post) {
-            if (!empty($post['sectors'])) $withSectors++;
-            if (!empty($post['affected_securities'])) $withSecurities++;
+            if (($post['sectors'] !== null && $post['sectors'] !== '' && $post['sectors'] !== [])) $withSectors++;
+            if (($post['affected_securities'] !== null && $post['affected_securities'] !== '' && $post['affected_securities'] !== [])) $withSecurities++;
         }
 
         return [
@@ -658,8 +658,8 @@ class SentimentProvider implements SourceProviderInterface
         if ($contentLength > 200) $score += 0.2;
         
         // Multiple affected securities/sectors
-        if (!empty($post['affected_securities'])) $score += 0.1;
-        if (!empty($post['sectors'])) $score += 0.1;
+        if (($post['affected_securities'] !== null && $post['affected_securities'] !== '' && $post['affected_securities'] !== [])) $score += 0.1;
+        if (($post['sectors'] !== null && $post['sectors'] !== '' && $post['sectors'] !== [])) $score += 0.1;
         
         return min($score, 1.0);
     }
@@ -711,7 +711,7 @@ class SentimentProvider implements SourceProviderInterface
      */
     private function calculateAverageContentLength(array $posts): int
     {
-        if (empty($posts)) return 0;
+        if (($posts === null || $posts === '' || $posts === [])) return 0;
         
         $totalLength = 0;
         foreach ($posts as $post) {

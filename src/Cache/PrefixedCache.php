@@ -144,7 +144,7 @@ class PrefixedCache implements CacheInterface
     {
         $keys = $this->getAllPrefixedKeys();
 
-        if (empty($keys)) {
+        if (($keys === null || $keys === '' || $keys === [])) {
             return true;
         }
 

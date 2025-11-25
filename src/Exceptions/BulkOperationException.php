@@ -62,7 +62,7 @@ class BulkOperationException extends WioexException
      */
     public function hasPartialSuccess(): bool
     {
-        return !empty($this->successfulResponses);
+        return ($this->successfulResponses !== null && $this->successfulResponses !== '' && $this->successfulResponses !== []);
     }
 
     /**

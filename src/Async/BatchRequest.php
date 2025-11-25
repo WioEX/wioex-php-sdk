@@ -144,7 +144,7 @@ class BatchRequest
 
     public function getExecutionTime(): float
     {
-        if ($this->endTime === 0) {
+        if ($this->endTime === 0.0) {
             return microtime(true) - $this->startTime;
         }
         return $this->endTime - $this->startTime;

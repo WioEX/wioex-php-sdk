@@ -275,7 +275,7 @@ class PerformanceProfiler
 
         // Analyze slow operations
         $slowOps = $this->getSlowOperations(5);
-        if (!empty($slowOps)) {
+        if (($slowOps !== null && $slowOps !== '' && $slowOps !== [])) {
             $recommendations[] = [
                 'type' => 'performance',
                 'priority' => 'high',
@@ -289,7 +289,7 @@ class PerformanceProfiler
 
         // Analyze memory usage
         $memoryIntensive = $this->getMemoryIntensiveOperations(5);
-        if (!empty($memoryIntensive)) {
+        if (($memoryIntensive !== null && $memoryIntensive !== '' && $memoryIntensive !== [])) {
             $recommendations[] = [
                 'type' => 'memory',
                 'priority' => 'medium',
@@ -303,7 +303,7 @@ class PerformanceProfiler
 
         // Check for memory leaks
         $leaks = $this->detectMemoryLeaks();
-        if (!empty($leaks)) {
+        if (($leaks !== null && $leaks !== '' && $leaks !== [])) {
             $recommendations[] = [
                 'type' => 'memory_leak',
                 'priority' => 'critical',
@@ -388,7 +388,7 @@ class PerformanceProfiler
         }
 
         // Checkpoint analysis
-        if (!empty($profile['checkpoints'])) {
+        if (($profile['checkpoints'] !== null && $profile['checkpoints'] !== '' && $profile['checkpoints'] !== [])) {
             $checkpointTimes = [];
             for ($i = 1; $i < count($profile['checkpoints']); $i++) {
                 $prev = $profile['checkpoints'][$i - 1];
@@ -396,7 +396,7 @@ class PerformanceProfiler
                 $checkpointTimes[] = $curr['elapsed_time'] - $prev['elapsed_time'];
             }
 
-            if (!empty($checkpointTimes)) {
+            if (($checkpointTimes !== null && $checkpointTimes !== '' && $checkpointTimes !== [])) {
                 $analysis['checkpoint_analysis'] = [
                     'total_checkpoints' => count($profile['checkpoints']),
                     'slowest_segment' => max($checkpointTimes),
@@ -414,7 +414,7 @@ class PerformanceProfiler
      */
     private function analyzeSession(): array
     {
-        if (empty($this->profiles)) {
+        if (($this->profiles === null || $this->profiles === '' || $this->profiles === [])) {
             return ['no_data' => true];
         }
 

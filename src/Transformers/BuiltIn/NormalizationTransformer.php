@@ -198,7 +198,7 @@ class NormalizationTransformer extends AbstractTransformer
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $cleaned = $this->removeEmptyArrays($value);
-                if (!empty($cleaned)) {
+                if (($cleaned !== null && $cleaned !== '' && $cleaned !== [])) {
                     $result[$key] = $cleaned;
                 }
             } else {
@@ -248,12 +248,12 @@ class NormalizationTransformer extends AbstractTransformer
 
     public function validate(array $data, array $context = []): bool
     {
-        return !empty($data);
+        return ($data !== null && $data !== '' && $data !== []);
     }
 
     public function supports(array $data, array $context = []): bool
     {
-        return !empty($data);
+        return ($data !== null && $data !== '' && $data !== []);
     }
 
     public function setKeyCase(string $case): self

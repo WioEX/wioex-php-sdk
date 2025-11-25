@@ -268,11 +268,13 @@ class RetryManager
         $retryableExceptions = $config['retryable_exceptions'] ?? [
             'GuzzleHttp\\Exception\\ConnectException',
             'GuzzleHttp\\Exception\\RequestException',
-            'Wioex\\SDK\\Exceptions\\RequestException'
+            'Wioex\\SDK\\Exceptions\\RequestException',
+            'Wioex\\SDK\\Exceptions\\ServerException' // Add ServerException for 503 handling
         ];
 
         $nonRetryableExceptions = $config['non_retryable_exceptions'] ?? [
             'Wioex\\SDK\\Exceptions\\AuthenticationException',
+            'Wioex\\SDK\\Exceptions\\ValidationException',
             'InvalidArgumentException'
         ];
 
@@ -293,8 +295,32 @@ class RetryManager
         // Check by error code if it's an HTTP-related exception
         if (method_exists($e, 'getCode')) {
             $code = $e->getCode();
-            $retryableCodes = $config['retryable_status_codes'] ?? [408, 429, 500, 502, 503, 504];
-            $nonRetryableCodes = $config['non_retryable_status_codes'] ?? [400, 401, 403, 404];
+            
+            // Build retryable codes based on configuration
+            $retryableCodes = [];
+            
+            // Server errors (5xx) - configurable
+            if ($config['retry_on_server_errors'] ?? true) {
+                $retryableCodes = array_merge($retryableCodes, [500, 501, 502, 503, 504, 505, 507, 508, 510, 511]);
+            }
+            
+            // Rate limiting (429) - configurable
+            if ($config['retry_on_rate_limit'] ?? true) {
+                $retryableCodes[] = 429;
+            }
+            
+            // Timeout/connection issues (408) - configurable  
+            if ($config['retry_on_connection_errors'] ?? true) {
+                $retryableCodes = array_merge($retryableCodes, [408, 598, 599]);
+            }
+            
+            // Allow custom additional codes
+            if (isset($config['custom_retryable_codes']) && is_array($config['custom_retryable_codes'])) {
+                $retryableCodes = array_merge($retryableCodes, $config['custom_retryable_codes']);
+            }
+            
+            // Non-retryable codes (client errors)
+            $nonRetryableCodes = $config['non_retryable_status_codes'] ?? [400, 401, 403, 404, 405, 406, 409, 410, 422];
 
             if (in_array($code, $nonRetryableCodes)) {
                 return false;
@@ -384,24 +410,31 @@ class RetryManager
     private function mergeRetryConfig(array $config): array
     {
         $defaultConfig = $this->config->get('retry', []);
+        $enhancedRetryConfig = $this->config->getEnhancedRetryConfig();
         
         return array_merge([
             'strategy' => 'exponential_backoff',
-            'max_attempts' => 3,
-            'base_delay' => 1000, // ms
-            'max_delay' => 30000, // ms
-            'multiplier' => 2.0,
-            'jitter' => true,
+            'max_attempts' => $enhancedRetryConfig['attempts'] ?? 3,
+            'base_delay' => $enhancedRetryConfig['base_delay'] ?? 1000, // ms
+            'max_delay' => $enhancedRetryConfig['max_delay'] ?? 30000, // ms
+            'multiplier' => $enhancedRetryConfig['exponential_base'] ?? 2.0,
+            'jitter' => $enhancedRetryConfig['jitter'] ?? true,
             'jitter_type' => 'full',
             'retryable_exceptions' => [
                 'GuzzleHttp\\Exception\\ConnectException',
-                'GuzzleHttp\\Exception\\RequestException'
+                'GuzzleHttp\\Exception\\RequestException',
+                'Wioex\\SDK\\Exceptions\\ServerException'
             ],
             'non_retryable_exceptions' => [
-                'InvalidArgumentException'
+                'InvalidArgumentException',
+                'Wioex\\SDK\\Exceptions\\AuthenticationException',
+                'Wioex\\SDK\\Exceptions\\ValidationException'
             ],
-            'retryable_status_codes' => [408, 429, 500, 502, 503, 504],
-            'non_retryable_status_codes' => [400, 401, 403, 404],
+            // Use enhanced retry config for global error handling
+            'retry_on_server_errors' => $enhancedRetryConfig['retry_on_server_errors'] ?? true,
+            'retry_on_connection_errors' => $enhancedRetryConfig['retry_on_connection_errors'] ?? true,
+            'retry_on_rate_limit' => $enhancedRetryConfig['retry_on_rate_limit'] ?? true,
+            'non_retryable_status_codes' => [400, 401, 403, 404, 405, 406, 409, 410, 422],
             'default_retryable' => false,
             'bulk_strategy' => 'parallel',
             'batch_size' => 5,
@@ -513,7 +546,7 @@ class RetryManager
      */
     public function analyzeRetryPatterns(): array
     {
-        if (empty($this->retryHistory)) {
+        if (($this->retryHistory === null || $this->retryHistory === '' || $this->retryHistory === [])) {
             return ['no_data' => true];
         }
 
@@ -545,7 +578,7 @@ class RetryManager
                 'max' => max($attempts),
                 'average' => array_sum($attempts) / count($attempts)
             ],
-            'delay_statistics' => !empty($delays) ? [
+            'delay_statistics' => ($delays !== null && $delays !== '' && $delays !== []) ? [
                 'min' => min($delays),
                 'max' => max($delays),
                 'average' => array_sum($delays) / count($delays)
@@ -590,7 +623,7 @@ class RetryManager
         }
 
         // Analyze exception patterns
-        if (!empty($patterns['exception_distribution'])) {
+        if (($patterns['exception_distribution'] !== null && $patterns['exception_distribution'] !== '' && $patterns['exception_distribution'] !== [])) {
             $topException = array_keys($patterns['exception_distribution'], max($patterns['exception_distribution']))[0];
             $topCount = max($patterns['exception_distribution']);
             
