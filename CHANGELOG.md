@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.1] - 2025-11-25
+
+### 🚨 Critical 503 Service Unavailable Fix
+
+This release resolves critical 503 Service Unavailable errors that customers were experiencing due to database type mismatches.
+
+#### 🔧 Critical Fixes
+- **CRITICAL**: Fixed PostgreSQL boolean/integer type mismatch in TypeSafeStreamTokenController
+- **FIXED**: Resolved 503 Service Unavailable errors caused by database type conflicts
+- **FIXED**: Changed `'active_status' => 1` to `'active_status' => true` for proper PostgreSQL boolean handling
+- **FIXED**: Eliminated false positive service unavailable responses
+
+#### 🆕 Improvements
+- **IMPROVED**: Enhanced stream token generation reliability and stability
+- **IMPROVED**: Reduced unnecessary retry attempts due to database type errors
+- **IMPROVED**: Better PostgreSQL boolean column compatibility
+- **IMPROVED**: More reliable database query execution
+
+#### 📊 Customer Impact
+- ✅ Eliminates 503 Service Unavailable errors from API requests
+- ✅ Improved API reliability and response consistency
+- ✅ Better stream token generation without service interruption
+- ✅ Maintains all existing functionality - fully backward compatible
+- ✅ No configuration changes required for customers
+
 ## [2.6.0] - 2025-10-30
 
 ### 🚀 Stream Token Fix Release

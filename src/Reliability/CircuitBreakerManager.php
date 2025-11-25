@@ -353,8 +353,8 @@ class CircuitBreakerManager
         $healthPercentage = $totalBreakers > 0 ? ($healthyBreakers / $totalBreakers) * 100 : 100;
 
         return [
-            'healthy' => empty($errors),
-            'status' => empty($errors) ? (empty($warnings) ? 'excellent' : 'good') : 'critical',
+            'healthy' => ($errors === null || $errors === '' || $errors === []),
+            'status' => ($errors === null || $errors === '' || $errors === []) ? (($warnings === null || $warnings === '' || $warnings === []) ? 'excellent' : 'good') : 'critical',
             'health_percentage' => round($healthPercentage, 1),
             'warnings' => $warnings,
             'errors' => $errors,

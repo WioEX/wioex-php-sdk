@@ -114,7 +114,7 @@ class MapTransformer extends AbstractTransformer
 
     public function supports(array $data, array $context = []): bool
     {
-        return !empty($data);
+        return ($data !== null && $data !== '' && $data !== []);
     }
 
     public function addFieldMapping(string $oldField, string $newField): self

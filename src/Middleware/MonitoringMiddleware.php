@@ -57,7 +57,7 @@ class MonitoringMiddleware extends AbstractMiddleware
         $this->monitor->startRequest($requestId, $endpoint, $method, [
             'uri' => (string) $request->getUri(),
             'headers_count' => count($request->getHeaders()),
-            'has_body' => !empty((string) $request->getBody()),
+            'has_body' => ((string) $request->getBody() !== ''),
         ]);
 
         $this->activeRequests[$requestId] = [

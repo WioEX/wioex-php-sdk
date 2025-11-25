@@ -15,35 +15,33 @@ final class Version
     /**
      * Current SDK version
      * 
-     * Version 2.13.0 - Clean Provider Architecture:
-     * - BREAKING CHANGE: Removed all legacy provider aliases
-     * - CLEAN INTERFACE: Only three providers: native, analysis, sentiment
-     * - PROFESSIONAL: No internal company/service names exposed
-     * - SIMPLIFIED: Clean, purpose-based provider naming only
-     * - REMOVED: wioex, perplexity, social, external aliases
-     * - ENHANCED: Professional, vendor-neutral API interface
-     * - FOCUSED: Streamlined provider registration without legacy clutter
+     * Version 2.13.1 - Critical 503 Service Unavailable Fix:
+     * - CRITICAL FIX: Fixed PostgreSQL boolean/integer type mismatch in TypeSafeStreamTokenController
+     * - BUG FIX: Resolved 503 Service Unavailable errors caused by database type conflicts
+     * - STABILITY: Eliminated false positive service unavailable responses
+     * - DATABASE: Fixed boolean column queries using proper PostgreSQL boolean types
+     * - RELIABILITY: Enhanced stream token generation reliability
+     * - PERFORMANCE: Reduced unnecessary retry attempts due to type errors
      * 
-     * Previous features (2.12.x):
-     * - Unified NewsManager with intelligent source routing
-     * - Provider-based architecture with automatic selection
-     * - Multi-source data aggregation and advanced fallbacks
-     * - Customer-friendly provider naming with neutral terminology
+     * Previous version (2.13.0) features:
+     * - Clean Provider Architecture with professional naming
+     * - Removed legacy provider aliases for cleaner interface
+     * - Streamlined provider registration without legacy clutter
      */
-    public const CURRENT = '2.13.0';
+    public const CURRENT = '2.13.1';
 
     /**
      * Version components
      */
     public const MAJOR = 2;
     public const MINOR = 13;
-    public const PATCH = 0;
+    public const PATCH = 1;
 
     /**
      * Version metadata
      */
-    public const RELEASE_DATE = '2025-11-10';
-    public const CODENAME = 'Clean Provider Architecture';
+    public const RELEASE_DATE = '2025-11-25';
+    public const CODENAME = 'Service Unavailable Fix';
 
     /**
      * Get current version string

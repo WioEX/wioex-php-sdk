@@ -356,7 +356,7 @@ class DebugManager
             'config' => $this->config->get('debug', [])
         ];
 
-        if (empty($filename)) {
+        if (($filename === null || $filename === '' || $filename === [])) {
             $filename = 'debug_export_' . date('Y-m-d_H-i-s') . '.' . $format;
         }
 
@@ -434,7 +434,7 @@ class DebugManager
      */
     private function sanitizeBody(string $body): string
     {
-        if (empty($body)) {
+        if (($body === null || $body === '' || $body === [])) {
             return $body;
         }
 
@@ -545,7 +545,7 @@ class DebugManager
      */
     private function analyzePerformance(array $log): array
     {
-        if (empty($log)) {
+        if (($log === null || $log === '' || $log === [])) {
             return ['no_data' => true];
         }
 

@@ -17,7 +17,6 @@ class ProgressTracker
     private int $failedItems = 0;
     private float $startTime;
     private array $chunkTimes = [];
-    private array $progressCallbacks = [];
     private $progressCallback = null;
     
     // ETA calculation parameters
@@ -109,7 +108,7 @@ class ProgressTracker
      */
     public function calculateProcessingSpeed(): float
     {
-        if (empty($this->chunkTimes)) {
+        if (($this->chunkTimes === null || $this->chunkTimes === '' || $this->chunkTimes === [])) {
             return 0;
         }
 
@@ -151,7 +150,7 @@ class ProgressTracker
      */
     public function getChunkStatistics(): array
     {
-        if (empty($this->chunkTimes)) {
+        if (($this->chunkTimes === null || $this->chunkTimes === '' || $this->chunkTimes === [])) {
             return [
                 'total_chunks' => 0,
                 'successful_chunks' => 0,
@@ -172,9 +171,9 @@ class ProgressTracker
             'total_chunks' => count($this->chunkTimes),
             'successful_chunks' => count($successfulChunks),
             'failed_chunks' => count($failedChunks),
-            'average_chunk_time' => !empty($successfulTimes) ? array_sum($successfulTimes) / count($successfulTimes) : 0,
-            'fastest_chunk_time' => !empty($successfulTimes) ? min($successfulTimes) : 0,
-            'slowest_chunk_time' => !empty($successfulTimes) ? max($successfulTimes) : 0,
+            'average_chunk_time' => ($successfulTimes !== null && $successfulTimes !== '' && $successfulTimes !== []) ? array_sum($successfulTimes) / count($successfulTimes) : 0,
+            'fastest_chunk_time' => ($successfulTimes !== null && $successfulTimes !== '' && $successfulTimes !== []) ? min($successfulTimes) : 0,
+            'slowest_chunk_time' => ($successfulTimes !== null && $successfulTimes !== '' && $successfulTimes !== []) ? max($successfulTimes) : 0,
             'chunk_success_rate' => count($this->chunkTimes) > 0 ? (count($successfulChunks) / count($this->chunkTimes)) * 100 : 0
         ];
     }

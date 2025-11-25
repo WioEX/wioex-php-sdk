@@ -63,7 +63,7 @@ class MemcachedDriver implements CacheInterface
             $this->memcached = new Memcached($this->config['persistent_id']);
 
             // Check if servers are already added (for persistent connections)
-            if (!count($this->memcached->getServerList())) {
+            if (count($this->memcached->getServerList()) === 0) {
                 $this->memcached->addServers($this->config['servers']);
             }
 
@@ -84,7 +84,7 @@ class MemcachedDriver implements CacheInterface
 
             // Test connection
             $version = $this->memcached->getVersion();
-            if (empty($version)) {
+            if (($version === null || $version === '' || $version === [])) {
                 throw new InvalidArgumentException('Failed to connect to Memcached servers');
             }
 
@@ -99,6 +99,10 @@ class MemcachedDriver implements CacheInterface
     public function get(string $key)
     {
         try {
+            if ($this->memcached === null) {
+                return null;
+            }
+            
             $value = $this->memcached->get($key);
             
             if ($this->memcached->getResultCode() === Memcached::RES_SUCCESS) {
@@ -118,6 +122,10 @@ class MemcachedDriver implements CacheInterface
     public function set(string $key, $value, int $ttl = 0): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $expiration = $ttl > 0 ? time() + $ttl : 0;
             $result = $this->memcached->set($key, $value, $expiration);
             
@@ -138,6 +146,10 @@ class MemcachedDriver implements CacheInterface
     public function has(string $key): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $this->memcached->get($key);
             return $this->memcached->getResultCode() === Memcached::RES_SUCCESS;
         } catch (\Exception $e) {
@@ -148,6 +160,10 @@ class MemcachedDriver implements CacheInterface
     public function delete(string $key): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $result = $this->memcached->delete($key);
             
             if ($result) {
@@ -165,6 +181,10 @@ class MemcachedDriver implements CacheInterface
     public function clear(): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             return $this->memcached->flush();
         } catch (\Exception $e) {
             $this->stats['errors']++;
@@ -175,12 +195,17 @@ class MemcachedDriver implements CacheInterface
     public function getMultiple(array $keys): array
     {
         try {
+            if ($this->memcached === null) {
+                return [];
+            }
+            
             $values = $this->memcached->getMulti($keys);
             
             if ($this->memcached->getResultCode() === Memcached::RES_SUCCESS) {
-                $this->stats['hits'] += count($values);
-                $this->stats['misses'] += count($keys) - count($values);
-                return $values ?: [];
+                $valuesCount = is_array($values) ? count($values) : 0;
+                $this->stats['hits'] += $valuesCount;
+                $this->stats['misses'] += count($keys) - $valuesCount;
+                return $values !== false ? $values : [];
             }
 
             $this->stats['misses'] += count($keys);
@@ -195,6 +220,10 @@ class MemcachedDriver implements CacheInterface
     public function setMultiple(array $items, int $ttl = 0): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $expiration = $ttl > 0 ? time() + $ttl : 0;
             $result = $this->memcached->setMulti($items, $expiration);
             
@@ -215,6 +244,10 @@ class MemcachedDriver implements CacheInterface
     public function deleteMultiple(array $keys): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $results = $this->memcached->deleteMulti($keys);
             $deleted = array_filter($results);
             $this->stats['deletes'] += count($deleted);
@@ -230,6 +263,10 @@ class MemcachedDriver implements CacheInterface
     public function increment(string $key, int $step = 1)
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $result = $this->memcached->increment($key, $step);
             
             if ($result === false) {
@@ -249,6 +286,10 @@ class MemcachedDriver implements CacheInterface
     public function decrement(string $key, int $step = 1)
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $result = $this->memcached->decrement($key, $step);
             
             if ($result === false) {
@@ -270,10 +311,14 @@ class MemcachedDriver implements CacheInterface
         $memcachedStats = [];
         
         try {
+            if ($this->memcached === null) {
+                return $this->stats;
+            }
+            
             $stats = $this->memcached->getStats();
             
             foreach ($stats as $server => $serverStats) {
-                if (!empty($serverStats)) {
+                if (($serverStats !== null && $serverStats !== '' && $serverStats !== [])) {
                     $memcachedStats[$server] = [
                         'version' => $serverStats['version'] ?? 'unknown',
                         'uptime' => $serverStats['uptime'] ?? 0,
@@ -314,7 +359,9 @@ class MemcachedDriver implements CacheInterface
     {
         $version = [];
         try {
-            $version = $this->memcached->getVersion();
+            if ($this->memcached !== null) {
+                $version = $this->memcached->getVersion();
+            }
         } catch (\Exception $e) {
             $version = ['error' => $e->getMessage()];
         }
@@ -335,8 +382,12 @@ class MemcachedDriver implements CacheInterface
     public function isHealthy(): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             $version = $this->memcached->getVersion();
-            return !empty($version);
+            return ($version !== null && $version !== '' && $version !== []);
         } catch (\Exception $e) {
             return false;
         }
@@ -346,12 +397,16 @@ class MemcachedDriver implements CacheInterface
     {
         // Memcached doesn't support TTL retrieval natively
         // We could implement this with additional metadata storage if needed
-        return null;
+        return false;
     }
 
     public function touch(string $key, int $ttl): bool
     {
         try {
+            if ($this->memcached === null) {
+                return false;
+            }
+            
             return $this->memcached->touch($key, time() + $ttl);
         } catch (\Exception $e) {
             return false;
@@ -380,18 +435,18 @@ class MemcachedDriver implements CacheInterface
 
     private function getHitRatio(): float
     {
-        $total = $this->stats['hits'] + $this->stats['misses'];
-        return $total > 0 ? round(($this->stats['hits'] / $total) * 100, 2) : 0.0;
+        $total = (int) $this->stats['hits'] + (int) $this->stats['misses'];
+        return $total > 0 ? round(((int) $this->stats['hits'] / $total) * 100, 2) : 0.0;
     }
 
     public function getResultCode(): int
     {
-        return $this->memcached->getResultCode();
+        return $this->memcached !== null ? $this->memcached->getResultCode() : Memcached::RES_FAILURE;
     }
 
     public function getResultMessage(): string
     {
-        return $this->memcached->getResultMessage();
+        return $this->memcached !== null ? $this->memcached->getResultMessage() : 'Memcached not initialized';
     }
 
     public function getAllKeys(): array
@@ -403,6 +458,10 @@ class MemcachedDriver implements CacheInterface
 
     public function getServerList(): array
     {
+        if ($this->memcached === null) {
+            return [];
+        }
+        
         try {
             return $this->memcached->getServerList();
         } catch (\Exception $e) {
@@ -412,6 +471,10 @@ class MemcachedDriver implements CacheInterface
 
     public function addServer(string $host, int $port, int $weight = 100): bool
     {
+        if ($this->memcached === null) {
+            return false;
+        }
+        
         try {
             return $this->memcached->addServer($host, $port, $weight);
         } catch (\Exception $e) {
@@ -421,6 +484,10 @@ class MemcachedDriver implements CacheInterface
 
     public function resetServerList(): bool
     {
+        if ($this->memcached === null) {
+            return false;
+        }
+        
         try {
             return $this->memcached->resetServerList();
         } catch (\Exception $e) {
@@ -430,6 +497,10 @@ class MemcachedDriver implements CacheInterface
 
     public function quit(): bool
     {
+        if ($this->memcached === null) {
+            return false;
+        }
+        
         try {
             return $this->memcached->quit();
         } catch (\Exception $e) {

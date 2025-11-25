@@ -63,7 +63,7 @@ class Streaming extends Resource
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             // Convert to WioEX response format
             $response = $e->getResponse();
-            if ($response) {
+            if ($response !== null) {
                 return new Response($response);
             }
             
@@ -228,7 +228,7 @@ class Streaming extends Resource
 
         if ($token !== null) {
             $params['token'] = $token;
-        } elseif ($this->cachedTokenData && isset($this->cachedTokenData['token'])) {
+        } elseif ($this->cachedTokenData !== null && isset($this->cachedTokenData['token'])) {
             $params['token'] = $this->cachedTokenData['token'];
         } else {
             // If no token provided and none cached, get a new one first
@@ -268,7 +268,7 @@ class Streaming extends Resource
 
         if ($token !== null) {
             $params['token'] = $token;
-        } elseif ($this->cachedTokenData && isset($this->cachedTokenData['token'])) {
+        } elseif ($this->cachedTokenData !== null && isset($this->cachedTokenData['token'])) {
             $params['token'] = $this->cachedTokenData['token'];
             // Clear cached data since we're revoking it
             $this->cachedTokenData = null;

@@ -132,9 +132,12 @@ class FileDriver implements CacheInterface
         $deleted = 0;
         $pattern = $this->cacheDir . '/*' . $this->extension;
 
-        foreach (glob($pattern) as $file) {
-            if (is_file($file) && unlink($file)) {
-                $deleted++;
+        $files = glob($pattern);
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (is_file($file) && unlink($file)) {
+                    $deleted++;
+                }
             }
         }
 
@@ -214,8 +217,10 @@ class FileDriver implements CacheInterface
 
     public function getStatistics(): array
     {
-        $total = $this->statistics['hits'] + $this->statistics['misses'];
-        $hitRate = $total > 0 ? ($this->statistics['hits'] / $total) * 100 : 0;
+        $hits = (int)$this->statistics['hits'];
+        $misses = (int)$this->statistics['misses'];
+        $total = $hits + $misses;
+        $hitRate = $total > 0 ? ($hits / $total) * 100 : 0;
 
         return array_merge($this->statistics, [
             'total_requests' => $total,
@@ -289,7 +294,7 @@ class FileDriver implements CacheInterface
         }
 
         $remaining = $data['expires_at'] - time();
-        return max(0, $remaining);
+        return max(0, (int) $remaining);
     }
 
     public function touch(string $key, int $ttl): bool
@@ -323,14 +328,17 @@ class FileDriver implements CacheInterface
         $keys = [];
         $searchPattern = $this->cacheDir . '/' . str_replace('*', '*', $pattern) . $this->extension;
 
-        foreach (glob($searchPattern) as $file) {
-            if (is_file($file)) {
-                $key = $this->getKeyFromFilePath($file);
+        $files = glob($searchPattern);
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    $key = $this->getKeyFromFilePath($file);
 
-                // Check if file is not expired
-                $data = $this->readCacheFile($file);
-                if ($data !== null && !$this->isExpired($data)) {
-                    $keys[] = $key;
+                    // Check if file is not expired
+                    $data = $this->readCacheFile($file);
+                    if ($data !== null && !$this->isExpired($data)) {
+                        $keys[] = $key;
+                    }
                 }
             }
         }
@@ -354,13 +362,16 @@ class FileDriver implements CacheInterface
         $expired = 0;
         $pattern = $this->cacheDir . '/*' . $this->extension;
 
-        foreach (glob($pattern) as $file) {
-            if (is_file($file)) {
-                $data = $this->readCacheFile($file);
+        $files = glob($pattern);
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    $data = $this->readCacheFile($file);
 
-                if ($data === null || $this->isExpired($data)) {
-                    if (unlink($file)) {
-                        $expired++;
+                    if ($data === null || $this->isExpired($data)) {
+                        if (unlink($file)) {
+                            $expired++;
+                        }
                     }
                 }
             }
@@ -392,6 +403,7 @@ class FileDriver implements CacheInterface
         $basename = basename($filePath, $this->extension);
 
         // Extract original key (everything before the last underscore and 8-char hash)
+        $matches = [];
         if (preg_match('/^(.+)_[a-f0-9]{8}$/', $basename, $matches)) {
             return str_replace('_', '', $matches[1]); // This is simplified; in practice, you'd need to store the original key
         }
@@ -459,13 +471,15 @@ class FileDriver implements CacheInterface
         }
 
         $files = glob($dir . '/*');
-
-        foreach ($files as $file) {
-            if (is_dir($file)) {
-                $this->clearDirectory($file);
-                @rmdir($file);
-            } elseif (is_file($file) && strpos($file, $this->extension) !== false) {
-                @unlink($file);
+        
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (is_dir($file)) {
+                    $this->clearDirectory($file);
+                    @rmdir($file);
+                } elseif (is_file($file) && strpos($file, $this->extension) !== false) {
+                    @unlink($file);
+                }
             }
         }
     }
@@ -478,9 +492,15 @@ class FileDriver implements CacheInterface
         $size = 0;
         $pattern = $this->cacheDir . '/*' . $this->extension;
 
-        foreach (glob($pattern) as $file) {
-            if (is_file($file)) {
-                $size += filesize($file);
+        $files = glob($pattern);
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    $fileSize = filesize($file);
+                    if ($fileSize !== false) {
+                        $size += $fileSize;
+                    }
+                }
             }
         }
 
@@ -493,6 +513,7 @@ class FileDriver implements CacheInterface
     private function countCacheFiles(): int
     {
         $pattern = $this->cacheDir . '/*' . $this->extension;
-        return count(glob($pattern));
+        $files = glob($pattern);
+        return $files !== false ? count($files) : 0;
     }
 }

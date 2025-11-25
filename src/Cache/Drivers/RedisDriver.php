@@ -124,14 +124,14 @@ class RedisDriver implements CacheInterface
         $this->redis->setOption(Redis::OPT_SERIALIZER, $mode);
     }
 
-    private function executeWithRetry(callable $operation)
+    private function executeWithRetry(callable $operation): mixed
     {
         $attempts = 0;
         $maxAttempts = $this->config['retry_attempts'];
 
         while ($attempts < $maxAttempts) {
             try {
-                if (!$this->redis->ping()) {
+                if ($this->redis === null || !$this->redis->ping()) {
                     $this->reconnect();
                 }
                 
@@ -148,6 +148,8 @@ class RedisDriver implements CacheInterface
                 $this->reconnect();
             }
         }
+        
+        throw new InvalidArgumentException('Redis operation failed after maximum retry attempts');
     }
 
     private function reconnect(): void
@@ -162,9 +164,13 @@ class RedisDriver implements CacheInterface
         $this->stats['reconnections']++;
     }
 
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         return $this->executeWithRetry(function () use ($key) {
+            if ($this->redis === null) {
+                throw new RedisException('Redis connection is null');
+            }
+            
             $value = $this->redis->get($key);
             
             if ($value === false) {
@@ -177,9 +183,13 @@ class RedisDriver implements CacheInterface
         });
     }
 
-    public function set(string $key, $value, int $ttl = 0): bool
+    public function set(string $key, mixed $value, int $ttl = 0): bool
     {
         return $this->executeWithRetry(function () use ($key, $value, $ttl) {
+            if ($this->redis === null) {
+                throw new RedisException('Redis connection is null');
+            }
+            
             $result = $ttl > 0 
                 ? $this->redis->setex($key, $ttl, $value)
                 : $this->redis->set($key, $value);
@@ -195,14 +205,24 @@ class RedisDriver implements CacheInterface
     public function has(string $key): bool
     {
         return $this->executeWithRetry(function () use ($key) {
-            return $this->redis->exists($key) > 0;
+            if ($this->redis === null) {
+                throw new RedisException('Redis connection is null');
+            }
+            
+            $exists = $this->redis->exists($key);
+            return is_int($exists) && $exists > 0;
         });
     }
 
     public function delete(string $key): bool
     {
         return $this->executeWithRetry(function () use ($key) {
-            $result = $this->redis->del($key) > 0;
+            if ($this->redis === null) {
+                throw new RedisException('Redis connection is null');
+            }
+            
+            $delResult = $this->redis->del($key);
+            $result = is_int($delResult) && $delResult > 0;
             
             if ($result) {
                 $this->stats['deletes']++;
@@ -215,6 +235,10 @@ class RedisDriver implements CacheInterface
     public function clear(): bool
     {
         return $this->executeWithRetry(function () {
+            if ($this->redis === null) {
+                throw new RedisException('Redis connection is null');
+            }
+            
             return $this->redis->flushDB();
         });
     }
@@ -222,6 +246,10 @@ class RedisDriver implements CacheInterface
     public function getMultiple(array $keys): array
     {
         return $this->executeWithRetry(function () use ($keys) {
+            if ($this->redis === null) {
+                throw new RedisException('Redis connection is null');
+            }
+            
             $values = $this->redis->mGet($keys);
             $result = [];
 

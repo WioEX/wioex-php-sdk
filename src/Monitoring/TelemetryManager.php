@@ -192,7 +192,7 @@ class TelemetryManager
      */
     public function flush(): void
     {
-        if (!$this->enabled || empty($this->queue) || $this->client === null) {
+        if (!$this->enabled || ($this->queue === null || $this->queue === '' || $this->queue === []) || $this->client === null) {
             return;
         }
 

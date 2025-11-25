@@ -29,7 +29,7 @@ $client->news()->latest('TSLA');
 $client->news()->companyAnalysis('TSLA');
 $client->news()->trumpEffect(['sentiment' => ['trumpy']]);
 $client->newsAnalysis()->getFromExternal('TSLA');
-$client->newsAnalysis()->getFromWioex('TSLA');
+$client->newsAnalysis()->getFromNative('TSLA');
 ```
 
 ### New Clean API
@@ -51,7 +51,7 @@ $events = $newsManager->get('TSLA', ['type' => 'events']);
 |--------------|----------------------|------------|
 | `news` | Native (primary API) | Analysis |
 | `analysis` | Analysis (AI-powered) | Native |
-| `sentiment` | Sentiment (social media) | Analysis |
+| `sentiment` | Sentiment (market sentiment) | Analysis |
 | `events` | Native (structured) | Analysis |
 
 ### Explicit Provider Selection
@@ -210,10 +210,10 @@ $newsManager = $client->newsManager();
 // Get latest news (auto-routed to best provider)
 $news = $newsManager->get('TSLA', ['type' => 'news']);
 
-// Get AI analysis (auto-routed to Perplexity)
+// Get AI analysis (auto-routed to analysis provider)
 $analysis = $newsManager->get('TSLA', ['type' => 'analysis']);
 
-// Get social sentiment (auto-routed to Sentiment provider)
+// Get social sentiment (auto-routed to sentiment provider)
 $sentiment = $newsManager->get('TSLA', ['type' => 'sentiment']);
 ```
 
@@ -291,7 +291,7 @@ If you encounter any issues during migration:
 ## 📝 Changelog Summary
 
 - ✅ **Added**: Unified NewsManager with intelligent routing
-- ✅ **Added**: Provider-based architecture (WioEX, Perplexity, Social)
+- ✅ **Added**: Provider-based architecture (Native, Analysis, Sentiment)
 - ✅ **Added**: Multi-source data aggregation
 - ✅ **Added**: Advanced fallback mechanisms
 - ✅ **Added**: Provider health monitoring

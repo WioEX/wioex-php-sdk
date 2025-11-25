@@ -15,7 +15,7 @@ use InvalidArgumentException as BaseInvalidArgumentException;
 class InvalidArgumentException extends WioexException
 {
     private ?string $argumentName = null;
-    private $argumentValue = null;
+    private mixed $argumentValue = null;
     private ?string $expectedType = null;
 
     public function __construct(
@@ -23,7 +23,7 @@ class InvalidArgumentException extends WioexException
         int $code = 0,
         ?\Throwable $previous = null,
         ?string $argumentName = null,
-        $argumentValue = null,
+        mixed $argumentValue = null,
         ?string $expectedType = null
     ) {
         parent::__construct($message, $code, $previous);
@@ -127,7 +127,7 @@ class InvalidArgumentException extends WioexException
     /**
      * Create exception for invalid parameter range
      */
-    public static function invalidRange(string $parameterName, $value, $min, $max): self
+    public static function invalidRange(string $parameterName, mixed $value, mixed $min, mixed $max): self
     {
         return new self(
             message: "Parameter '{$parameterName}' value {$value} is out of range. Must be between {$min} and {$max}.",

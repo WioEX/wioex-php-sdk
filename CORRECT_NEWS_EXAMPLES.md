@@ -128,8 +128,8 @@ echo "Average per company: " . number_format($totalArticles / count($portfolioSy
 {
   "status": "success",
   "data": {
-    "wioex": {
-      "server": "SarexWay",
+    "provider": {
+      "server": "NativeAPI",
       "service": "news",
       "requests": {"ticker": "AAPL", "real_time": false, "delay": "5min"}
     },

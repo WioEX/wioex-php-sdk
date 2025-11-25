@@ -38,7 +38,8 @@ class OpcacheDriver implements CacheInterface
             'file_permissions' => 0644
         ], $config);
 
-        if (!function_exists('opcache_compile_file') || !ini_get('opcache.enable')) {
+        $opcacheEnabled = ini_get('opcache.enable');
+        if (!function_exists('opcache_compile_file') || !$opcacheEnabled) {
             throw new InvalidArgumentException('OPcache is not enabled');
         }
 
@@ -65,7 +66,7 @@ class OpcacheDriver implements CacheInterface
         return $this->cacheDir . '/' . $hash . '.php';
     }
 
-    private function createCacheFile(string $filePath, $value, int $ttl = 0): bool
+    private function createCacheFile(string $filePath, mixed $value, int $ttl = 0): bool
     {
         $expireTime = $ttl > 0 ? time() + $ttl : 0;
         
@@ -99,7 +100,7 @@ class OpcacheDriver implements CacheInterface
         return false;
     }
 
-    private function readCacheFile(string $filePath)
+    private function readCacheFile(string $filePath): mixed
     {
         if (!file_exists($filePath)) {
             return null;
@@ -187,6 +188,10 @@ class OpcacheDriver implements CacheInterface
     public function clear(): bool
     {
         $files = glob($this->cacheDir . '/*.php');
+        if ($files === false) {
+            return false;
+        }
+        
         $success = true;
 
         foreach ($files as $file) {
@@ -278,11 +283,18 @@ class OpcacheDriver implements CacheInterface
         }
 
         $files = glob($this->cacheDir . '/*.php');
+        if ($files === false) {
+            $files = [];
+        }
+        
         $totalSize = 0;
         $expiredFiles = 0;
         
         foreach ($files as $file) {
-            $totalSize += filesize($file);
+            $filesize = filesize($file);
+            if ($filesize !== false) {
+                $totalSize += $filesize;
+            }
             
             // Check if file is expired
             $data = include $file;
@@ -329,36 +341,37 @@ class OpcacheDriver implements CacheInterface
 
     public function isHealthy(): bool
     {
+        $opcacheEnabled = ini_get('opcache.enable');
         return is_dir($this->cacheDir) && 
                is_writable($this->cacheDir) && 
                function_exists('opcache_compile_file') && 
-               ini_get('opcache.enable');
+               (bool)$opcacheEnabled;
     }
 
-    public function getTtl(string $key)
+    public function getTtl(string $key): int|false
     {
         $filePath = $this->getFilePath($key);
         
         if (!file_exists($filePath)) {
-            return null;
+            return false;
         }
 
         try {
             $data = include $filePath;
             
             if (!is_array($data) || !isset($data['expires'])) {
-                return null;
+                return false;
             }
 
             if ($data['expires'] === 0) {
-                return null; // No expiration
+                return false; // No expiration
             }
 
             $remaining = $data['expires'] - time();
-            return $remaining > 0 ? $remaining : 0;
+            return $remaining > 0 ? $remaining : false;
 
         } catch (\Exception $e) {
-            return null;
+            return false;
         }
     }
 
@@ -376,6 +389,10 @@ class OpcacheDriver implements CacheInterface
     public function getKeys(string $pattern = '*'): array
     {
         $files = glob($this->cacheDir . '/*.php');
+        if ($files === false) {
+            return [];
+        }
+        
         $keys = [];
 
         foreach ($files as $file) {
@@ -424,8 +441,10 @@ class OpcacheDriver implements CacheInterface
 
     private function getHitRatio(): float
     {
-        $total = $this->stats['hits'] + $this->stats['misses'];
-        return $total > 0 ? round(($this->stats['hits'] / $total) * 100, 2) : 0.0;
+        $hits = (int)$this->stats['hits'];
+        $misses = (int)$this->stats['misses'];
+        $total = $hits + $misses;
+        return $total > 0 ? round(($hits / $total) * 100, 2) : 0.0;
     }
 
     private function formatBytes(int $bytes): string
@@ -436,7 +455,7 @@ class OpcacheDriver implements CacheInterface
             $bytes /= 1024;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2) . ' ' . ($units[$i] ?? 'B');
     }
 
     public function getOpcacheStatus(): array

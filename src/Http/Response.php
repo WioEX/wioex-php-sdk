@@ -623,7 +623,7 @@ class Response implements ArrayAccess
     public function hasEnhancedData(): bool
     {
         $instruments = $this->getInstruments();
-        if (empty($instruments)) {
+        if (($instruments === null || $instruments === '' || $instruments === [])) {
             return false;
         }
         
@@ -802,7 +802,7 @@ class Response implements ArrayAccess
     {
         $timeline = $this->getTimelineData();
         
-        if (empty($timeline)) {
+        if (($timeline === null || $timeline === '' || $timeline === [])) {
             return [];
         }
 
@@ -864,7 +864,7 @@ class Response implements ArrayAccess
     public function getLatestNews(): ?array
     {
         $articles = $this->getNewsArticles();
-        return !empty($articles) ? $articles[0] : null;
+        return ($articles !== null && $articles !== '' && $articles !== []) ? $articles[0] : null;
     }
 
     /**
@@ -882,7 +882,7 @@ class Response implements ArrayAccess
     {
         $timeline = $this->getTimelineData();
         
-        if (empty($timeline)) {
+        if (($timeline === null || $timeline === '' || $timeline === [])) {
             return null;
         }
 
@@ -957,7 +957,7 @@ class Response implements ArrayAccess
 
         // Legacy support for stocks
         $instruments = $this->getInstruments();
-        if (!empty($instruments)) {
+        if (($instruments !== null && $instruments !== '' && $instruments !== [])) {
             $summary['instruments_count'] = count($instruments);
             $summary['detailed_mode'] = $this->isDetailedMode();
         }

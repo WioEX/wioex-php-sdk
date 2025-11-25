@@ -73,7 +73,7 @@ class BulkRequestManager
         // Remove duplicates and normalize symbols
         $symbols = array_unique(array_map('strtoupper', array_filter($symbols)));
 
-        if (empty($symbols)) {
+        if (($symbols === null || $symbols === '' || $symbols === [])) {
             throw new ValidationException('No valid symbols provided for bulk operation');
         }
 
@@ -151,7 +151,7 @@ class BulkRequestManager
         }
 
         // Check if we have any successful responses
-        if (empty($responses)) {
+        if (($responses === null || $responses === '' || $responses === [])) {
             throw new BulkOperationException(
                 'All bulk operation chunks failed',
                 $errors,
@@ -288,7 +288,7 @@ class BulkRequestManager
      */
     private function mergeResponses(array $responses, array $errors, int $totalProcessed, int $totalRequested): Response
     {
-        if (empty($responses)) {
+        if (($responses === null || $responses === '' || $responses === [])) {
             throw new BulkOperationException('No successful responses to merge', $errors, []);
         }
 
@@ -325,7 +325,7 @@ class BulkRequestManager
         }
 
         // Build merged response structure
-        if (!empty($allTickers)) {
+        if (($allTickers !== null && $allTickers !== '' && $allTickers !== [])) {
             $mergedData['tickers'] = $allTickers;
         }
 
@@ -340,7 +340,7 @@ class BulkRequestManager
         ];
 
         // Add errors if any occurred and not in strict mode
-        if (!empty($errors)) {
+        if (($errors !== null && $errors !== '' && $errors !== [])) {
             $mergedData['bulk_operation']['errors'] = $errors;
         }
 
@@ -362,7 +362,7 @@ class BulkRequestManager
      */
     private function validateBulkRequest(array $symbols, array $options): void
     {
-        if (empty($symbols)) {
+        if (($symbols === null || $symbols === '' || $symbols === [])) {
             throw new ValidationException('Symbols array cannot be empty');
         }
 
@@ -377,7 +377,7 @@ class BulkRequestManager
 
         // Validate symbol format
         foreach ($symbols as $symbol) {
-            if (!is_string($symbol) || empty(trim($symbol))) {
+            if (!is_string($symbol) || ($symbol === null || $symbol === '' || $symbol === [])) {
                 throw new ValidationException('All symbols must be non-empty strings');
             }
 

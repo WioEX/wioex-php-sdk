@@ -84,7 +84,7 @@ class NativeProvider implements SourceProviderInterface
         ];
 
         // Add sentiment filter if provided
-        if (!empty($sentiment)) {
+        if (($sentiment !== null && $sentiment !== '' && $sentiment !== [])) {
             $params['sentiment'] = is_array($sentiment) ? $sentiment : [$sentiment];
         }
 

@@ -28,13 +28,13 @@ class RateLimitingMiddleware
     private array $requestTimes = [];
 
     // Token bucket implementation
-    private float $tokens;
-    private float $lastRefill;
-    private float $refillRate;
+    private float $tokens = 0.0;
+    private float $lastRefill = 0.0;
+    private float $refillRate = 0.0;
 
     // Fixed window tracking
-    private int $fixedWindowStart;
-    private int $fixedWindowCount;
+    private int $fixedWindowStart = 0;
+    private int $fixedWindowCount = 0;
 
     /**
      * @param array{enabled: bool, requests: int, window: int, strategy: string, burst_allowance: int} $config
@@ -400,7 +400,7 @@ class RateLimitingMiddleware
      */
     private function calculateRequestsPerSecond(): float
     {
-        if ($this->strategy !== 'sliding_window' || empty($this->requestTimes)) {
+        if ($this->strategy !== 'sliding_window' || ($this->requestTimes === null || $this->requestTimes === '' || $this->requestTimes === [])) {
             return 0.0;
         }
 

@@ -11,8 +11,17 @@ class ServerException extends WioexException
         return new self($message);
     }
 
-    public static function serviceUnavailable(): self
+    public static function serviceUnavailable(string $message = 'Service temporarily unavailable. Please try again later.'): self
     {
-        return new self('Service temporarily unavailable. Please try again later.');
+        return new self($message);
+    }
+
+    public static function backendServiceError(string $service, string $details = ''): self
+    {
+        $message = "Backend service '{$service}' is currently unavailable";
+        if ($details) {
+            $message .= ": {$details}";
+        }
+        return new self($message);
     }
 }

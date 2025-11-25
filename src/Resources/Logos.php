@@ -63,12 +63,12 @@ class Logos extends Resource
         $symbolsString = implode(',', array_map('strtoupper', array_map('trim', $symbols)));
         $response = $this->get('/api/logos/batch', ['symbols' => $symbolsString]);
         
-        $data = $response->getData();
+        $data = $response->data();
         $logoUrls = [];
         
         if (isset($data['logos']) && is_array($data['logos'])) {
             foreach ($data['logos'] as $symbol => $logoInfo) {
-                $logoUrls[$symbol] = $logoInfo['logo_url'] ?: null;
+                $logoUrls[$symbol] = $logoInfo['logo_url'] ?? null;
             }
         }
         
@@ -97,7 +97,7 @@ class Logos extends Resource
         try {
             // Make direct HTTP request to logo endpoint
             $logoUrl = "/logos/{$symbol}";
-            $response = $this->client->getRawResponse('GET', $logoUrl);
+            $response = $this->client->request('GET', $logoUrl);
             
             if ($response->getStatusCode() !== 200) {
                 throw new RequestException("Logo not found for symbol: {$symbol}");
@@ -153,7 +153,7 @@ class Logos extends Resource
     {
         try {
             $logoInfo = $this->getInfo($symbol);
-            $data = $logoInfo->getData();
+            $data = $logoInfo->data();
             return $data['logo_available'] ?? false;
         } catch (\Exception $e) {
             return false;
@@ -268,7 +268,7 @@ class Logos extends Resource
     public function getAvailableOnly(array $symbols, bool $includeUnavailable = false): array
     {
         $batchInfo = $this->getBatchInfo($symbols);
-        $logos = $batchInfo->getData()['logos'] ?? [];
+        $logos = $batchInfo->data()['logos'] ?? [];
         $result = [];
 
         foreach ($logos as $symbol => $info) {
@@ -298,7 +298,7 @@ class Logos extends Resource
             throw new ValidationException('Symbol cannot be longer than 10 characters');
         }
 
-        if (!preg_match('/^[A-Za-z0-9._-]+$/', $symbol)) {
+        if (preg_match('/^[A-Za-z0-9._-]+$/', $symbol) !== 1) {
             throw new ValidationException('Symbol contains invalid characters. Only letters, numbers, dots, underscores, and hyphens are allowed');
         }
     }

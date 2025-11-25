@@ -76,7 +76,7 @@ class LoggingMiddleware extends AbstractMiddleware
 
         if ($this->getConfigValue('log_request_body', false)) {
             $body = (string) $request->getBody();
-            if (!empty($body)) {
+            if (($body !== null && $body !== '' && $body !== [])) {
                 $logData['body'] = $this->sanitizeBody($body);
             }
         }
@@ -110,7 +110,7 @@ class LoggingMiddleware extends AbstractMiddleware
 
         if ($this->getConfigValue('log_response_body', false)) {
             $body = (string) $response->getBody();
-            if (!empty($body)) {
+            if (($body !== null && $body !== '' && $body !== [])) {
                 $logData['body'] = $this->sanitizeBody($body);
             }
         }

@@ -43,7 +43,7 @@ class FilterTransformer extends AbstractTransformer
     {
         $fields = $this->getOption('fields', []);
 
-        if (empty($fields)) {
+        if (($fields === null || $fields === '' || $fields === [])) {
             return $data;
         }
 
@@ -54,7 +54,7 @@ class FilterTransformer extends AbstractTransformer
     {
         $excludeFields = $this->getOption('exclude_fields', []);
 
-        if (empty($excludeFields)) {
+        if (($excludeFields === null || $excludeFields === '' || $excludeFields === [])) {
             return $data;
         }
 
@@ -118,7 +118,7 @@ class FilterTransformer extends AbstractTransformer
 
             case 'custom':
                 $filters = $this->getOption('filters', []);
-                return is_array($filters) && !empty($filters);
+                return is_array($filters) && ($filters !== null && $filters !== '' && $filters !== []);
 
             default:
                 return false;
@@ -127,6 +127,6 @@ class FilterTransformer extends AbstractTransformer
 
     public function supports(array $data, array $context = []): bool
     {
-        return !empty($data);
+        return ($data !== null && $data !== '' && $data !== []);
     }
 }

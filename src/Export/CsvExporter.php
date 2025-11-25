@@ -18,7 +18,7 @@ class CsvExporter extends AbstractExporter
     {
         $data = $this->prepareData($data, $options);
 
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return '';
         }
 
@@ -39,7 +39,7 @@ class CsvExporter extends AbstractExporter
             $headers = $this->extractHeaders($processedData);
 
             // Write headers
-            if ($includeHeaders && !empty($headers)) {
+            if ($includeHeaders && ($headers !== null && $headers !== '' && $headers !== [])) {
                 fputcsv($output, $headers, $delimiter, $enclosure, $escapeChar);
             }
 
@@ -136,7 +136,7 @@ class CsvExporter extends AbstractExporter
         $options = $this->validateOptions(array_merge($this->getDefaultOptions(), $options));
         $data = $this->prepareData($data, $options);
 
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return true;
         }
 
@@ -151,7 +151,7 @@ class CsvExporter extends AbstractExporter
             $headers = $this->extractHeaders($processedData);
 
             // Write headers
-            if ($includeHeaders && !empty($headers)) {
+            if ($includeHeaders && ($headers !== null && $headers !== '' && $headers !== [])) {
                 fputcsv($stream, $headers, $delimiter, $enclosure, $escapeChar);
             }
 
@@ -177,7 +177,7 @@ class CsvExporter extends AbstractExporter
         $options = $this->validateOptions(array_merge($this->getDefaultOptions(), $options));
         $chunkSize = $options['chunk_size'] ?? 1000;
 
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return $this->exportToFile([], $filename, $options);
         }
 
@@ -199,7 +199,7 @@ class CsvExporter extends AbstractExporter
             $headers = $this->extractHeaders($processedChunk);
 
             // Write headers
-            if ($includeHeaders && !empty($headers)) {
+            if ($includeHeaders && ($headers !== null && $headers !== '' && $headers !== [])) {
                 fputcsv($file, $headers, $delimiter, $enclosure, $escapeChar);
             }
 
@@ -251,7 +251,7 @@ class CsvExporter extends AbstractExporter
 
     public function estimateSize(array $data, array $options = []): int
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return 0;
         }
 

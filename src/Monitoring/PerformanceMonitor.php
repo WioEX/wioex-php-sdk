@@ -19,13 +19,13 @@ class PerformanceMonitor
     private array $thresholds;
 
     public function __construct(
-        Metrics $metrics = null,
-        Logger $logger = null,
+        ?Metrics $metrics = null,
+        ?Logger $logger = null,
         array $config = [],
         bool $enabled = true
     ) {
-        $this->metrics = $metrics ?: new Metrics();
-        $this->logger = $logger ?: new Logger();
+        $this->metrics = $metrics !== null ? $metrics : new Metrics();
+        $this->logger = $logger !== null ? $logger : new Logger();
         $this->config = array_merge($this->getDefaultConfig(), $config);
         $this->enabled = $enabled;
         $this->thresholds = $this->config['thresholds'] ?? [];
@@ -130,7 +130,7 @@ class PerformanceMonitor
         return $this;
     }
 
-    public function recordCacheOperation(string $operation, string $key, bool $hit, float $duration = null, array $context = []): self
+    public function recordCacheOperation(string $operation, string $key, bool $hit, ?float $duration = null, array $context = []): self
     {
         if (!$this->enabled) {
             return $this;

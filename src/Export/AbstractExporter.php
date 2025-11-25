@@ -125,7 +125,7 @@ abstract class AbstractExporter implements ExporterInterface
 
     public function estimateSize(array $data, array $options = []): int
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return 0;
         }
 
@@ -195,7 +195,7 @@ abstract class AbstractExporter implements ExporterInterface
      */
     protected function prepareData(array $data, array $options): array
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return [];
         }
 
@@ -212,7 +212,7 @@ abstract class AbstractExporter implements ExporterInterface
      */
     protected function isIndexedArrayOfArrays(array $data): bool
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return true;
         }
 
@@ -262,7 +262,7 @@ abstract class AbstractExporter implements ExporterInterface
      */
     protected function extractHeaders(array $data): array
     {
-        if (empty($data)) {
+        if (($data === null || $data === '' || $data === [])) {
             return [];
         }
 
@@ -364,7 +364,7 @@ abstract class AbstractExporter implements ExporterInterface
             'type' => $type,
             'format' => $this->format->value,
             'row_count' => count($data),
-            'column_count' => empty($data) ? 0 : count($this->extractHeaders($data)),
+            'column_count' => ($data === null || $data === '' || $data === []) ? 0 : count($this->extractHeaders($data)),
             'duration_seconds' => $duration,
             'size_bytes' => $size,
             'filename' => $filename,

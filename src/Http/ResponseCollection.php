@@ -308,7 +308,7 @@ class ResponseCollection implements ArrayAccess, Countable, Iterator, JsonSerial
 
     public function isEmpty(): bool
     {
-        return empty($this->items);
+        return ($this->items === null || $this->items === '' || $this->items === []);
     }
 
     public function isNotEmpty(): bool

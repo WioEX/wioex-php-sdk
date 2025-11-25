@@ -348,7 +348,7 @@ class TaggedCache implements CacheInterface
                     fn($item) => $item !== $taggedKey
                 ));
 
-                if (empty($items)) {
+                if (($items === null || $items === '' || $items === [])) {
                     $this->cache->delete($tagKey);
                 } else {
                     $this->cache->set($tagKey, $items);
