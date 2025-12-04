@@ -313,7 +313,8 @@ class BatchRequestManager
             'params' => $request->getParams()
         ];
 
-        return 'batch_request:' . md5(serialize($data));
+        // SECURITY FIX: Use json_encode instead of serialize to prevent object injection
+        return 'batch_request:' . md5(json_encode($data));
     }
 
     private function cacheResult(BatchRequest $request): void

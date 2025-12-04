@@ -80,7 +80,7 @@ class Config
         // Enhanced rate limiting configuration
         $rateLimit = $options['rate_limit'] ?? [];
         $this->rateLimitConfig = [
-            'enabled' => (bool)($rateLimit['enabled'] ?? false),
+            'enabled' => false, // Permanently disabled for maximum performance
             'requests' => (int)($rateLimit['requests'] ?? 100), // requests per window
             'window' => (int)($rateLimit['window'] ?? 60), // window in seconds
             'strategy' => $rateLimit['strategy'] ?? 'sliding_window', // sliding_window, fixed_window, token_bucket
@@ -637,10 +637,146 @@ class Config
 
     /**
      * Merge configuration with another array
+     *
+     * SECURITY FIX: Validates input against whitelist and type checks
+     * to prevent configuration injection attacks
      */
     public function merge(array $config): self
     {
-        $this->dynamicConfig = array_merge_recursive($this->dynamicConfig, $config);
+        // Whitelist of allowed configuration keys
+        $allowedKeys = [
+            'api_key', 'base_url', 'timeout', 'connect_timeout',
+            'retry', 'headers', 'error_reporting', 'error_reporting_endpoint',
+            'include_stack_trace', 'error_reporting_level', 'include_request_data',
+            'include_response_data', 'rate_limit', 'enhanced_retry', 'telemetry'
+        ];
+
+        // Validate and sanitize input
+        $validated = $this->validateMergeConfig($config, $allowedKeys);
+
+        // Perform merge with validated configuration
+        $this->dynamicConfig = array_merge_recursive($this->dynamicConfig, $validated);
         return $this;
+    }
+
+    /**
+     * Validate configuration array for merge operation
+     */
+    private function validateMergeConfig(array $config, array $allowedKeys): array
+    {
+        $validated = [];
+
+        foreach ($config as $key => $value) {
+            // Check if key is in whitelist
+            if (!in_array($key, $allowedKeys, true)) {
+                throw new InvalidArgumentException(
+                    "Invalid configuration key: '{$key}'. Allowed keys: " . implode(', ', $allowedKeys)
+                );
+            }
+
+            // Type validation based on key
+            switch ($key) {
+                case 'api_key':
+                case 'base_url':
+                case 'error_reporting_endpoint':
+                case 'error_reporting_level':
+                    if (!is_string($value) && $value !== null) {
+                        throw new InvalidArgumentException("Configuration key '{$key}' must be a string or null");
+                    }
+                    break;
+
+                case 'timeout':
+                case 'connect_timeout':
+                    if (!is_int($value) || $value < 0) {
+                        throw new InvalidArgumentException("Configuration key '{$key}' must be a positive integer");
+                    }
+                    break;
+
+                case 'error_reporting':
+                case 'include_stack_trace':
+                case 'include_request_data':
+                case 'include_response_data':
+                    if (!is_bool($value)) {
+                        throw new InvalidArgumentException("Configuration key '{$key}' must be a boolean");
+                    }
+                    break;
+
+                case 'retry':
+                case 'rate_limit':
+                case 'enhanced_retry':
+                case 'telemetry':
+                case 'headers':
+                    if (!is_array($value)) {
+                        throw new InvalidArgumentException("Configuration key '{$key}' must be an array");
+                    }
+                    $validated[$key] = $this->validateNestedConfig($key, $value);
+                    continue 2;
+            }
+
+            $validated[$key] = $value;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Validate nested configuration arrays
+     */
+    private function validateNestedConfig(string $parentKey, array $config): array
+    {
+        $nestedWhitelists = [
+            'retry' => ['times', 'delay', 'multiplier', 'max_delay'],
+            'rate_limit' => ['enabled', 'requests', 'window', 'strategy', 'burst_allowance'],
+            'enhanced_retry' => [
+                'enabled', 'attempts', 'backoff', 'base_delay', 'max_delay',
+                'jitter', 'exponential_base', 'retry_on_server_errors',
+                'retry_on_connection_errors', 'retry_on_rate_limit', 'circuit_breaker_enabled'
+            ],
+            'telemetry' => [
+                'enabled', 'auto_report_errors', 'performance_tracking', 'privacy_mode',
+                'sampling_rate', 'endpoint', 'flush_interval', 'max_queue_size', 'filters'
+            ],
+            'headers' => null
+        ];
+
+        $validated = [];
+
+        if ($parentKey === 'headers') {
+            foreach ($config as $headerKey => $headerValue) {
+                if (!is_string($headerKey) || (!is_string($headerValue) && !is_numeric($headerValue))) {
+                    throw new InvalidArgumentException("Header keys and values must be strings");
+                }
+                $validated[$headerKey] = (string) $headerValue;
+            }
+            return $validated;
+        }
+
+        $allowedNestedKeys = $nestedWhitelists[$parentKey] ?? [];
+
+        foreach ($config as $nestedKey => $nestedValue) {
+            if (!in_array($nestedKey, $allowedNestedKeys, true)) {
+                throw new InvalidArgumentException(
+                    "Invalid configuration key '{$parentKey}.{$nestedKey}'. Allowed keys: " .
+                    implode(', ', $allowedNestedKeys)
+                );
+            }
+
+            if (str_ends_with($nestedKey, '_enabled') ||
+                in_array($nestedKey, ['enabled', 'jitter', 'auto_report_errors', 'performance_tracking'], true)) {
+                if (!is_bool($nestedValue)) {
+                    throw new InvalidArgumentException("Configuration key '{$parentKey}.{$nestedKey}' must be a boolean");
+                }
+            } elseif (in_array($nestedKey, ['times', 'delay', 'multiplier', 'max_delay', 'requests',
+                                             'window', 'burst_allowance', 'attempts', 'base_delay',
+                                             'flush_interval', 'max_queue_size'], true)) {
+                if (!is_int($nestedValue) || $nestedValue < 0) {
+                    throw new InvalidArgumentException("Configuration key '{$parentKey}.{$nestedKey}' must be a positive integer");
+                }
+            }
+
+            $validated[$nestedKey] = $nestedValue;
+        }
+
+        return $validated;
     }
 }

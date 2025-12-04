@@ -393,6 +393,9 @@ class HistoricalDataHelper
             return $data;
         }
 
+        // MEMORY LEAK FIX: Maximum number of gap fills to prevent unbounded array growth
+        $MAX_GAP_FILL = 1000;
+
         $filled = [];
         $intervalSeconds = $interval->getSeconds();
 
@@ -410,8 +413,17 @@ class HistoricalDataHelper
             // Fill gaps larger than one interval
             $gap = $nextTime - $currentTime;
             if ($gap > $intervalSeconds * 1.5) {
+                // MEMORY LEAK FIX: Calculate gap count and limit it
+                $gapCount = (int) (($gap / $intervalSeconds) - 1);
+
+                if ($gapCount > $MAX_GAP_FILL) {
+                    // Gap too large, skip filling to prevent memory exhaustion
+                    continue;
+                }
+
                 $fillTime = $currentTime + $intervalSeconds;
-                while ($fillTime < $nextTime) {
+                $fillCount = 0;
+                while ($fillTime < $nextTime && $fillCount < $MAX_GAP_FILL) {
                     $filled[] = [
                         $timestampField => $fillTime,
                         'open' => $data[$i]['close'] ?? 0,
@@ -422,6 +434,7 @@ class HistoricalDataHelper
                         'filled' => true,
                     ];
                     $fillTime += $intervalSeconds;
+                    $fillCount++;
                 }
             }
         }
