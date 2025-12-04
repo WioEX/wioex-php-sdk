@@ -54,10 +54,20 @@ class RetryManager
             } catch (\Throwable $e) {
                 $lastException = $e;
                 
+                // EXCEPTION CONTEXT FIX: Add attempt context to non-retryable exceptions
                 // Check if this exception is retryable
                 if (!$this->isRetryableException($e, $config)) {
                     $this->logRetryAttempt($config, $attempt, false, $e, microtime(true) - $startTime, 'non_retryable');
-                    throw $e;
+                    throw new RequestException(
+                        sprintf(
+                            'Non-retryable exception on attempt %d/%d: %s',
+                            $attempt,
+                            $config['max_attempts'],
+                            $e->getMessage()
+                        ),
+                        $e->getCode(),
+                        $e
+                    );
                 }
 
                 // If this was the last attempt, don't retry

@@ -81,7 +81,15 @@ class ErrorReporter
             $this->sendReport($data);
             return true;
         } catch (Throwable $e) {
-            // Silently fail - we don't want error reporting to break the application
+            // EXCEPTION CONTEXT FIX: Log error reporting failures for debugging
+            // We don't want error reporting to break the application, but we need visibility
+            error_log(sprintf(
+                '[WioEX SDK] ERROR REPORTER FAILED: %s (Original exception: %s) [File: %s:%d]',
+                $e->getMessage(),
+                $exception->getMessage(),
+                $e->getFile(),
+                $e->getLine()
+            ));
             return false;
         }
     }
@@ -309,8 +317,13 @@ class ErrorReporter
         try {
             $endpoint = $this->config->getErrorReportingEndpoint();
             $jsonData = json_encode($data);
-            
+
+            // EXCEPTION CONTEXT FIX: Log JSON encoding failures
             if ($jsonData === false) {
+                error_log(sprintf(
+                    '[WioEX SDK] ERROR REPORTER: JSON encoding failed for error data. JSON Error: %s',
+                    json_last_error_msg()
+                ));
                 return;
             }
 
@@ -353,8 +366,21 @@ class ErrorReporter
             CURLOPT_NOSIGNAL => 1,
         ]);
         
-        // Execute and close immediately (fire and forget)
-        curl_exec($ch);
+        // EXCEPTION CONTEXT FIX: Log curl failures instead of silent fail
+        // Execute (fire and forget, but log failures)
+        $result = curl_exec($ch);
+
+        if ($result === false) {
+            $error = curl_error($ch);
+            $errno = curl_errno($ch);
+            error_log(sprintf(
+                '[WioEX SDK] ERROR REPORTER: CURL request failed. Error %d: %s (Endpoint: %s)',
+                $errno,
+                $error,
+                $endpoint
+            ));
+        }
+
         curl_close($ch);
     }
 

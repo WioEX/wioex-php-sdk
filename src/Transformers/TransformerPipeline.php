@@ -18,6 +18,7 @@ class TransformerPipeline
         'failed_executions' => 0,
         'total_processing_time' => 0.0,
         'transformers_executed' => [],
+        'transformers_failed' => [],
     ];
 
     public function __construct(array $options = [])
@@ -100,6 +101,20 @@ class TransformerPipeline
                     $this->statistics['transformers_executed'][$transformer->getName()] =
                         ($this->statistics['transformers_executed'][$transformer->getName()] ?? 0) + 1;
                 } catch (\Throwable $e) {
+                    // EXCEPTION CONTEXT FIX: Log transformer failures even when continuing
+                    error_log(sprintf(
+                        '[WioEX SDK] TRANSFORMER FAILED: %s in %s (File: %s:%d) - %s',
+                        $transformer->getName(),
+                        get_class($transformer),
+                        $e->getFile(),
+                        $e->getLine(),
+                        $e->getMessage()
+                    ));
+
+                    // Track failed execution
+                    $this->statistics['transformers_failed'][$transformer->getName()] = 
+                        ($this->statistics['transformers_failed'][$transformer->getName()] ?? 0) + 1;
+
                     if ($this->stopOnError) {
                         throw new TransformationException(
                             "Transformation failed in {$transformer->getName()}: {$e->getMessage()}",
@@ -205,6 +220,7 @@ class TransformerPipeline
             'failed_executions' => 0,
             'total_processing_time' => 0.0,
             'transformers_executed' => [],
+            'transformers_failed' => [],
         ];
 
         return $this;
