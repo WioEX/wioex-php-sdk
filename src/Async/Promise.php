@@ -14,6 +14,10 @@ class Promise
     private array $onFulfilled = [];
     private array $onRejected = [];
 
+    // MEMORY LEAK FIX: Limit promise chain depth to prevent unbounded handler accumulation
+    private const MAX_CHAIN_DEPTH = 100;
+    private int $chainDepth = 0;
+
     public function __construct()
     {
         $this->state = PromiseState::PENDING;
@@ -21,7 +25,13 @@ class Promise
 
     public function then(?callable $onFulfilled = null, ?callable $onRejected = null): self
     {
+        // MEMORY LEAK FIX: Prevent unbounded promise chains
+        if ($this->chainDepth >= self::MAX_CHAIN_DEPTH) {
+            throw new \RuntimeException('Promise chain depth exceeded maximum limit of ' . self::MAX_CHAIN_DEPTH);
+        }
+
         $promise = new self();
+        $promise->chainDepth = $this->chainDepth + 1;
 
         $this->onFulfilled[] = function ($value) use ($promise, $onFulfilled) {
             if ($onFulfilled === null) {
@@ -152,18 +162,26 @@ class Promise
 
     private function handleFulfilled(): void
     {
-        foreach ($this->onFulfilled as $handler) {
+        // MEMORY LEAK FIX: Execute and immediately clear handlers to free memory
+        $handlers = $this->onFulfilled;
+        $this->onFulfilled = []; // Clear immediately before execution
+        $this->onRejected = []; // Clear rejected handlers too (won't be used)
+
+        foreach ($handlers as $handler) {
             $handler($this->value);
         }
-        $this->onFulfilled = [];
     }
 
     private function handleRejected(): void
     {
-        foreach ($this->onRejected as $handler) {
+        // MEMORY LEAK FIX: Execute and immediately clear handlers to free memory
+        $handlers = $this->onRejected;
+        $this->onRejected = []; // Clear immediately before execution
+        $this->onFulfilled = []; // Clear fulfilled handlers too (won't be used)
+
+        foreach ($handlers as $handler) {
             $handler($this->reason);
         }
-        $this->onRejected = [];
     }
 
     public static function resolved(mixed $value): self
