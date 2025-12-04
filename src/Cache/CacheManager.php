@@ -49,6 +49,7 @@ class CacheManager implements CacheInterface
             $this->drivers = ['memory' => new MemoryDriver()];
             $this->driver = $this->drivers['memory'];
             
+            // EXCEPTION CONTEXT FIX: Always log cache initialization errors
             // Report error if ErrorReporter is available
             if (class_exists('\Wioex\SDK\ErrorReporter')) {
                 try {
@@ -58,8 +59,23 @@ class CacheManager implements CacheInterface
                         'fallback_driver' => 'memory'
                     ]);
                 } catch (\Exception $reportError) {
-                    // Silent fail on error reporting
+                    // EXCEPTION CONTEXT FIX: Fallback to error_log if ErrorReporter fails
+                    error_log(sprintf(
+                        '[WioEX SDK] CRITICAL: Cache initialization failed: %s (File: %s:%d). ErrorReporter also failed: %s',
+                        $e->getMessage(),
+                        $e->getFile(),
+                        $e->getLine(),
+                        $reportError->getMessage()
+                    ));
                 }
+            } else {
+                // EXCEPTION CONTEXT FIX: Log directly if ErrorReporter not available
+                error_log(sprintf(
+                    '[WioEX SDK] WARNING: Cache initialization failed: %s (File: %s:%d). Falling back to memory driver.',
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine()
+                ));
             }
         }
     }

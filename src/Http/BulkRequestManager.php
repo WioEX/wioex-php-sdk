@@ -126,12 +126,17 @@ class BulkRequestManager
                 $chunkEndTime = microtime(true);
                 $chunkDuration = $chunkEndTime - $chunkStartTime;
                 
+                // EXCEPTION CONTEXT FIX: Preserve full exception context for debugging
                 $error = [
                     'chunk' => $chunkIndex,
                     'symbols' => $chunk,
                     'error' => $e->getMessage(),
                     'code' => $e->getCode(),
-                    'duration' => $chunkDuration
+                    'duration' => $chunkDuration,
+                    'exception_type' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
                 ];
                 $errors[] = $error;
 
@@ -144,7 +149,9 @@ class BulkRequestManager
                     throw new BulkOperationException(
                         "Bulk operation failed on chunk {$chunkIndex}: " . $e->getMessage(),
                         $errors,
-                        $responses
+                        $responses,
+                        0,
+                        $e  // EXCEPTION CONTEXT FIX: Pass original exception as previous
                     );
                 }
             }

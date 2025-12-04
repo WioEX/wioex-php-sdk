@@ -124,6 +124,16 @@ class CircuitBreaker
                 $lastException = $e;
                 $attempt++;
 
+                // EXCEPTION CONTEXT FIX: Log retry attempts for debugging
+                error_log(sprintf(
+                    '[WioEX SDK] CIRCUIT BREAKER RETRY: Attempt %d/%d failed: %s (File: %s:%d)',
+                    $attempt,
+                    $retries + 1,
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine()
+                ));
+
                 if ($attempt <= $retries) {
                     $currentDelay = min($delay * pow(2, $attempt - 1), $maxDelay);
                     usleep($currentDelay * 1000);
@@ -131,7 +141,18 @@ class CircuitBreaker
             }
         }
 
-        throw $lastException;
+        // EXCEPTION CONTEXT FIX: Add attempt context to final exception
+        if ($lastException) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Circuit breaker execution failed after %d attempts. Last error: %s',
+                    $attempt,
+                    $lastException->getMessage()
+                ),
+                $lastException->getCode(),
+                $lastException
+            );
+        }
     }
 
     private function canExecute(): bool
