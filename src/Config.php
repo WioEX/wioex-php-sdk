@@ -111,7 +111,7 @@ class Config
             'performance_tracking' => (bool)($telemetry['performance_tracking'] ?? true),
             'privacy_mode' => $telemetry['privacy_mode'] ?? 'production', // production, development, debug
             'sampling_rate' => (float)($telemetry['sampling_rate'] ?? 0.1), // 10% sampling by default
-            'endpoint' => $telemetry['endpoint'] ?? 'https://api.wioex.com/sdk/telemetry',
+            'endpoint' => $telemetry['endpoint'] ?? 'https://api.wioex.com/sdk/usage',
             'flush_interval' => (int)($telemetry['flush_interval'] ?? 30), // seconds
             'max_queue_size' => (int)($telemetry['max_queue_size'] ?? 100),
             'filters' => array_merge([
@@ -129,7 +129,7 @@ class Config
         // Error reporting configuration
         $this->errorReporting = $options['error_reporting'] ?? false;
         $this->errorReportingEndpoint = $options['error_reporting_endpoint']
-            ?? 'https://api.wioex.com/sdk/error-report';
+            ?? 'https://api.wioex.com/sdk/errors';
         $this->includeStackTrace = $options['include_stack_trace'] ?? false;
 
         // Error reporting levels: 'minimal', 'standard', 'detailed'
