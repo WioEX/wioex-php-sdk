@@ -31,10 +31,10 @@ class BulkRequestManager
     
     // Endpoint-specific limits based on real API constraints
     private const ENDPOINT_LIMITS = [
-        'quotes' => 30,      // /v2/stocks/get supports up to 30 symbols
-        'timeline' => 1,     // /v2/stocks/chart/timeline supports only 1 symbol
-        'info' => 1,         // /v2/stocks/info supports only 1 symbol
-        'financials' => 1    // /v2/stocks/financials supports only 1 symbol
+        'quotes' => 30,      // /api/stocks/get supports up to 30 symbols
+        'timeline' => 1,     // /api/stocks/chart/timeline supports only 1 symbol
+        'info' => 1,         // /api/stocks/info supports only 1 symbol
+        'financials' => 1    // /api/stocks/financials supports only 1 symbol
     ];
 
     public function __construct(
@@ -213,14 +213,14 @@ class BulkRequestManager
         // Handle different endpoint types based on their API requirements
         switch ($endpointType) {
             case 'quotes':
-                // /v2/stocks/get supports multiple symbols via 'stocks' parameter
+                // /api/stocks/get supports multiple symbols via 'stocks' parameter
                 $symbolsParam = implode(',', $symbols);
                 $separator = strpos($url, '?') !== false ? '&' : '?';
                 $url .= $separator . 'stocks=' . urlencode($symbolsParam);
                 break;
                 
             case 'timeline':
-                // /v2/stocks/chart/timeline supports single symbol via 'ticker' parameter
+                // /api/stocks/chart/timeline supports single symbol via 'ticker' parameter
                 if (count($symbols) > 1) {
                     throw new ValidationException('Timeline endpoint only supports single symbol per request');
                 }
@@ -229,7 +229,7 @@ class BulkRequestManager
                 break;
                 
             case 'info':
-                // /v2/stocks/info supports single symbol via 'ticker' parameter
+                // /api/stocks/info supports single symbol via 'ticker' parameter
                 if (count($symbols) > 1) {
                     throw new ValidationException('Info endpoint only supports single symbol per request');
                 }
@@ -238,7 +238,7 @@ class BulkRequestManager
                 break;
                 
             case 'financials':
-                // /v2/stocks/financials supports single symbol via 'ticker' parameter
+                // /api/stocks/financials supports single symbol via 'ticker' parameter
                 if (count($symbols) > 1) {
                     throw new ValidationException('Financials endpoint only supports single symbol per request');
                 }
@@ -417,7 +417,7 @@ class BulkRequestManager
     /**
      * Map bulk endpoint to real API endpoint with limits
      *
-     * @param string $bulkEndpoint The bulk endpoint (e.g., /v2/stocks/bulk/quote)
+     * @param string $bulkEndpoint The bulk endpoint (e.g., /api/stocks/bulk/quote)
      * @return array<string, mixed> Endpoint info with real endpoint, limits, and type
      * @throws ValidationException
      */
@@ -425,23 +425,23 @@ class BulkRequestManager
     {
         // Map bulk endpoints to real API endpoints
         $endpointMapping = [
-            '/v2/stocks/bulk/quote' => [
-                'endpoint' => '/v2/stocks/get',
+            '/api/stocks/bulk/quote' => [
+                'endpoint' => '/api/stocks/get',
                 'max_symbols' => self::ENDPOINT_LIMITS['quotes'],
                 'type' => 'quotes'
             ],
-            '/v2/stocks/bulk/timeline' => [
-                'endpoint' => '/v2/stocks/chart/timeline',
+            '/api/stocks/bulk/timeline' => [
+                'endpoint' => '/api/stocks/chart/timeline',
                 'max_symbols' => self::ENDPOINT_LIMITS['timeline'],
                 'type' => 'timeline'
             ],
-            '/v2/stocks/bulk/info' => [
-                'endpoint' => '/v2/stocks/info',
+            '/api/stocks/bulk/info' => [
+                'endpoint' => '/api/stocks/info',
                 'max_symbols' => self::ENDPOINT_LIMITS['info'],
                 'type' => 'info'
             ],
-            '/v2/stocks/bulk/financials' => [
-                'endpoint' => '/v2/stocks/financials',
+            '/api/stocks/bulk/financials' => [
+                'endpoint' => '/api/stocks/financials',
                 'max_symbols' => self::ENDPOINT_LIMITS['financials'],
                 'type' => 'financials'
             ]
