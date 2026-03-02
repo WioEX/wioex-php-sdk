@@ -52,12 +52,14 @@ class Streaming extends Resource
             ]);
             
             $wioexResponse = new Response($response);
-            
+
             // Cache token data for helper methods
+            // Server returns {success:true, data:{token, expires_at, websocket_url, ...}}
             if ($wioexResponse->successful()) {
-                $this->cachedTokenData = $wioexResponse->data();
+                $body = $wioexResponse->data();
+                $this->cachedTokenData = $body['data'] ?? $body;
             }
-            
+
             return $wioexResponse;
             
         } catch (\GuzzleHttp\Exception\RequestException $e) {
@@ -99,7 +101,8 @@ class Streaming extends Resource
 
         // Cache new token data
         if ($response->successful()) {
-            $this->cachedTokenData = $response->data();
+            $body = $response->data();
+            $this->cachedTokenData = $body['data'] ?? $body;
         }
 
         return $response;
