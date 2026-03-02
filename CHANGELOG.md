@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-03-02
+
+### Fixed
+
+- **CRITICAL**: Fixed `Streaming::getToken()` caching wrong data level — `cachedTokenData` now correctly reads from `$body['data']` instead of `$body`, resolving null returns on `$token['token']`, `$token['websocket_url']`, and all other token fields
+- **FIXED**: Same fix applied to `Streaming::refreshToken()` for consistency
+- Users who were getting `null` from `$token['token']` after a successful `getToken()` call will now receive the correct value
+
 ## [2.13.1] - 2025-11-25
 
 ### 🚨 Critical 503 Service Unavailable Fix
